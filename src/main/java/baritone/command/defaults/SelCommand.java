@@ -40,7 +40,6 @@ import baritone.api.selection.ISelectionManager;
 import baritone.api.utils.BetterBlockPos;
 import baritone.api.utils.BlockOptionalMeta;
 import baritone.api.utils.BlockOptionalMetaLookup;
-import baritone.utils.IRenderer;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.server.command.ServerCommandSource;
@@ -252,21 +251,6 @@ public class SelCommand extends Command {
                 "> sel contract <target> <direction> <blocks> - Contract the targets.",
                 "> sel shift <target> <direction> <blocks> - Shift the targets (does not resize)."
         );
-    }
-
-    public void renderSelectionBox() {
-        Settings settings = BaritoneAPI.getGlobalSettings();
-        BetterBlockPos pos1 = this.pos1;
-        if (!settings.renderSelectionCorners.get() || pos1 == null) {
-            return;
-        }
-        Color color = settings.colorSelectionPos1.get();
-        float opacity = settings.selectionOpacity.get();
-        float lineWidth = settings.selectionLineWidth.get();
-        boolean ignoreDepth = settings.renderSelectionIgnoreDepth.get();
-        IRenderer.startLines(color, opacity, lineWidth, ignoreDepth);
-        IRenderer.drawAABB(new Box(pos1, pos1.add(1, 1, 1)));
-        IRenderer.endLines(ignoreDepth);
     }
 
     enum Action {

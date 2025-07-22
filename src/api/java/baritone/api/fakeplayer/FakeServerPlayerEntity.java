@@ -72,9 +72,11 @@ public class FakeServerPlayerEntity extends ServerPlayerEntity implements Automa
 
     protected @Nullable GameProfile displayProfile;
     private boolean release;
+    public LivingEntityInteractionManager manager;
 
     public FakeServerPlayerEntity(EntityType<? extends PlayerEntity> type, ServerWorld world) {
         this(type, world, new GameProfile(UUID.randomUUID(), "FakePlayer"));
+        manager = new LivingEntityInteractionManager(this);
     }
 
     public FakeServerPlayerEntity(EntityType<? extends PlayerEntity> type, ServerWorld world, GameProfile profile) {
@@ -134,6 +136,7 @@ public class FakeServerPlayerEntity extends ServerPlayerEntity implements Automa
 
     @Override
     public void tick() {
+        manager.update();
         this.closeHandledScreen();
         super.tick();
         this.playerTick();

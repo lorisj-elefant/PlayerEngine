@@ -17,14 +17,16 @@
 
 package baritone.utils;
 
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.entity.EntityRenderDispatcher;
 import net.minecraft.util.Identifier;
 
 /**
  * @author Brady
  * @since 8/9/2018
  */
-public final class PathRenderer implements IRenderer {
-
+public final class PathRenderer {
+    static EntityRenderDispatcher renderManager = MinecraftClient.getInstance().getEntityRenderDispatcher();
 
     private PathRenderer() {}
 

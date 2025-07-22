@@ -17,8 +17,9 @@
 
 package baritone.utils.player;
 
+import baritone.api.fakeplayer.FakeServerPlayerEntity;
+import baritone.api.fakeplayer.LivingEntityInteractionManager;
 import baritone.api.utils.IPlayerController;
-import baritone.utils.accessor.IServerPlayerInteractionManager;
 import com.jamieswhiteshirt.reachentityattributes.ReachEntityAttributes;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
@@ -49,16 +50,16 @@ public class ServerPlayerController implements IPlayerController {
 
     @Override
     public boolean hasBrokenBlock() {
-        return ((IServerPlayerInteractionManager) this.player.interactionManager).automatone$hasBrokenBlock();
+        return getInteractionManager().hasBrokenBlock();
     }
 
     @Override
     public boolean onPlayerDamageBlock(BlockPos pos, Direction side) {
-        IServerPlayerInteractionManager interactionManager = (IServerPlayerInteractionManager) this.player.interactionManager;
+        LivingEntityInteractionManager interactionManager = getInteractionManager();
         if (interactionManager.isMining()) {
             int progress = interactionManager.getBlockBreakingProgress();
             if (progress >= 10) {
-                this.player.interactionManager.processBlockBreakingAction(interactionManager.getMiningPos(), PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, side, this.player.getWorld().getTopY(), sequence++);
+                getInteractionManager().processBlockBreakingAction(interactionManager.getMiningPos(), PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, side, this.player.getWorld().getTopY(), sequence++);
             }
             return true;
         }
@@ -67,25 +68,25 @@ public class ServerPlayerController implements IPlayerController {
 
     @Override
     public void resetBlockRemoving() {
-        IServerPlayerInteractionManager interactionManager = (IServerPlayerInteractionManager) this.player.interactionManager;
+        LivingEntityInteractionManager interactionManager = getInteractionManager();
         if (interactionManager.isMining()) {
-            this.player.interactionManager.processBlockBreakingAction(interactionManager.getMiningPos(), PlayerActionC2SPacket.Action.ABORT_DESTROY_BLOCK, Direction.UP, this.player.getWorld().getTopY(), sequence++);
+            getInteractionManager().processBlockBreakingAction(interactionManager.getMiningPos(), PlayerActionC2SPacket.Action.ABORT_DESTROY_BLOCK, Direction.UP, this.player.getWorld().getTopY(), sequence++);
         }
     }
 
     @Override
     public GameMode getGameType() {
-        return player.interactionManager.getGameMode();
+        return GameMode.SURVIVAL;
     }
 
     @Override
     public ActionResult processRightClickBlock(PlayerEntity player, World world, Hand hand, BlockHitResult result) {
-        return this.player.interactionManager.interactBlock(this.player, this.player.getWorld(), this.player.getStackInHand(hand), hand, result);
+        return getInteractionManager().interactBlock(this.player, this.player.getWorld(), this.player.getStackInHand(hand), hand, result);
     }
 
     @Override
     public ActionResult processRightClick(PlayerEntity player, World world, Hand hand) {
-        return this.player.interactionManager.interactItem(this.player, this.player.getWorld(), this.player.getStackInHand(hand), hand);
+        return getInteractionManager().interactItem(this.player, this.player.getWorld(), this.player.getStackInHand(hand), hand);
     }
 
     @Override
@@ -93,9 +94,15 @@ public class ServerPlayerController implements IPlayerController {
         BlockState state = this.player.getWorld().getBlockState(loc);
         if (state.isAir()) return false;
 
-        this.player.interactionManager.processBlockBreakingAction(loc, PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, face, this.player.getWorld().getTopY(), sequence++);
+        getInteractionManager().processBlockBreakingAction(loc, PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, face, this.player.getWorld().getTopY(), sequence++);
         // Success = starting the mining process or insta-mining
-        return ((IServerPlayerInteractionManager) this.player.interactionManager).isMining() || this.player.getWorld().isAir(loc);
+        return (getInteractionManager()).isMining() || this.player.getWorld().isAir(loc);
+    }
+
+    public LivingEntityInteractionManager getInteractionManager(){
+        if(player instanceof FakeServerPlayerEntity fakeServerPlayer)
+            return fakeServerPlayer.manager;
+        return null;
     }
 
     @Override

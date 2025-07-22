@@ -65,7 +65,7 @@ public final class AutomatoneClient implements ClientModInitializer {
             return;
         }
 
-        DefaultCommands.selCommand.renderSelectionBox();
+        //DefaultCommands.selCommand.renderSelectionBox();
     }
 
     @Override
