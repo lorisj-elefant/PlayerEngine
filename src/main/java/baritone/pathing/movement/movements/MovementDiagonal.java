@@ -313,7 +313,7 @@ public class MovementDiagonal extends Movement {
         if (MovementHelper.isLiquid(ctx, ctx.feetPos()) && !baritone.settings().sprintInWater.get()) {
             return false;
         }
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < Math.min(positionsToBreak.length,4); i++) {
             if (!MovementHelper.canWalkThrough(ctx, positionsToBreak[i])) {
                 return false;
             }
@@ -332,7 +332,7 @@ public class MovementDiagonal extends Movement {
             return toBreakCached;
         }
         List<BlockPos> result = new ArrayList<>();
-        for (int i = 4; i < 6; i++) {
+        for (int i = 4; i < Math.min(positionsToBreak.length,6); i++) {
             if (!MovementHelper.canWalkThrough(bsi, positionsToBreak[i].x, positionsToBreak[i].y, positionsToBreak[i].z, ctx.baritone().settings())) {
                 result.add(positionsToBreak[i]);
             }
@@ -347,7 +347,7 @@ public class MovementDiagonal extends Movement {
             toWalkIntoCached = new ArrayList<>();
         }
         List<BlockPos> result = new ArrayList<>();
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < Math.min(positionsToBreak.length, 4); i++) {
             if (!MovementHelper.canWalkThrough(bsi, positionsToBreak[i].x, positionsToBreak[i].y, positionsToBreak[i].z, ctx.baritone().settings())) {
                 result.add(positionsToBreak[i]);
             }
