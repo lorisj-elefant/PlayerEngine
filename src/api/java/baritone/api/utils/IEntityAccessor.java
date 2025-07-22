@@ -23,5 +23,4 @@ import net.minecraft.entity.EntityType;
 
 public interface IEntityAccessor {
     float automatone$invokeGetEyeHeight(EntityPose pose, EntityDimensions dimensions);
-    void automatone$setType(EntityType<?> type);
 }

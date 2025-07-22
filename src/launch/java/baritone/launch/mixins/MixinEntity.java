@@ -40,9 +40,6 @@ public abstract class MixinEntity implements IEntityAccessor {
     @Override
     @Invoker("getEyeHeight")
     public abstract float automatone$invokeGetEyeHeight(EntityPose pose, EntityDimensions dimensions);
-    @Override
-    @Accessor("type")
-    public abstract void automatone$setType(EntityType<?> type);
 
     @Inject(method = "setRemoved", at = @At("RETURN"))
     private void shutdownPathingOnUnloading(Entity.RemovalReason reason, CallbackInfo ci) {

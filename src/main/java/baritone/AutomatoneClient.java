@@ -17,7 +17,6 @@
 
 package baritone;
 
-import baritone.api.selection.ISelectionManager;
 import baritone.command.defaults.ClickCommand;
 import baritone.utils.GuiClick;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -27,16 +26,10 @@ import net.minecraft.client.MinecraftClient;
 import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.qsl.base.api.entrypoint.client.ClientModInitializer;
 
-import java.util.Collections;
-import java.util.Set;
 import java.util.UUID;
-import java.util.WeakHashMap;
 
 @KeepName
 public final class AutomatoneClient implements ClientModInitializer {
-    public static final Set<Baritone> renderList = Collections.newSetFromMap(new WeakHashMap<>());
-    public static final Set<ISelectionManager> selectionRenderList = Collections.newSetFromMap(new WeakHashMap<>());
-
     public static void onRenderPass(WorldRenderContext context) {
         MinecraftClient mc = MinecraftClient.getInstance();
 
@@ -44,12 +37,6 @@ public final class AutomatoneClient implements ClientModInitializer {
             ((GuiClick) mc.currentScreen).onRender(context.matrixStack(), context.projectionMatrix());
         }
 
-        if (!mc.isIntegratedServerRunning()) {
-            // FIXME we should really be able to render stuff in multiplayer
-            return;
-        }
-
-        //DefaultCommands.selCommand.renderSelectionBox();
     }
 
     @Override

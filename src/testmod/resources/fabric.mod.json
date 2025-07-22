@@ -21,9 +21,6 @@
     ],
     "client_init": [
       "io.github.ladysnake.otomaton.OtomatonClient"
-    ],
-    "quilt:game_test": [
-      "io.github.ladysnake.otomaton.OtomatonTestSuite"
     ]
   },
   "depends": {
