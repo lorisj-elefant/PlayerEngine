@@ -17,7 +17,7 @@
 
 package baritone.launch.mixins.player;
 
-import baritone.api.fakeplayer.AutomatoneFakePlayer;
+import baritone.api.fakeplayer.IAutomatone;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import org.spongepowered.asm.mixin.Dynamic;
@@ -37,7 +37,7 @@ public abstract class EntityMixin {
     @Dynamic("hasPlayerRider player check lambda")
     @Inject(method = { "m_lsaraprt", "method_31469" }, at = @At(value = "HEAD"), cancellable = true, require = 1, allow = 1)
     private static void removeFakePlayers(Entity entity, CallbackInfoReturnable<Boolean> cir) {
-        if (entity instanceof AutomatoneFakePlayer) {
+        if (entity instanceof IAutomatone) {
             cir.setReturnValue(false);
         }
     }

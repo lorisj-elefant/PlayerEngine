@@ -17,14 +17,13 @@
 
 package io.github.ladysnake.otomaton;
 
-import baritone.api.fakeplayer.FakePlayers;
-import baritone.api.fakeplayer.FakeServerPlayerEntity;
+import baritone.api.fakeplayer.AutomatoneEntity;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricEntityTypeBuilder;
 import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnGroup;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.mob.ZombieEntity;
 import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
 import net.minecraft.registry.Registry;
@@ -39,10 +38,10 @@ public class Otomaton implements ModInitializer {
         return new Identifier(MOD_ID, path);
     }
 
-    public static final EntityType<PlayerEntity> FAKE_PLAYER = FabricEntityTypeBuilder.<PlayerEntity>createLiving()
+    public static final EntityType<AutomatoneEntity> FAKE_PLAYER = FabricEntityTypeBuilder.<ZombieEntity>createLiving()
             .spawnGroup(SpawnGroup.MISC)
-            .entityFactory(FakePlayers.entityFactory(FakeServerPlayerEntity::new))
-            .defaultAttributes(PlayerEntity::createAttributes)
+            .entityFactory(AutomatoneEntity::new)
+            .defaultAttributes(ZombieEntity::createAttributes)
             .dimensions(EntityDimensions.changing(EntityType.PLAYER.getWidth(), EntityType.PLAYER.getHeight()))
             .trackRangeBlocks(64)
             .trackedUpdateRate(1)

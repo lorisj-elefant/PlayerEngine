@@ -26,7 +26,7 @@ import baritone.api.command.argument.ICommandArgument;
 import baritone.api.command.exception.CommandException;
 import baritone.api.command.exception.CommandNotEnoughArgumentsException;
 import baritone.api.command.manager.ICommandManager;
-import baritone.api.fakeplayer.FakeServerPlayerEntity;
+import baritone.api.fakeplayer.AutomatoneEntity;
 import baritone.command.argument.ArgConsumer;
 import baritone.command.manager.BaritoneArgumentType;
 import baritone.command.manager.BaritoneCommandManager;
@@ -190,7 +190,7 @@ public final class DefaultCommands {
     private static int runCommand(ServerCommandSource source, Entity target, String command) throws CommandSyntaxException {
         if (!(target instanceof LivingEntity)) throw EntityArgumentType.ENTITY_NOT_FOUND_EXCEPTION.create();
         try {
-            target = target.getWorld().getClosestEntity(FakeServerPlayerEntity.class, TargetPredicate.createNonAttackable(), (LivingEntity) null, target.getX(), target.getY(), target.getZ(), target.getBoundingBox().expand(100, 100, 100));
+            target = target.getWorld().getClosestEntity(AutomatoneEntity.class, TargetPredicate.createNonAttackable(), (LivingEntity) null, target.getX(), target.getY(), target.getZ(), target.getBoundingBox().expand(100, 100, 100));
             return runCommand(source, command, BaritoneAPI.getProvider().getBaritone((LivingEntity) target)) ? Command.SINGLE_SUCCESS : 0;
         } catch (baritone.api.command.exception.CommandException e) {
             throw BARITONE_COMMAND_FAILED_EXCEPTION.create(e.handle());

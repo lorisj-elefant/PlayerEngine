@@ -34,7 +34,7 @@
  */
 package baritone.launch.mixins.player;
 
-import baritone.api.fakeplayer.AutomatoneFakePlayer;
+import baritone.api.fakeplayer.IAutomatone;
 import net.minecraft.advancement.Advancement;
 import net.minecraft.advancement.PlayerAdvancementTracker;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -51,6 +51,6 @@ public abstract class PlayerAdvancementTrackerMixin {
 
     @Inject(method = "grantCriterion", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/PlayerManager;broadcastSystemMessage(Lnet/minecraft/text/Text;Z)V"), cancellable = true)
     private void cancelAdvancementProgress(Advancement advancement, String criterionName, CallbackInfoReturnable<Boolean> cir) {
-        if (this.owner instanceof AutomatoneFakePlayer) cir.setReturnValue(true);
+        if (this.owner instanceof IAutomatone) cir.setReturnValue(true);
     }
 }

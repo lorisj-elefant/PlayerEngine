@@ -34,8 +34,8 @@
  */
 package baritone.launch.mixins.player;
 
-import baritone.api.fakeplayer.AutomatoneFakePlayer;
-import baritone.api.fakeplayer.FakeServerPlayerEntity;
+import baritone.api.fakeplayer.AutomatoneEntity;
+import baritone.api.fakeplayer.IAutomatone;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -67,7 +67,7 @@ public abstract class PlayerEntityMixin extends LivingEntity {
 
     @Inject(method = "shouldSave", at = @At("HEAD"), cancellable = true)
     private void allowFakePlayerSave(CallbackInfoReturnable<Boolean> cir) {
-        if (this instanceof AutomatoneFakePlayer) {
+        if (this instanceof IAutomatone) {
             cir.setReturnValue(super.shouldSave());
         }
     }
@@ -77,7 +77,7 @@ public abstract class PlayerEntityMixin extends LivingEntity {
      */
     @Inject(method = "readCustomDataFromNbt", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;readCustomDataFromNbt(Lnet/minecraft/nbt/NbtCompound;)V"))
     private void bringBackUuid(NbtCompound nbt, CallbackInfo ci) {
-        if (this instanceof AutomatoneFakePlayer) {
+        if (this instanceof IAutomatone) {
             this.gameProfile = new GameProfile(this.getUuid(), this.gameProfile.getName());
         }
     }
@@ -95,7 +95,7 @@ public abstract class PlayerEntityMixin extends LivingEntity {
         at = @At(value = "LOAD")
     )
     private Vec3d cancelKnockbackCancellation(Vec3d previousVelocity, Entity target) {
-        if (target instanceof FakeServerPlayerEntity) {
+        if (target instanceof AutomatoneEntity) {
             return target.getVelocity();
         }
         return previousVelocity;

@@ -34,11 +34,10 @@
  */
 package baritone.launch.mixins.player;
 
-import baritone.api.fakeplayer.AutomatoneFakePlayer;
+import baritone.api.fakeplayer.IAutomatone;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.encryption.PlayerPublicKey;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
@@ -61,14 +60,14 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity {
      */
     @Inject(method = "moveToSpawn", at = @At("HEAD"), cancellable = true)
     private void cancelMoveToSpawn(ServerWorld world, CallbackInfo ci) {
-        if (this instanceof AutomatoneFakePlayer) {
+        if (this instanceof IAutomatone) {
             ci.cancel();
         }
     }
 
     @Inject(method = "moveToWorld", at = @At("HEAD"), cancellable = true)
     private void callSuperMoveToWorld(ServerWorld destination, CallbackInfoReturnable<Entity> cir) {
-        if (this instanceof AutomatoneFakePlayer) {
+        if (this instanceof IAutomatone) {
             cir.setReturnValue(super.moveToWorld(destination));
         }
     }

@@ -35,11 +35,6 @@
 package baritone.api.fakeplayer;
 
 import baritone.api.IBaritone;
-import com.mojang.authlib.GameProfile;
-import org.jetbrains.annotations.Nullable;
-
-import javax.annotation.CheckForNull;
-import java.util.UUID;
 
 /**
  * Player entities that implement this class:
@@ -49,16 +44,7 @@ import java.util.UUID;
  *     <li>should be counted as fake players by other mods</li>
  * </ul>
  */
-public interface AutomatoneFakePlayer {
-    @Nullable GameProfile getDisplayProfile();
-
-    void setDisplayProfile(@CheckForNull GameProfile profile);
-
-    @Nullable
-    default UUID getOwnerUuid() {
-        return this.getDisplayProfile() != null ? this.getDisplayProfile().getId() : null;
-    }
-
+public interface IAutomatone {
     default IBaritone getBaritone() {
         return IBaritone.KEY.get(this);
     }

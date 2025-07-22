@@ -34,7 +34,7 @@
  */
 package baritone.launch.mixins.player;
 
-import baritone.api.fakeplayer.AutomatoneFakePlayer;
+import baritone.api.fakeplayer.IAutomatone;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ThreadedChunkManager;
 import org.spongepowered.asm.mixin.Mixin;
@@ -47,21 +47,21 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class ThreadedAnvilChunkStorageMixin {
     @Inject(method = "handlePlayerAddedOrRemoved", at = @At("HEAD"), cancellable = true)
     private void handleFakePlayerAddedOrRemoved(ServerPlayerEntity player, boolean added, CallbackInfo ci) {
-        if (added && player instanceof AutomatoneFakePlayer) {
+        if (added && player instanceof IAutomatone) {
             ci.cancel();
         }
     }
 
     @Inject(method = "updatePosition", at = @At("HEAD"), cancellable = true)
     private void updateFakeCameraPosition(ServerPlayerEntity player, CallbackInfo ci) {
-        if (player instanceof AutomatoneFakePlayer) {
+        if (player instanceof IAutomatone) {
             ci.cancel();
         }
     }
 
     @Inject(method = "doesNotGenerateChunks", at = @At("RETURN"), cancellable = true)
     private void doesNotGenerateChunks(ServerPlayerEntity player, CallbackInfoReturnable<Boolean> cir) {
-        if (!cir.getReturnValueZ() && player instanceof AutomatoneFakePlayer) {
+        if (!cir.getReturnValueZ() && player instanceof IAutomatone) {
             cir.setReturnValue(true);
         }
     }

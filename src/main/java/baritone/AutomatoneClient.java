@@ -17,33 +17,17 @@
 
 package baritone;
 
-import baritone.api.IBaritone;
-import baritone.api.fakeplayer.AutomatoneFakePlayer;
-import baritone.api.fakeplayer.FakeClientPlayerEntity;
-import baritone.api.fakeplayer.FakePlayers;
 import baritone.api.selection.ISelectionManager;
 import baritone.command.defaults.ClickCommand;
-import baritone.command.defaults.DefaultCommands;
 import baritone.utils.GuiClick;
-import com.mojang.authlib.GameProfile;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientEntityEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.registry.Registries;
-import net.minecraft.util.math.Vec3d;
-import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.qsl.base.api.entrypoint.client.ClientModInitializer;
 
 import java.util.Collections;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.WeakHashMap;
@@ -75,59 +59,5 @@ public final class AutomatoneClient implements ClientModInitializer {
             UUID uuid = buf.readUuid();
             client.execute(() -> MinecraftClient.getInstance().setScreen(new GuiClick(uuid)));
         });
-        ClientPlayNetworking.registerGlobalReceiver(FakePlayers.SPAWN_PACKET_ID, (client, handler, buf, responseSender) -> {
-            int id = buf.readVarInt();
-            UUID uuid = buf.readUuid();
-            EntityType<?> entityTypeId = Registries.ENTITY_TYPE.get(buf.readVarInt());
-            String name = buf.readString();
-            double x = buf.readDouble();
-            double y = buf.readDouble();
-            double z = buf.readDouble();
-            float yaw = (float)(buf.readByte() * 360) / 256.0F;
-            float pitch = (float)(buf.readByte() * 360) / 256.0F;
-            float headYaw = (float)(buf.readByte() * 360) / 256.0F;
-            GameProfile profile = readProfile(buf);
-            client.execute(() -> spawnPlayer(id, uuid, entityTypeId, name, x, y, z, yaw, pitch, headYaw, profile));
-        });
-        ClientPlayNetworking.registerGlobalReceiver(FakePlayers.PROFILE_UPDATE_PACKET_ID, (client, handler, buf, responseSender) -> {
-            int entityId = buf.readVarInt();
-            GameProfile profile = readProfile(buf);
-            client.execute(() -> {
-                        Entity entity = Objects.requireNonNull(client.world).getEntityById(entityId);
-                        if (entity instanceof AutomatoneFakePlayer) {
-                            ((AutomatoneFakePlayer) entity).setDisplayProfile(profile);
-                        }
-                    }
-            );
-        });
-        ClientEntityEvents.ENTITY_UNLOAD.register((entity, world) -> {
-            //yes, it is normal to remove an IBaritone from a Baritone set
-            //noinspection SuspiciousMethodCalls
-            renderList.remove(IBaritone.KEY.getNullable(entity));
-            selectionRenderList.remove(ISelectionManager.KEY.getNullable(entity));
-        });
-    }
-
-    private <P extends PlayerEntity & AutomatoneFakePlayer> void spawnPlayer(int id, UUID uuid, EntityType<?> entityTypeId, String name, double x, double y, double z, float yaw, float pitch, float headYaw, GameProfile profile) {
-        ClientWorld world = MinecraftClient.getInstance().world;
-        assert world != null;
-        @SuppressWarnings("unchecked") EntityType<P> playerType = (EntityType<P>) entityTypeId;
-        P other = FakeClientPlayerEntity.createClientFakePlayer(playerType, world, new GameProfile(uuid, name));
-        other.setId(id);
-        other.setPosition(x, y, z);
-        other.getPacketPositionCodec().setPos(new Vec3d(x, y, z));
-        other.bodyYaw = headYaw;
-        other.prevBodyYaw = headYaw;
-        other.headYaw = headYaw;
-        other.prevHeadYaw = headYaw;
-        other.updatePositionAndAngles(x, y, z, yaw, pitch);
-        other.setDisplayProfile(profile);
-        world.addEntity(id, other);
-    }
-
-    @Nullable
-    private static GameProfile readProfile(PacketByteBuf buf) {
-        boolean hasProfile = buf.readBoolean();
-        return hasProfile ? new GameProfile(buf.readUuid(), buf.readString()) : null;
     }
 }
