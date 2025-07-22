@@ -20,6 +20,7 @@ package baritone.pathing.movement.movements;
 import baritone.Automatone;
 import baritone.api.IBaritone;
 import baritone.api.Settings;
+import baritone.api.fakeplayer.LivingEntityInventory;
 import baritone.api.pathing.movement.MovementStatus;
 import baritone.api.utils.BetterBlockPos;
 import baritone.api.utils.Rotation;
@@ -36,7 +37,6 @@ import baritone.utils.pathing.MutableMoveResult;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.LadderBlock;
-import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.fluid.WaterFluid;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -107,8 +107,8 @@ public class MovementFall extends Movement {
         BlockState destState = ctx.world().getBlockState(dest);
         boolean isWater = destState.getFluidState().getFluid() instanceof WaterFluid;
         if (!isWater && willPlaceBucket() && !playerFeet.equals(dest)) {
-            PlayerInventory inventory = ctx.inventory();
-            if (inventory == null || !PlayerInventory.isValidHotbarIndex(InventoryBehavior.getSlotWithStack(inventory, Automatone.WATER_BUCKETS)) || ctx.world().getDimension().ultraWarm()) {
+            LivingEntityInventory inventory = ctx.inventory();
+            if (inventory == null || !LivingEntityInventory.isValidHotbarIndex(InventoryBehavior.getSlotWithStack(inventory, Automatone.WATER_BUCKETS)) || ctx.world().getDimension().ultraWarm()) {
                 return state.setStatus(MovementStatus.UNREACHABLE);
             }
 
@@ -132,9 +132,9 @@ public class MovementFall extends Movement {
                 // Avoid sinking further than expected
                 state.setInput(Input.JUMP, true);
 
-                PlayerInventory inventory = ctx.inventory();
+                LivingEntityInventory inventory = ctx.inventory();
 
-                if (inventory != null && PlayerInventory.isValidHotbarIndex(InventoryBehavior.getSlotWithStack(inventory, Automatone.EMPTY_BUCKETS))) {
+                if (inventory != null && LivingEntityInventory.isValidHotbarIndex(InventoryBehavior.getSlotWithStack(inventory, Automatone.EMPTY_BUCKETS))) {
                     inventory.selectedSlot = InventoryBehavior.getSlotWithStack(inventory, Automatone.EMPTY_BUCKETS);
                     if (ctx.entity().getVelocity().y >= 0) {
                         return state.setInput(Input.CLICK_RIGHT, true);

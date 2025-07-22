@@ -15,13 +15,8 @@
  * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package baritone.utils.accessor;
+package baritone.api.fakeplayer;
 
-import net.minecraft.util.math.BlockPos;
-
-public interface IServerPlayerInteractionManager {
-    boolean isMining();
-    BlockPos getMiningPos();
-    boolean automatone$hasBrokenBlock();
-    int getBlockBreakingProgress();
+public interface IInventoryProvider {
+    LivingEntityInventory getLivingInventory();
 }

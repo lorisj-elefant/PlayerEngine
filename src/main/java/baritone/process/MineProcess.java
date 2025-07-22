@@ -19,6 +19,7 @@ package baritone.process;
 
 import baritone.Automatone;
 import baritone.Baritone;
+import baritone.api.fakeplayer.LivingEntityInventory;
 import baritone.api.pathing.goals.*;
 import baritone.api.process.IMineProcess;
 import baritone.api.process.PathingCommand;
@@ -35,7 +36,7 @@ import baritone.utils.NotificationHelper;
 import net.minecraft.block.*;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
-import net.minecraft.entity.player.PlayerInventory;
+
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
 
@@ -75,7 +76,7 @@ public final class MineProcess extends BaritoneProcessHelper implements IMinePro
     @Override
     public PathingCommand onTick(boolean calcFailed, boolean isSafeToCancel) {
         if (desiredQuantity > 0) {
-            PlayerInventory inventory = ctx.inventory();
+            LivingEntityInventory inventory = ctx.inventory();
             int curr = inventory == null ? -1 : inventory.main.stream()
                     .filter(stack -> filter.has(stack))
                     .mapToInt(ItemStack::getCount).sum();

@@ -20,6 +20,8 @@ package baritone.pathing.movement;
 import baritone.Baritone;
 import baritone.api.IBaritone;
 import baritone.api.Settings;
+import baritone.api.fakeplayer.IInventoryProvider;
+import baritone.api.fakeplayer.LivingEntityInventory;
 import baritone.api.pathing.movement.ActionCosts;
 import baritone.api.pathing.movement.MovementStatus;
 import baritone.api.utils.BetterBlockPos;
@@ -59,8 +61,6 @@ import net.minecraft.block.TrapdoorBlock;
 import net.minecraft.block.enums.SlabType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.pathing.NavigationType;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.fluid.FlowableFluid;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
@@ -477,8 +477,8 @@ public interface MovementHelper extends ActionCosts {
      */
     static void switchToBestToolFor(IEntityContext ctx, BlockState b) {
         LivingEntity entity = ctx.entity();
-        if (entity instanceof PlayerEntity) {
-            switchToBestToolFor(ctx, b, new ToolSet((PlayerEntity) entity), ctx.baritone().settings().preferSilkTouch.get());
+        if (entity instanceof IInventoryProvider) {
+            switchToBestToolFor(ctx, b, new ToolSet(entity), ctx.baritone().settings().preferSilkTouch.get());
         }
     }
 
@@ -490,7 +490,7 @@ public interface MovementHelper extends ActionCosts {
      * @param ts  previously calculated ToolSet
      */
     static void switchToBestToolFor(IEntityContext ctx, BlockState b, ToolSet ts, boolean preferSilkTouch) {
-        PlayerInventory inventory = ctx.inventory();
+        LivingEntityInventory inventory = ctx.inventory();
 
         if (inventory != null && !ctx.baritone().settings().disableAutoTool.get() && !ctx.baritone().settings().assumeExternalAutoTool.get()) {
             inventory.selectedSlot = ts.getBestSlot(b.getBlock(), preferSilkTouch);

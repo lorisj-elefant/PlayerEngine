@@ -16,7 +16,6 @@
     "MixinMobEntity",
     "MixinServerChunkManager",
     "MixinServerCommandSource",
-    "MixinServerPlayerInteractionManager",
     "MixinUtil",
     "player.EntityMixin",
     "player.PlayerAdvancementTrackerMixin",

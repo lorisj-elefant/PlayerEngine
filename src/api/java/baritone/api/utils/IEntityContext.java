@@ -20,11 +20,11 @@ package baritone.api.utils;
 import baritone.api.BaritoneAPI;
 import baritone.api.IBaritone;
 import baritone.api.cache.IWorldData;
+import baritone.api.fakeplayer.LivingEntityInventory;
 import baritone.api.pathing.calc.Avoidance;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -54,9 +54,9 @@ public interface IEntityContext {
         return IBaritone.KEY.get(entity());
     }
 
-    @Nullable PlayerInventory inventory();
+    @Nullable LivingEntityInventory inventory();
 
-    IPlayerController playerController();
+    IInteractionController playerController();
 
     ServerWorld world();
 

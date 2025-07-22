@@ -19,10 +19,12 @@ package baritone.utils.player;
 
 import baritone.api.BaritoneAPI;
 import baritone.api.cache.IWorldData;
+import baritone.api.fakeplayer.IInventoryProvider;
+import baritone.api.fakeplayer.LivingEntityInventory;
 import baritone.api.pathing.calc.Avoidance;
 import baritone.api.utils.BetterBlockPos;
 import baritone.api.utils.IEntityContext;
-import baritone.api.utils.IPlayerController;
+import baritone.api.utils.IInteractionController;
 import baritone.api.utils.RayTraceUtils;
 import baritone.utils.accessor.ServerChunkManagerAccessor;
 import net.minecraft.block.SlabBlock;
@@ -32,8 +34,6 @@ import net.minecraft.entity.mob.EndermanEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.SpiderEntity;
 import net.minecraft.entity.mob.ZombifiedPiglinEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.world.World;
@@ -61,13 +61,13 @@ public class EntityContext implements IEntityContext {
     }
 
     @Override
-    public @Nullable PlayerInventory inventory() {
-        return entity instanceof PlayerEntity ? ((PlayerEntity) entity).getInventory() : null;
+    public @Nullable LivingEntityInventory inventory() {
+        return entity instanceof IInventoryProvider ? ((IInventoryProvider) entity).getLivingInventory() : null;
     }
 
     @Override
-    public IPlayerController playerController() {
-        return IPlayerController.KEY.get(this.entity);
+    public IInteractionController playerController() {
+        return IInteractionController.KEY.get(this.entity);
     }
 
     @Override

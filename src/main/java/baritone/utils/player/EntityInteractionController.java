@@ -17,15 +17,13 @@
 
 package baritone.utils.player;
 
-import baritone.api.fakeplayer.FakeServerPlayerEntity;
+import baritone.api.fakeplayer.IInteractionManagerProvider;
 import baritone.api.fakeplayer.LivingEntityInteractionManager;
-import baritone.api.utils.IPlayerController;
+import baritone.api.utils.IInteractionController;
 import com.jamieswhiteshirt.reachentityattributes.ReachEntityAttributes;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
@@ -36,16 +34,16 @@ import net.minecraft.world.World;
 
 
 /**
- * Implementation of {@link IPlayerController} that chains to the primary player controller's methods
+ * Implementation of {@link IInteractionController} that chains to the primary player controller's methods
  *
  * @author Brady
  * @since 12/14/2018
  */
-public class ServerPlayerController implements IPlayerController {
+public class EntityInteractionController implements IInteractionController {
     private final LivingEntity player;
     private int sequence;
 
-    public ServerPlayerController(LivingEntity player) {
+    public EntityInteractionController(LivingEntity player) {
         this.player = player;
     }
 
@@ -81,12 +79,12 @@ public class ServerPlayerController implements IPlayerController {
     }
 
     @Override
-    public ActionResult processRightClickBlock(PlayerEntity player, World world, Hand hand, BlockHitResult result) {
+    public ActionResult processRightClickBlock(LivingEntity player, World world, Hand hand, BlockHitResult result) {
         return getInteractionManager().interactBlock(this.player, this.player.getWorld(), this.player.getStackInHand(hand), hand, result);
     }
 
     @Override
-    public ActionResult processRightClick(PlayerEntity player, World world, Hand hand) {
+    public ActionResult processRightClick(LivingEntity player, World world, Hand hand) {
         return getInteractionManager().interactItem(this.player, this.player.getWorld(), this.player.getStackInHand(hand), hand);
     }
 
@@ -101,8 +99,8 @@ public class ServerPlayerController implements IPlayerController {
     }
 
     public LivingEntityInteractionManager getInteractionManager(){
-        if(player instanceof FakeServerPlayerEntity fakeServerPlayer)
-            return fakeServerPlayer.manager;
+        if(player instanceof IInteractionManagerProvider managerProvider)
+            return managerProvider.getInteractionManager();
         return null;
     }
 

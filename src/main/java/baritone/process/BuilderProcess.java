@@ -19,6 +19,8 @@ package baritone.process;
 
 import baritone.Automatone;
 import baritone.Baritone;
+import baritone.api.fakeplayer.IInventoryProvider;
+import baritone.api.fakeplayer.LivingEntityInventory;
 import baritone.api.pathing.goals.Goal;
 import baritone.api.pathing.goals.GoalBlock;
 import baritone.api.pathing.goals.GoalComposite;
@@ -51,8 +53,7 @@ import net.minecraft.block.AirBlock;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.FluidBlock;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
@@ -321,10 +322,11 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
     }
 
     private OptionalInt hasAnyItemThatWouldPlace(BlockState desired, HitResult result, Rotation rot) {
-        if (!(ctx.entity() instanceof PlayerEntity player)) return OptionalInt.empty();
+        if (!(ctx.entity() instanceof IInventoryProvider provider)) return OptionalInt.empty();
+        LivingEntity player = ctx.entity();
 
         for (int i = 0; i < 9; i++) {
-            ItemStack stack = player.getInventory().main.get(i);
+            ItemStack stack = provider.getLivingInventory().main.get(i);
             if (stack.isEmpty() || !(stack.getItem() instanceof BlockItem)) {
                 continue;
             }
@@ -335,11 +337,16 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
             player.setPitch(rot.getPitch());
             ItemPlacementContext meme = new ItemPlacementContext(new ItemUsageContext(
                     ctx.world(),
-                    player,
+                    null,
                     Hand.MAIN_HAND,
                     stack,
                     (BlockHitResult) result
-            ) {}); // that {} gives us access to a protected constructor lmfao
+            ) {
+                @Override
+                public boolean shouldCancelInteraction() {
+                    return false;
+                }
+            }); // that {} gives us access to a protected constructor lmfao
             BlockState wouldBePlaced = ((BlockItem) stack.getItem()).getBlock().getPlacementState(meme);
             player.setYaw(originalYaw);
             player.setPitch(originalPitch);
@@ -383,7 +390,7 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
             return new PathingCommand(null, PathingCommandType.SET_GOAL_AND_PATH);
         }
 
-        PlayerInventory inventory = ctx.inventory();
+        LivingEntityInventory inventory = ctx.inventory();
         if (inventory == null) {
             this.schematic = null;  // cancel the task
             return null;
@@ -843,9 +850,8 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
 
     private List<BlockState> approxPlaceable(int size) {
         List<BlockState> result = new ArrayList<>();
-        PlayerEntity player = (PlayerEntity) ctx.entity();
         for (int i = 0; i < size; i++) {
-            ItemStack stack = player.getInventory().main.get(i);
+            ItemStack stack = ((IInventoryProvider)ctx.entity()).getLivingInventory().main.get(i);
             if (stack.isEmpty() || !(stack.getItem() instanceof BlockItem)) {
                 result.add(Blocks.AIR.getDefaultState());
                 continue;
@@ -854,7 +860,7 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
             BlockState placementState = ((BlockItem) stack.getItem()).getBlock().getPlacementState(new ItemPlacementContext(
                     new ItemUsageContext(
                             ctx.world(),
-                            player,
+                            null,
                             Hand.MAIN_HAND,
                             stack,
                             new BlockHitResult(
@@ -863,7 +869,12 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
                                     ctx.feetPos(),
                                     false
                             )
-                    ) {})   // protected constructor
+                    ) {
+                        @Override
+                        public boolean shouldCancelInteraction() {
+                            return false;
+                        }
+                    })   // protected constructor
             );
             if (placementState != null) {
                 result.add(placementState);

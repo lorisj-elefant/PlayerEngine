@@ -1,16 +1,10 @@
 package baritone.selection;
 
-import baritone.AutomatoneClient;
-import baritone.api.BaritoneAPI;
-import baritone.api.IBaritone;
 import baritone.api.selection.ISelection;
 import baritone.api.selection.ISelectionManager;
 import baritone.api.utils.BetterBlockPos;
 import net.minecraft.entity.Entity;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 
 import java.util.LinkedList;

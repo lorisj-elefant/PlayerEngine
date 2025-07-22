@@ -20,6 +20,7 @@ package baritone.api.utils;
 import dev.onyxstudios.cca.api.v3.component.ComponentKey;
 import dev.onyxstudios.cca.api.v3.component.ComponentRegistry;
 import dev.onyxstudios.cca.api.v3.component.TransientComponent;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -34,8 +35,8 @@ import net.minecraft.world.World;
  * @author Brady
  * @since 12/14/2018
  */
-public interface IPlayerController extends TransientComponent {
-    ComponentKey<IPlayerController> KEY = ComponentRegistry.getOrCreate(new Identifier("automatone", "controller"), IPlayerController.class);
+public interface IInteractionController extends TransientComponent {
+    ComponentKey<IInteractionController> KEY = ComponentRegistry.getOrCreate(new Identifier("automatone", "controller"), IInteractionController.class);
 
     boolean hasBrokenBlock();
 
@@ -45,9 +46,9 @@ public interface IPlayerController extends TransientComponent {
 
     GameMode getGameType();
 
-    ActionResult processRightClickBlock(PlayerEntity player, World world, Hand hand, BlockHitResult result);
+    ActionResult processRightClickBlock(LivingEntity player, World world, Hand hand, BlockHitResult result);
 
-    ActionResult processRightClick(PlayerEntity player, World world, Hand hand);
+    ActionResult processRightClick(LivingEntity player, World world, Hand hand);
 
     boolean clickBlock(BlockPos loc, Direction face);
 

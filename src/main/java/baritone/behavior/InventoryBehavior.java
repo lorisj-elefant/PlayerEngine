@@ -18,12 +18,12 @@
 package baritone.behavior;
 
 import baritone.Baritone;
+import baritone.api.fakeplayer.IInventoryProvider;
+import baritone.api.fakeplayer.LivingEntityInventory;
 import baritone.utils.ToolSet;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemPlacementContext;
@@ -54,23 +54,19 @@ public final class InventoryBehavior extends Behavior {
         if (!baritone.settings().allowInventory.get()) {
             return;
         }
-        if (!(ctx.entity() instanceof PlayerEntity player)) {
+        if (!(ctx.entity() instanceof IInventoryProvider player)) {
             return;
         }
-        if (player.playerScreenHandler != player.currentScreenHandler) {
-            // we have a crafting table or a chest or something open
-            return;
-        }
-        if (firstValidThrowaway(player.getInventory()) >= 9) { // aka there are none on the hotbar, but there are some in main inventory
-            swapWithHotBar(firstValidThrowaway(player.getInventory()), 8, player.getInventory());
+        if (firstValidThrowaway(player.getLivingInventory()) >= 9) { // aka there are none on the hotbar, but there are some in main inventory
+            swapWithHotBar(firstValidThrowaway(player.getLivingInventory()), 8, player.getLivingInventory());
         }
         int pick = bestToolAgainst(Blocks.STONE, PickaxeItem.class);
         if (pick >= 9) {
-            swapWithHotBar(pick, 0, player.getInventory());
+            swapWithHotBar(pick, 0, player.getLivingInventory());
         }
     }
 
-    public void attemptToPutOnHotbar(int inMainInvy, Predicate<Integer> disallowedHotbar, PlayerInventory inventory) {
+    public void attemptToPutOnHotbar(int inMainInvy, Predicate<Integer> disallowedHotbar, LivingEntityInventory inventory) {
         OptionalInt destination = getTempHotbarSlot(disallowedHotbar);
         if (destination.isPresent()) {
             swapWithHotBar(inMainInvy, destination.getAsInt(), inventory);
@@ -78,7 +74,7 @@ public final class InventoryBehavior extends Behavior {
     }
 
     public OptionalInt getTempHotbarSlot(Predicate<Integer> disallowedHotbar) {
-        PlayerInventory inventory = ctx.inventory();
+        LivingEntityInventory inventory = ctx.inventory();
         if (inventory == null) return OptionalInt.empty();
 
         // we're using 0 and 8 for pickaxe and throwaway
@@ -104,13 +100,13 @@ public final class InventoryBehavior extends Behavior {
         return OptionalInt.of(candidates.get(new Random().nextInt(candidates.size())));
     }
 
-    private void swapWithHotBar(int inInventory, int inHotbar, PlayerInventory inventory) {
+    private void swapWithHotBar(int inInventory, int inHotbar, LivingEntityInventory inventory) {
         ItemStack h = inventory.getStack(inHotbar);
         inventory.setStack(inHotbar, inventory.getStack(inInventory));
         inventory.setStack(inInventory, h);
     }
 
-    private int firstValidThrowaway(PlayerInventory inventory) { // TODO offhand idk
+    private int firstValidThrowaway(LivingEntityInventory inventory) { // TODO offhand idk
         DefaultedList<ItemStack> invy = inventory.main;
         for (int i = 0; i < invy.size(); i++) {
             if (invy.get(i).isIn(baritone.settings().acceptableThrowawayItems.get())) {
@@ -149,10 +145,13 @@ public final class InventoryBehavior extends Behavior {
     }
 
     public boolean selectThrowawayForLocation(boolean select, int x, int y, int z) {
-        if (!(ctx.entity() instanceof PlayerEntity player)) return false;
-
         BlockState maybe = baritone.getBuilderProcess().placeAt(x, y, z, baritone.bsi.get0(x, y, z));
-        if (maybe != null && throwaway(select, stack -> stack.getItem() instanceof BlockItem && maybe.equals(((BlockItem) stack.getItem()).getBlock().getPlacementState(new ItemPlacementContext(new ItemUsageContext(ctx.world(), player, Hand.MAIN_HAND, stack, new BlockHitResult(new Vec3d(player.getX(), player.getY(), player.getZ()), Direction.UP, ctx.feetPos(), false)) {}))))) {
+        if (maybe != null && throwaway(select, stack -> stack.getItem() instanceof BlockItem && maybe.equals(((BlockItem) stack.getItem()).getBlock().getPlacementState(new ItemPlacementContext(new ItemUsageContext(ctx.world(), null, Hand.MAIN_HAND, stack, new BlockHitResult(new Vec3d(ctx.entity().getX(), ctx.entity().getY(), ctx.entity().getZ()), Direction.UP, ctx.feetPos(), false)) {
+            @Override
+            public boolean shouldCancelInteraction() {
+                return false;
+            }
+        }))))) {
             return true; // gotem
         }
         if (maybe != null && throwaway(select, stack -> stack.getItem() instanceof BlockItem && ((BlockItem) stack.getItem()).getBlock().equals(maybe.getBlock()))) {
@@ -163,9 +162,9 @@ public final class InventoryBehavior extends Behavior {
     }
 
     public boolean throwaway(boolean select, Predicate<? super ItemStack> desired) {
-        if (!(ctx.entity() instanceof PlayerEntity p)) return false;
+        if (!(ctx.entity() instanceof IInventoryProvider p)) return false;
 
-        DefaultedList<ItemStack> inv = p.getInventory().main;
+        DefaultedList<ItemStack> inv = p.getLivingInventory().main;
         for (int i = 0; i < 9; i++) {
             ItemStack item = inv.get(i);
             // this usage of settings() is okay because it's only called once during pathing
@@ -175,12 +174,12 @@ public final class InventoryBehavior extends Behavior {
             // acceptableThrowawayItems to the CalculationContext
             if (desired.test(item)) {
                 if (select) {
-                    p.getInventory().selectedSlot = i;
+                    p.getLivingInventory().selectedSlot = i;
                 }
                 return true;
             }
         }
-        if (desired.test(p.getInventory().offHand.get(0))) {
+        if (desired.test(p.getLivingInventory().offHand.get(0))) {
             // main hand takes precedence over off hand
             // that means that if we have block A selected in main hand and block B in off hand, right clicking places block B
             // we've already checked above ^ and the main hand can't possible have an acceptablethrowawayitem
@@ -190,7 +189,7 @@ public final class InventoryBehavior extends Behavior {
                 ItemStack item = inv.get(i);
                 if (item.isEmpty() || item.getItem() instanceof PickaxeItem) {
                     if (select) {
-                        p.getInventory().selectedSlot = i;
+                        p.getLivingInventory().selectedSlot = i;
                     }
                     return true;
                 }
@@ -199,7 +198,7 @@ public final class InventoryBehavior extends Behavior {
         return false;
     }
 
-    public static int getSlotWithStack(PlayerInventory inv, TagKey<Item> tag) {
+    public static int getSlotWithStack(LivingEntityInventory inv, TagKey<Item> tag) {
         for(int i = 0; i < inv.main.size(); ++i) {
             if (!inv.main.get(i).isEmpty() && inv.main.get(i).isIn(tag)) {
                 return i;

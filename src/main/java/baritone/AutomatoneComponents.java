@@ -20,13 +20,11 @@ package baritone;
 import baritone.api.BaritoneAPI;
 import baritone.api.IBaritone;
 import baritone.api.cache.IWorldProvider;
-import baritone.api.fakeplayer.FakeServerPlayerEntity;
 import baritone.api.selection.ISelectionManager;
-import baritone.api.utils.IPlayerController;
+import baritone.api.utils.IInteractionController;
 import baritone.cache.WorldProvider;
 import baritone.selection.SelectionManager;
-import baritone.utils.player.DummyEntityController;
-import baritone.utils.player.ServerPlayerController;
+import baritone.utils.player.EntityInteractionController;
 import dev.onyxstudios.cca.api.v3.entity.EntityComponentFactoryRegistry;
 import dev.onyxstudios.cca.api.v3.entity.EntityComponentInitializer;
 import dev.onyxstudios.cca.api.v3.world.WorldComponentFactoryRegistry;
@@ -37,10 +35,9 @@ import net.minecraft.entity.LivingEntity;
 public final class AutomatoneComponents implements EntityComponentInitializer, WorldComponentInitializer {
     @Override
     public void registerEntityComponentFactories(EntityComponentFactoryRegistry registry) {
-        registry.registerFor(LivingEntity.class, IPlayerController.KEY, ServerPlayerController::new);
+        registry.registerFor(LivingEntity.class, IInteractionController.KEY, EntityInteractionController::new);
         registry.registerFor(LivingEntity.class, ISelectionManager.KEY, SelectionManager::new);
         registry.registerFor(LivingEntity.class, IBaritone.KEY, BaritoneAPI.getProvider().componentFactory());
-        //registry.registerFor(FakeServerPlayerEntity.class, IPlayerController.KEY, );
     }
 
     @Override

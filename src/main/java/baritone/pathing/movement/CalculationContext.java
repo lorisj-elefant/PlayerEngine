@@ -20,6 +20,8 @@ package baritone.pathing.movement;
 import baritone.Automatone;
 import baritone.Baritone;
 import baritone.api.IBaritone;
+import baritone.api.fakeplayer.IInventoryProvider;
+import baritone.api.fakeplayer.LivingEntityInventory;
 import baritone.api.pathing.movement.ActionCosts;
 import baritone.behavior.InventoryBehavior;
 import baritone.cache.WorldData;
@@ -33,8 +35,6 @@ import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.registry.tag.FluidTags;
@@ -85,7 +85,7 @@ public class CalculationContext {
     /**The extra space required on each side of the entity for free movement; 0 in the case of a normal size player*/
     public final int requiredSideSpace;
     public final int height;
-    private final PlayerEntity player;
+    private final IInventoryProvider player;
     private final BlockPos.Mutable blockPos;
     public final int breathTime;
     public final int startingBreathTime;
@@ -101,14 +101,14 @@ public class CalculationContext {
         this.safeForThreadedUse = forUseOnAnotherThread;
         this.baritone = baritone;
         LivingEntity entity = baritone.getEntityContext().entity();
-        this.player = entity instanceof PlayerEntity ? (PlayerEntity) entity : null;
+        this.player = entity instanceof IInventoryProvider ? (IInventoryProvider) entity : null;
         this.world = baritone.getEntityContext().world();
         this.worldData = (WorldData) baritone.getWorldProvider().getCurrentWorld();
         this.bsi = new BlockStateInterface(world);
-        this.toolSet = player == null ? null : new ToolSet(player);
+        this.toolSet = player == null ? null : new ToolSet(entity);
         this.hasThrowaway = baritone.settings().allowPlace.get() && ((Baritone) baritone).getInventoryBehavior().hasGenericThrowaway();
-        this.hasWaterBucket = player != null && baritone.settings().allowWaterBucketFall.get() && PlayerInventory.isValidHotbarIndex(InventoryBehavior.getSlotWithStack(player.getInventory(), Automatone.WATER_BUCKETS)) && !world.getDimension().ultraWarm();
-        this.canSprint = player != null && baritone.settings().allowSprint.get() && player.getHungerManager().getFoodLevel() > 6;
+        this.hasWaterBucket = player != null && baritone.settings().allowWaterBucketFall.get() && LivingEntityInventory.isValidHotbarIndex(InventoryBehavior.getSlotWithStack(player.getLivingInventory(), Automatone.WATER_BUCKETS)) && !world.getDimension().ultraWarm();
+        this.canSprint = player != null && baritone.settings().allowSprint.get();// && player.getHungerManager().getFoodLevel() > 6;
         this.placeBlockCost = baritone.settings().blockPlacementPenalty.get();
         this.allowBreak = baritone.settings().allowBreak.get();
         this.allowParkour = baritone.settings().allowParkour.get();
@@ -211,7 +211,7 @@ public class CalculationContext {
 
     public boolean isProtected(int x, int y, int z) {
         this.blockPos.set(x, y, z);
-        return this.player != null && !world.canPlayerModifyAt(this.player, this.blockPos);
+        return this.player != null && false;//!world.canPlayerModifyAt(this.player, this.blockPos);
     }
 
     public double oxygenCost(double baseCost, BlockState headState) {

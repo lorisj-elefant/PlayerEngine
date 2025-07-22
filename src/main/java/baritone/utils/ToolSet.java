@@ -18,13 +18,14 @@
 package baritone.utils;
 
 import baritone.api.IBaritone;
+import baritone.api.fakeplayer.IInventoryProvider;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.SwordItem;
 import net.minecraft.item.ToolItem;
@@ -51,10 +52,10 @@ public class ToolSet {
      */
     private final Function<Block, Double> backendCalculation;
 
-    private final PlayerEntity player;
+    private final LivingEntity player;
     private final IBaritone baritone;
 
-    public ToolSet(PlayerEntity player) {
+    public ToolSet(LivingEntity player) {
         this.breakStrengthCache = new HashMap<>();
         this.player = player;
         this.baritone = IBaritone.KEY.get(player);
@@ -111,7 +112,7 @@ public class ToolSet {
         possible, this lets us make pathing depend on the actual tool to be used (if auto tool is disabled)
         */
         if (baritone.settings().disableAutoTool.get() && pathingCalculation) {
-            return player.getInventory().selectedSlot;
+            return ((IInventoryProvider)player).getLivingInventory().selectedSlot;
         }
 
         int best = 0;
@@ -120,7 +121,7 @@ public class ToolSet {
         boolean bestSilkTouch = false;
         BlockState blockState = b.getDefaultState();
         for (int i = 0; i < 9; i++) {
-            ItemStack itemStack = player.getInventory().getStack(i);
+            ItemStack itemStack = ((IInventoryProvider)player).getLivingInventory().getStack(i);
             if (!baritone.settings().useSwordToMine.get() && itemStack.getItem() instanceof SwordItem) {
                 continue;
             }
@@ -156,7 +157,7 @@ public class ToolSet {
      * @return A double containing the destruction ticks with the best tool
      */
     private double getBestDestructionTime(Block b) {
-        ItemStack stack = player.getInventory().getStack(getBestSlot(b, false, true));
+        ItemStack stack = ((IInventoryProvider)player).getLivingInventory().getStack(getBestSlot(b, false, true));
         return calculateSpeedVsBlock(stack, b.getDefaultState()) * avoidanceMultiplier(b);
     }
 

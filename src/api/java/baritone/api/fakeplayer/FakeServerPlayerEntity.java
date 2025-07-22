@@ -43,11 +43,12 @@ import net.fabricmc.fabric.api.util.NbtType;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtHelper;
+import net.minecraft.nbt.NbtList;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.NetworkSide;
 import net.minecraft.network.packet.Packet;
@@ -68,15 +69,17 @@ import javax.annotation.CheckForNull;
 import java.util.Objects;
 import java.util.UUID;
 
-public class FakeServerPlayerEntity extends ServerPlayerEntity implements AutomatoneFakePlayer {
+public class FakeServerPlayerEntity extends ServerPlayerEntity implements AutomatoneFakePlayer, IInventoryProvider, IInteractionManagerProvider {
 
     protected @Nullable GameProfile displayProfile;
     private boolean release;
     public LivingEntityInteractionManager manager;
+    public LivingEntityInventory inventory;
 
     public FakeServerPlayerEntity(EntityType<? extends PlayerEntity> type, ServerWorld world) {
         this(type, world, new GameProfile(UUID.randomUUID(), "FakePlayer"));
         manager = new LivingEntityInteractionManager(this);
+        inventory = new LivingEntityInventory(this);
     }
 
     public FakeServerPlayerEntity(EntityType<? extends PlayerEntity> type, ServerWorld world, GameProfile profile) {
@@ -88,7 +91,7 @@ public class FakeServerPlayerEntity extends ServerPlayerEntity implements Automa
     }
 
     public void selectHotbarSlot(int hotbarSlot) {
-        Preconditions.checkArgument(PlayerInventory.isValidHotbarIndex(hotbarSlot));
+        Preconditions.checkArgument(LivingEntityInventory.isValidHotbarIndex(hotbarSlot));
         if (this.getInventory().selectedSlot != hotbarSlot && this.getActiveHand() == Hand.MAIN_HAND) {
             this.clearActiveItem();
         }
@@ -102,6 +105,11 @@ public class FakeServerPlayerEntity extends ServerPlayerEntity implements Automa
         this.setStackInHand(Hand.OFF_HAND, this.getStackInHand(Hand.MAIN_HAND));
         this.setStackInHand(Hand.MAIN_HAND, offhandStack);
         this.clearActiveItem();
+    }
+
+    @Override
+    public LivingEntityInventory getLivingInventory() {
+        return inventory;
     }
 
     /**
@@ -137,6 +145,7 @@ public class FakeServerPlayerEntity extends ServerPlayerEntity implements Automa
     @Override
     public void tick() {
         manager.update();
+        inventory.updateItems();
         this.closeHandledScreen();
         super.tick();
         this.playerTick();
@@ -223,6 +232,9 @@ public class FakeServerPlayerEntity extends ServerPlayerEntity implements Automa
         if (tag.contains("head_yaw")) {
             this.headYaw = tag.getFloat("head_yaw");
         }
+        NbtList nbtList = tag.getList("Inventory", 10);
+        this.inventory.readNbt(nbtList);
+        this.inventory.selectedSlot = tag.getInt("SelectedItemSlot");
     }
 
     @Override
@@ -232,6 +244,8 @@ public class FakeServerPlayerEntity extends ServerPlayerEntity implements Automa
             tag.put("automatone:display_profile", NbtHelper.writeGameProfile(new NbtCompound(), this.displayProfile));
         }
         tag.putFloat("head_yaw", this.headYaw);
+        tag.put("Inventory", this.inventory.writeNbt(new NbtList()));
+        tag.putInt("SelectedItemSlot", this.inventory.selectedSlot);
     }
 
     @Override
@@ -273,6 +287,21 @@ public class FakeServerPlayerEntity extends ServerPlayerEntity implements Automa
         if (profile != null) {
             buf.writeUuid(profile.getId());
             buf.writeString(profile.getName());
+        }
+    }
+
+    @Override
+    public LivingEntityInteractionManager getInteractionManager() {
+        return manager;
+    }
+
+    public ItemStack getEquippedStack(EquipmentSlot slot) {
+        if (slot == EquipmentSlot.MAINHAND) {
+            return this.inventory.getMainHandStack();
+        } else if (slot == EquipmentSlot.OFFHAND) {
+            return this.inventory.offHand.get(0);
+        } else {
+            return slot.getType() == EquipmentSlot.Type.ARMOR ? this.inventory.armor.get(slot.getEntitySlotId()) : ItemStack.EMPTY;
         }
     }
 }

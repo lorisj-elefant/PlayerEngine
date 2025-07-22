@@ -17,8 +17,8 @@
 
 package baritone.utils.player;
 
-import baritone.api.utils.IPlayerController;
-import net.minecraft.entity.player.PlayerEntity;
+import baritone.api.utils.IInteractionController;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
@@ -30,7 +30,7 @@ import net.minecraft.world.World;
 /**
  * A stubbed controller implementation for entities that cannot break or place blocks
  */
-public class DummyEntityController implements IPlayerController {
+public class DummyEntityController implements IInteractionController {
     public static final DummyEntityController INSTANCE = new DummyEntityController();
 
     @Override
@@ -54,12 +54,12 @@ public class DummyEntityController implements IPlayerController {
     }
 
     @Override
-    public ActionResult processRightClickBlock(PlayerEntity player, World world, Hand hand, BlockHitResult result) {
+    public ActionResult processRightClickBlock(LivingEntity player, World world, Hand hand, BlockHitResult result) {
         return ActionResult.FAIL;
     }
 
     @Override
-    public ActionResult processRightClick(PlayerEntity player, World world, Hand hand) {
+    public ActionResult processRightClick(LivingEntity player, World world, Hand hand) {
         return ActionResult.FAIL;
     }
 
