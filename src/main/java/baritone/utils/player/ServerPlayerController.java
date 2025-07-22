@@ -22,6 +22,7 @@ import baritone.api.fakeplayer.LivingEntityInteractionManager;
 import baritone.api.utils.IPlayerController;
 import com.jamieswhiteshirt.reachentityattributes.ReachEntityAttributes;
 import net.minecraft.block.BlockState;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -41,10 +42,10 @@ import net.minecraft.world.World;
  * @since 12/14/2018
  */
 public class ServerPlayerController implements IPlayerController {
-    private final ServerPlayerEntity player;
+    private final LivingEntity player;
     private int sequence;
 
-    public ServerPlayerController(ServerPlayerEntity player) {
+    public ServerPlayerController(LivingEntity player) {
         this.player = player;
     }
 

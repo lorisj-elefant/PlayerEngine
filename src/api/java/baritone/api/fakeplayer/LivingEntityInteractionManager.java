@@ -28,6 +28,7 @@ import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffectUtil;
 import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.item.AutomaticItemPlacementContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUsageContext;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
@@ -340,72 +341,70 @@ public class LivingEntityInteractionManager {
         }
     }
 
-    public ActionResult interactItem(ServerPlayerEntity player, World world, ItemStack stack, Hand hand) {
+    public ActionResult interactItem(LivingEntity player, World world, ItemStack stack, Hand hand) {
         if (this.gameMode == GameMode.SPECTATOR) {
-            return ActionResult.PASS;
-        } else if (player.getItemCooldownManager().isCoolingDown(stack.getItem())) {
             return ActionResult.PASS;
         } else {
             int i = stack.getCount();
             int j = stack.getDamage();
-            TypedActionResult<ItemStack> typedActionResult = stack.use(world, player, hand);
-            ItemStack itemStack = (ItemStack)typedActionResult.getValue();
-            if (itemStack == stack && itemStack.getCount() == i && itemStack.getMaxUseTime() <= 0 && itemStack.getDamage() == j) {
-                return typedActionResult.getResult();
-            } else if (typedActionResult.getResult() == ActionResult.FAIL && itemStack.getMaxUseTime() > 0 && !player.isUsingItem()) {
-                return typedActionResult.getResult();
-            } else {
-                if (stack != itemStack) {
-                    player.setStackInHand(hand, itemStack);
-                }
-
-                if (this.isCreative() && itemStack != ItemStack.EMPTY) {
-                    itemStack.setCount(i);
-                    if (itemStack.isDamageable() && itemStack.getDamage() != j) {
-                        itemStack.setDamage(j);
+            try {
+                TypedActionResult<ItemStack> typedActionResult = stack.use(world, null, hand);
+                ItemStack itemStack = (ItemStack) typedActionResult.getValue();
+                if (itemStack == stack && itemStack.getCount() == i && itemStack.getMaxUseTime() <= 0 && itemStack.getDamage() == j) {
+                    return typedActionResult.getResult();
+                } else if (typedActionResult.getResult() == ActionResult.FAIL && itemStack.getMaxUseTime() > 0 && !player.isUsingItem()) {
+                    return typedActionResult.getResult();
+                } else {
+                    if (stack != itemStack) {
+                        player.setStackInHand(hand, itemStack);
                     }
-                }
 
-                if (itemStack.isEmpty()) {
-                    player.setStackInHand(hand, ItemStack.EMPTY);
-                }
+                    if (this.isCreative() && itemStack != ItemStack.EMPTY) {
+                        itemStack.setCount(i);
+                        if (itemStack.isDamageable() && itemStack.getDamage() != j) {
+                            itemStack.setDamage(j);
+                        }
+                    }
 
-                if (!player.isUsingItem()) {
-                    player.playerScreenHandler.syncState();
-                }
+                    if (itemStack.isEmpty()) {
+                        player.setStackInHand(hand, ItemStack.EMPTY);
+                    }
 
-                return typedActionResult.getResult();
-            }
+                    return typedActionResult.getResult();
+                }
+            }catch (Exception ignored){ return ActionResult.PASS; }
         }
     }
 
-    public ActionResult interactBlock(ServerPlayerEntity player, World world, ItemStack stack, Hand hand, BlockHitResult hitResult) {
+    public boolean shouldCancelInteraction(){
+        return false;
+    }
+
+    public ActionResult interactBlock(LivingEntity player, World world, ItemStack stack, Hand hand, BlockHitResult hitResult) {
         BlockPos blockPos = hitResult.getBlockPos();
         BlockState blockState = world.getBlockState(blockPos);
         if (!blockState.getBlock().enabledIn(world.getEnabledFlags())) {
             return ActionResult.FAIL;
-        } else if (this.gameMode == GameMode.SPECTATOR) {
-            NamedScreenHandlerFactory namedScreenHandlerFactory = blockState.createScreenHandlerFactory(world, blockPos);
-            if (namedScreenHandlerFactory != null) {
-                player.openHandledScreen(namedScreenHandlerFactory);
-                return ActionResult.SUCCESS;
-            } else {
-                return ActionResult.PASS;
-            }
         } else {
             boolean bl = !player.getMainHandStack().isEmpty() || !player.getOffHandStack().isEmpty();
-            boolean bl2 = player.shouldCancelInteraction() && bl;
+            boolean bl2 = shouldCancelInteraction() && bl;
             ItemStack itemStack = stack.copy();
             if (!bl2) {
-                ActionResult actionResult = blockState.onUse(world, player, hand, hitResult);
-                if (actionResult.isAccepted()) {
-                    Criteria.ITEM_USED_ON_BLOCK.trigger(player, blockPos, itemStack);
-                    return actionResult;
-                }
+                try {
+                    ActionResult actionResult = blockState.onUse(world, null, hand, hitResult);
+                    if (actionResult.isAccepted()) {
+                        return actionResult;
+                    }
+                }catch (NullPointerException ignored){}
             }
 
-            if (!stack.isEmpty() && !player.getItemCooldownManager().isCoolingDown(stack.getItem())) {
-                ItemUsageContext itemUsageContext = new ItemUsageContext(player, hand, hitResult);
+            if (!stack.isEmpty()) {
+                ItemUsageContext itemUsageContext = new ItemUsageContext(player.getWorld(), null, hand, player.getStackInHand(hand), hitResult){
+                    @Override
+                    public boolean shouldCancelInteraction() {
+                        return shouldCancelInteraction();
+                    }
+                };
                 ActionResult actionResult2;
                 if (this.isCreative()) {
                     int i = stack.getCount();
@@ -413,10 +412,6 @@ public class LivingEntityInteractionManager {
                     stack.setCount(i);
                 } else {
                     actionResult2 = stack.useOnBlock(itemUsageContext);
-                }
-
-                if (actionResult2.isAccepted()) {
-                    Criteria.ITEM_USED_ON_BLOCK.trigger(player, blockPos, itemStack);
                 }
 
                 return actionResult2;
