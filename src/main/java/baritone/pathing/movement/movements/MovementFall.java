@@ -20,7 +20,7 @@ package baritone.pathing.movement.movements;
 import baritone.Automatone;
 import baritone.api.IBaritone;
 import baritone.api.Settings;
-import baritone.api.fakeplayer.LivingEntityInventory;
+import baritone.api.entity.LivingEntityInventory;
 import baritone.api.pathing.movement.MovementStatus;
 import baritone.api.utils.BetterBlockPos;
 import baritone.api.utils.Rotation;

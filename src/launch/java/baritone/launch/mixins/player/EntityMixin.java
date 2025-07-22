@@ -17,7 +17,7 @@
 
 package baritone.launch.mixins.player;
 
-import baritone.api.fakeplayer.IAutomatone;
+import baritone.api.entity.IAutomatone;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import org.spongepowered.asm.mixin.Dynamic;

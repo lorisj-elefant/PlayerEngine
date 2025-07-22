@@ -19,8 +19,8 @@ package baritone.process;
 
 import baritone.Automatone;
 import baritone.Baritone;
-import baritone.api.fakeplayer.IInventoryProvider;
-import baritone.api.fakeplayer.LivingEntityInventory;
+import baritone.api.entity.IInventoryProvider;
+import baritone.api.entity.LivingEntityInventory;
 import baritone.api.pathing.goals.Goal;
 import baritone.api.pathing.goals.GoalBlock;
 import baritone.api.pathing.goals.GoalComposite;

@@ -18,9 +18,9 @@
 package baritone.utils;
 
 import baritone.api.BaritoneAPI;
+import baritone.api.entity.IInventoryProvider;
 import baritone.api.utils.IEntityContext;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.vehicle.BoatEntity;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -43,7 +43,7 @@ public class BlockPlaceHelper {
         }
         HitResult mouseOver = ctx.objectMouseOver();
         boolean isRowingBoat = ctx.entity().getVehicle() != null && ctx.entity().getVehicle() instanceof BoatEntity;
-        if (!rightClickRequested  || !(ctx.entity() instanceof PlayerEntity) || isRowingBoat || mouseOver == null || mouseOver.getType() != HitResult.Type.BLOCK) {
+        if (!rightClickRequested  || !(ctx.entity() instanceof IInventoryProvider) || isRowingBoat || mouseOver == null || mouseOver.getType() != HitResult.Type.BLOCK) {
             return;
         }
 

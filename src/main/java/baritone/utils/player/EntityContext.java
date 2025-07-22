@@ -19,8 +19,8 @@ package baritone.utils.player;
 
 import baritone.api.BaritoneAPI;
 import baritone.api.cache.IWorldData;
-import baritone.api.fakeplayer.IInventoryProvider;
-import baritone.api.fakeplayer.LivingEntityInventory;
+import baritone.api.entity.IInventoryProvider;
+import baritone.api.entity.LivingEntityInventory;
 import baritone.api.pathing.calc.Avoidance;
 import baritone.api.utils.BetterBlockPos;
 import baritone.api.utils.IEntityContext;

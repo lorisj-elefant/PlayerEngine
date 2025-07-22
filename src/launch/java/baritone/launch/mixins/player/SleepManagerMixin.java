@@ -17,7 +17,7 @@
 
 package baritone.launch.mixins.player;
 
-import baritone.api.fakeplayer.IAutomatone;
+import baritone.api.entity.IAutomatone;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.SleepManager;
 import org.objectweb.asm.Opcodes;

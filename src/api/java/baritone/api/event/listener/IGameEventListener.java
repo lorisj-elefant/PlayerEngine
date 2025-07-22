@@ -20,7 +20,6 @@ package baritone.api.event.listener;
 import baritone.api.IBaritone;
 import baritone.api.event.events.*;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.minecraft.client.network.ClientPlayerEntity;
 
 /**
  * @author Brady

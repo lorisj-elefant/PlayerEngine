@@ -19,7 +19,7 @@ package baritone.process;
 
 import baritone.Automatone;
 import baritone.Baritone;
-import baritone.api.fakeplayer.LivingEntityInventory;
+import baritone.api.entity.LivingEntityInventory;
 import baritone.api.pathing.goals.*;
 import baritone.api.process.IMineProcess;
 import baritone.api.process.PathingCommand;

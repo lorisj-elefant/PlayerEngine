@@ -34,7 +34,7 @@
  */
 package baritone.launch.mixins.player;
 
-import baritone.api.fakeplayer.IAutomatone;
+import baritone.api.entity.IAutomatone;
 import net.minecraft.advancement.Advancement;
 import net.minecraft.advancement.PlayerAdvancementTracker;
 import net.minecraft.server.network.ServerPlayerEntity;

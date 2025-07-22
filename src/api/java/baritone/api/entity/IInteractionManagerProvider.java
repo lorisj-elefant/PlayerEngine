@@ -15,8 +15,8 @@
  * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package baritone.api.fakeplayer;
+package baritone.api.entity;
 
-public interface IInventoryProvider {
-    LivingEntityInventory getLivingInventory();
+public interface IInteractionManagerProvider {
+    LivingEntityInteractionManager getInteractionManager();
 }

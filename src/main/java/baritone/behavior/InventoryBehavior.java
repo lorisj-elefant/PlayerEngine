@@ -18,8 +18,8 @@
 package baritone.behavior;
 
 import baritone.Baritone;
-import baritone.api.fakeplayer.IInventoryProvider;
-import baritone.api.fakeplayer.LivingEntityInventory;
+import baritone.api.entity.IInventoryProvider;
+import baritone.api.entity.LivingEntityInventory;
 import baritone.utils.ToolSet;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;

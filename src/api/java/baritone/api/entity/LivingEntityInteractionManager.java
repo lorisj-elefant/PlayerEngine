@@ -15,7 +15,7 @@
  * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package baritone.api.fakeplayer;
+package baritone.api.entity;
 
 import com.mojang.logging.LogUtils;
 import java.util.Objects;

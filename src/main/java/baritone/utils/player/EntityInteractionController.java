@@ -17,8 +17,8 @@
 
 package baritone.utils.player;
 
-import baritone.api.fakeplayer.IInteractionManagerProvider;
-import baritone.api.fakeplayer.LivingEntityInteractionManager;
+import baritone.api.entity.IInteractionManagerProvider;
+import baritone.api.entity.LivingEntityInteractionManager;
 import baritone.api.utils.IInteractionController;
 import com.jamieswhiteshirt.reachentityattributes.ReachEntityAttributes;
 import net.minecraft.block.BlockState;

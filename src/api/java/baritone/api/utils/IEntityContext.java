@@ -20,7 +20,7 @@ package baritone.api.utils;
 import baritone.api.BaritoneAPI;
 import baritone.api.IBaritone;
 import baritone.api.cache.IWorldData;
-import baritone.api.fakeplayer.LivingEntityInventory;
+import baritone.api.entity.LivingEntityInventory;
 import baritone.api.pathing.calc.Avoidance;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;

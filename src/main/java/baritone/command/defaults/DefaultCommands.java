@@ -26,7 +26,7 @@ import baritone.api.command.argument.ICommandArgument;
 import baritone.api.command.exception.CommandException;
 import baritone.api.command.exception.CommandNotEnoughArgumentsException;
 import baritone.api.command.manager.ICommandManager;
-import baritone.api.fakeplayer.AutomatoneEntity;
+import baritone.api.entity.AutomatoneEntity;
 import baritone.command.argument.ArgConsumer;
 import baritone.command.manager.BaritoneArgumentType;
 import baritone.command.manager.BaritoneCommandManager;

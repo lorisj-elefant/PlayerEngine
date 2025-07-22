@@ -15,7 +15,7 @@
  * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package baritone.api.fakeplayer;
+package baritone.api.entity;
 
 import com.google.common.collect.ImmutableList;
 import net.minecraft.block.BlockState;
@@ -30,11 +30,9 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
-import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
 import net.minecraft.recipe.RecipeMatcher;
 import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.registry.tag.TagKey;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Nameable;
 import net.minecraft.util.collection.DefaultedList;
@@ -299,32 +297,6 @@ public class LivingEntityInventory implements Inventory, Nameable {
                 crashReportSection.add("Item name", () -> stack.getName().getString());
                 throw new CrashException(crashReport);
             }
-        }
-    }
-
-    public void offerOrDrop(ItemStack stack) {
-        this.offer(stack, true);
-    }
-
-    public void offer(ItemStack stack, boolean notifiesClient) {
-        while(true) {
-            if (!stack.isEmpty()) {
-                int i = this.getOccupiedSlotWithRoomForStack(stack);
-                if (i == -1) {
-                    i = this.getEmptySlot();
-                }
-
-                if (i != -1) {
-                    int j = stack.getMaxCount() - this.getStack(i).getCount();
-                    if (this.insertStack(i, stack.split(j)) && notifiesClient && this.player instanceof ServerPlayerEntity) {
-                        ((ServerPlayerEntity)this.player).networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(-2, 0, i, this.getStack(i)));
-                    }
-                    continue;
-                }
-                this.player.dropStack(stack, 0);
-            }
-
-            return;
         }
     }
 

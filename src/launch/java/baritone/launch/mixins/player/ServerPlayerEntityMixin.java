@@ -34,7 +34,7 @@
  */
 package baritone.launch.mixins.player;
 
-import baritone.api.fakeplayer.IAutomatone;
+import baritone.api.entity.IAutomatone;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;

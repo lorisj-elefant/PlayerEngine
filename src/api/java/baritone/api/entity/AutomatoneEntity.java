@@ -32,39 +32,25 @@
  * The GNU General Public License gives permission to release a modified version without this exception;
  * this exception also makes it possible to release a modified version which carries forward this exception.
  */
-package baritone.api.fakeplayer;
+package baritone.api.entity;
 
-import baritone.api.utils.IEntityAccessor;
-import com.mojang.authlib.GameProfile;
-import net.fabricmc.fabric.api.util.NbtType;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.mob.ZombieEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtHelper;
 import net.minecraft.nbt.NbtList;
-import net.minecraft.stat.Stats;
-import net.minecraft.text.Text;
 import net.minecraft.util.Arm;
 import net.minecraft.world.World;
-import org.jetbrains.annotations.Nullable;
 
 public class AutomatoneEntity extends ZombieEntity implements IAutomatone, IInventoryProvider, IInteractionManagerProvider {
-
-    protected @Nullable GameProfile displayProfile;
-    private boolean release;
     public LivingEntityInteractionManager manager;
     public LivingEntityInventory inventory;
 
     public AutomatoneEntity(EntityType<? extends ZombieEntity> type, World world) {
         super(type, world);
-        ((IEntityAccessor)this).automatone$setType(type);
-        this.setStepHeight(0.6f); // same step height as LivingEntity
+        this.setStepHeight(0.6f);
         manager = new LivingEntityInteractionManager(this);
         inventory = new LivingEntityInventory(this);
         setCanPickUpLoot(true);
@@ -76,27 +62,51 @@ public class AutomatoneEntity extends ZombieEntity implements IAutomatone, IInve
     }
 
     @Override
-    protected boolean burnsInDaylight() {
-        return false;
+    public LivingEntityInteractionManager getInteractionManager() {
+        return manager;
+    }
+
+    @Override
+    public void readCustomDataFromNbt(NbtCompound tag) {
+        super.readCustomDataFromNbt(tag);
+        if (tag.contains("head_yaw")) {
+            this.headYaw = tag.getFloat("head_yaw");
+        }
+        NbtList nbtList = tag.getList("Inventory", 10);
+        this.inventory.readNbt(nbtList);
+        this.inventory.selectedSlot = tag.getInt("SelectedItemSlot");
+    }
+
+    @Override
+    public void writeCustomDataToNbt(NbtCompound tag) {
+        super.writeCustomDataToNbt(tag);
+        tag.putFloat("head_yaw", this.headYaw);
+        tag.put("Inventory", this.inventory.writeNbt(new NbtList()));
+        tag.putInt("SelectedItemSlot", this.inventory.selectedSlot);
     }
 
     @Override
     public void tick() {
         manager.update();
         inventory.updateItems();
-        //this.closeHandledScreen();
         goalSelector.clear((g)->true);
         targetSelector.clear((t)->true);
         setCanPickUpLoot(true);
         super.tick();
-        //this.playerTick();
+    }
+
+    @Override
+    public void tickMovement() {
+        if (this.isTouchingWater() && this.isSneaking() && this.shouldSwimInFluids()) {
+            this.knockDownwards();
+        }
+        super.tickMovement();
     }
 
     @Override
     protected void loot(ItemEntity itemEntity) {
         if (!this.getWorld().isClient) {
             ItemStack itemStack = itemEntity.getStack();
-            Item item = itemStack.getItem();
             int i = itemStack.getCount();
             if (this.getLivingInventory().insertStack(itemStack)) {
                 this.sendPickup(itemEntity, i);
@@ -109,19 +119,9 @@ public class AutomatoneEntity extends ZombieEntity implements IAutomatone, IInve
     }
 
     @Override
-    public void tickMovement() {
-        if (this.isTouchingWater() && this.isSneaking() && this.shouldSwimInFluids()) {
-            this.knockDownwards();
-        }
-        super.tickMovement();
-    }
-
-    @Override
-    protected void sendAiDebugData() {
-        super.sendAiDebugData();
-        if (this.release) {
-            this.clearActiveItem();
-            this.release = false;
+    public void takeKnockback(double strength, double x, double z) {
+        if (this.velocityModified) {
+            super.takeKnockback(strength, x, z);
         }
     }
 
@@ -131,60 +131,8 @@ public class AutomatoneEntity extends ZombieEntity implements IAutomatone, IInve
     }
 
     @Override
-    public void takeKnockback(double strength, double x, double z) {
-        if (this.velocityModified) {
-            super.takeKnockback(strength, x, z);
-        }
-    }
-
-    @Override
     public Iterable<ItemStack> getArmorItems() {
         return getLivingInventory().armor;
-    }
-
-    /**
-     * Controls whether this should be considered a player for ticking and tracking purposes
-     *
-     * <p>We want fake players to behave like regular entities, so for once we pretend they are not players.
-     */
-    @Override
-    public boolean isPlayer() {
-        return false;
-    }
-
-    @Override
-    public Text getName() {
-        return Text.literal("Automatone");
-    }
-
-    @Override
-    public void readCustomDataFromNbt(NbtCompound tag) {
-        super.readCustomDataFromNbt(tag);
-        if (tag.contains("automatone:display_profile", NbtType.COMPOUND)) {
-            this.displayProfile = NbtHelper.toGameProfile(tag.getCompound("automatone:display_profile"));
-        }
-        if (tag.contains("head_yaw")) {
-            this.headYaw = tag.getFloat("head_yaw");
-        }
-        NbtList nbtList = tag.getList("Inventory", 10);
-        this.inventory.readNbt(nbtList);
-        this.inventory.selectedSlot = tag.getInt("SelectedItemSlot");
-    }
-
-    @Override
-    public void writeCustomDataToNbt(NbtCompound tag) {
-        super.writeCustomDataToNbt(tag);
-        if (this.displayProfile != null) {
-            tag.put("automatone:display_profile", NbtHelper.writeGameProfile(new NbtCompound(), this.displayProfile));
-        }
-        tag.putFloat("head_yaw", this.headYaw);
-        tag.put("Inventory", this.inventory.writeNbt(new NbtList()));
-        tag.putInt("SelectedItemSlot", this.inventory.selectedSlot);
-    }
-
-    @Override
-    public LivingEntityInteractionManager getInteractionManager() {
-        return manager;
     }
 
     public ItemStack getEquippedStack(EquipmentSlot slot) {
@@ -199,6 +147,17 @@ public class AutomatoneEntity extends ZombieEntity implements IAutomatone, IInve
 
     @Override
     public void equipStack(EquipmentSlot slot, ItemStack stack) {
+        if (slot == EquipmentSlot.MAINHAND) {
+            this.inventory.setStack(this.inventory.selectedSlot, stack);
+        } else if (slot == EquipmentSlot.OFFHAND) {
+            this.inventory.offHand.set(0, stack);
+        } else if(slot.getType() == EquipmentSlot.Type.ARMOR){
+            inventory.armor.set(slot.getEntitySlotId(), stack);
+        }
+    }
 
+    @Override
+    protected boolean burnsInDaylight() {
+        return false;
     }
 }

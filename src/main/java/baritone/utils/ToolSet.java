@@ -18,7 +18,7 @@
 package baritone.utils;
 
 import baritone.api.IBaritone;
-import baritone.api.fakeplayer.IInventoryProvider;
+import baritone.api.entity.IInventoryProvider;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.enchantment.EnchantmentHelper;
