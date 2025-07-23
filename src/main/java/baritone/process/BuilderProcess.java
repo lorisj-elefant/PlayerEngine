@@ -660,10 +660,10 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
         incorrectPositions.forEach(pos -> {
             BlockState state = bcc.bsi.get0(pos);
             if (state.getBlock() instanceof AirBlock) {
-                if (approxPlaceable.contains(bcc.getSchematic(pos.x, pos.y, pos.z, state))) {
+                BlockState desired = bcc.getSchematic(pos.x, pos.y, pos.z, state);
+                if (desired!=null && approxPlaceable.stream().anyMatch(placeableState -> placeableState.getBlock() == desired.getBlock())) {
                     placeable.add(pos);
                 } else {
-                    BlockState desired = bcc.getSchematic(pos.x, pos.y, pos.z, state);
                     missing.put(desired, 1 + missing.getOrDefault(desired, 0));
                 }
             } else {
@@ -905,7 +905,11 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
         if (!current.isAir() && baritone.settings().buildIgnoreExisting.get() && !itemVerify) {
             return true;
         }
-        return current.equals(desired);
+        //if (itemVerify) {
+            return current.getBlock() == desired.getBlock();
+//        }else {
+//            return current.equals(desired);
+//        }
     }
 
     public class BuilderCalculationContext extends CalculationContext {

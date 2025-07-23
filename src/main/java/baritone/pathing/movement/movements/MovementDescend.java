@@ -244,6 +244,9 @@ public class MovementDescend extends Movement {
                 res.oxygenCost = context.oxygenCost(fallCost, Blocks.AIR.getDefaultState());
                 return true;
             } else {
+                res.x = destX;
+                res.y = newY + 1;// this is the block we're falling onto, so dest is +1
+                res.z = destZ;
                 return false;
             }
         }

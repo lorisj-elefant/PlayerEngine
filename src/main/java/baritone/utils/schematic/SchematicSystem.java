@@ -25,6 +25,9 @@ import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
@@ -35,16 +38,14 @@ import java.util.Optional;
 public enum SchematicSystem implements ISchematicSystem {
     INSTANCE;
 
-    private final Registry<ISchematicFormat> registry = FabricRegistryBuilder.createSimple(ISchematicFormat.class, new Identifier("automatone", "schematics")).buildAndRegister();
+    private final List<ISchematicFormat> registry = new ArrayList<>();
 
     SchematicSystem() {
-        for (DefaultSchematicFormats s : DefaultSchematicFormats.values()) {
-            Registry.register(this.registry, new Identifier("automatone", s.name().toLowerCase(Locale.ROOT)), s);
-        }
+        Collections.addAll(registry, DefaultSchematicFormats.values());
     }
 
     @Override
-    public Registry<ISchematicFormat> getRegistry() {
+    public List<ISchematicFormat> getRegistry() {
         return this.registry;
     }
 

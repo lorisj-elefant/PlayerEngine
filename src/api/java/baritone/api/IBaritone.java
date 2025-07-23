@@ -31,6 +31,7 @@ import dev.onyxstudios.cca.api.v3.component.ComponentRegistry;
 import dev.onyxstudios.cca.api.v3.component.tick.ServerTickingComponent;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -162,6 +163,18 @@ public interface IBaritone extends ServerTickingComponent {
             component.append(Text.literal(" "));
             Arrays.asList(components).forEach(component::append);
             ((PlayerEntity) entity).sendMessage(component, false);
+        }else{
+            for(ServerPlayerEntity p : entity.getWorld().getServer().getPlayerManager().getPlayerList()){
+                if(p.isCreative()){
+                    MutableText component = Text.literal("");
+                    // If we are not logging as a Toast
+                    // Append the prefix to the base component line
+                    component.append(BaritoneAPI.getPrefix());
+                    component.append(Text.literal(" "));
+                    Arrays.asList(components).forEach(component::append);
+                    p.sendMessage(component, false);
+                }
+            }
         }
     }
 

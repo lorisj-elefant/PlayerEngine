@@ -105,20 +105,22 @@ public final class InputOverrideHandler extends Behavior implements IInputOverri
 
         entity.setJumping(this.isInputForcedDown(Input.JUMP)); // oppa gangnam style
 
+        float speed = 0.3f;
+
         if (this.isInputForcedDown(Input.MOVE_FORWARD)) {
-            entity.forwardSpeed++;
+            entity.forwardSpeed+=speed;
         }
 
         if (this.isInputForcedDown(Input.MOVE_BACK)) {
-            entity.forwardSpeed--;
+            entity.forwardSpeed-=speed;
         }
 
         if (this.isInputForcedDown(Input.MOVE_LEFT)) {
-            entity.sidewaysSpeed++;
+            entity.sidewaysSpeed+=speed;
         }
 
         if (this.isInputForcedDown(Input.MOVE_RIGHT)) {
-            entity.sidewaysSpeed--;
+            entity.sidewaysSpeed-=speed;
         }
 
         if (this.isInputForcedDown(Input.SNEAK)) {

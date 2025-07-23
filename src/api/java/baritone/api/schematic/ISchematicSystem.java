@@ -21,6 +21,7 @@ import baritone.api.schematic.format.ISchematicFormat;
 import net.minecraft.registry.Registry;
 
 import java.io.File;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -32,7 +33,7 @@ public interface ISchematicSystem {
     /**
      * @return The registry of supported schematic formats
      */
-    Registry<ISchematicFormat> getRegistry();
+    List<ISchematicFormat> getRegistry();
 
     /**
      * Attempts to find an {@link ISchematicFormat} that supports the specified schematic file.
