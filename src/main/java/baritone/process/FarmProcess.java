@@ -303,6 +303,9 @@ public final class FarmProcess extends BaritoneProcessHelper implements IFarmPro
                 goalz.add(new GoalBlock(BlockPos.create(item.getX(), item.getY() + 0.1, item.getZ())));
             }
         }
+        if(goalz.isEmpty()){
+            return new PathingCommand(null, PathingCommandType.REQUEST_PAUSE);
+        }
         return new PathingCommand(new GoalComposite(goalz.toArray(new Goal[0])), PathingCommandType.SET_GOAL_AND_PATH);
     }
 
