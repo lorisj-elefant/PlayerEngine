@@ -45,8 +45,6 @@ import net.minecraft.world.RaycastContext;
 import org.joml.Matrix4f;
 import org.joml.Vector4f;
 
-import java.awt.*;
-import java.util.Collections;
 import java.util.Objects;
 import java.util.UUID;
 

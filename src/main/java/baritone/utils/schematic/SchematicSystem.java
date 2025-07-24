@@ -20,15 +20,11 @@ package baritone.utils.schematic;
 import baritone.api.schematic.ISchematicSystem;
 import baritone.api.schematic.format.ISchematicFormat;
 import baritone.utils.schematic.format.DefaultSchematicFormats;
-import net.fabricmc.fabric.api.event.registry.FabricRegistryBuilder;
-import net.minecraft.registry.Registry;
-import net.minecraft.util.Identifier;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 
 /**

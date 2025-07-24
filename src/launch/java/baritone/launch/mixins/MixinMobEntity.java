@@ -18,7 +18,6 @@
 package baritone.launch.mixins;
 
 import baritone.BaritoneProvider;
-import baritone.api.entity.IAutomatone;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.EntityAttributes;

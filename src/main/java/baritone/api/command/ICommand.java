@@ -26,7 +26,6 @@ import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 

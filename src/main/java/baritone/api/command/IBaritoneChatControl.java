@@ -17,10 +17,6 @@
 
 package baritone.api.command;
 
-import baritone.api.Settings;
-
-import java.util.UUID;
-
 /**
  * @author Brady
  * @since 9/26/2019

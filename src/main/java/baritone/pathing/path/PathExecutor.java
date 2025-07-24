@@ -45,8 +45,6 @@ import net.minecraft.util.math.Vec3i;
 
 import java.util.*;
 
-import static baritone.api.pathing.movement.MovementStatus.*;
-
 /**
  * Behavior to execute a precomputed path
  *
@@ -224,12 +222,12 @@ public class PathExecutor implements IPathExecutor {
             return true;
         }
         MovementStatus movementStatus = movement.update();
-        if (movementStatus == UNREACHABLE || movementStatus == FAILED) {
+        if (movementStatus == MovementStatus.UNREACHABLE || movementStatus == MovementStatus.FAILED) {
             logDebug("Movement returns status " + movementStatus);
             cancel();
             return true;
         }
-        if (movementStatus == SUCCESS) {
+        if (movementStatus == MovementStatus.SUCCESS) {
             //Automatone.LOGGER.debug("Movement done, next path");
             pathPosition++;
             onChangeInPathPosition();
