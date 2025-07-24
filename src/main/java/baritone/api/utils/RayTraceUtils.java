@@ -28,6 +28,7 @@ import net.minecraft.world.RaycastContext;
  * @since 8/25/2018
  */
 public final class RayTraceUtils {
+    public static RaycastContext.FluidHandling fluidHandling = RaycastContext.FluidHandling.NONE;
 
     private RayTraceUtils() {}
 
@@ -58,7 +59,7 @@ public final class RayTraceUtils {
                 direction.y * blockReachDistance,
                 direction.z * blockReachDistance
         );
-        return entity.getWorld().raycast(new RaycastContext(start, end, RaycastContext.ShapeType.OUTLINE, RaycastContext.FluidHandling.NONE, entity));
+        return entity.getWorld().raycast(new RaycastContext(start, end, RaycastContext.ShapeType.OUTLINE, fluidHandling, entity));
     }
 
     public static Vec3d inferSneakingEyePosition(Entity entity) {
