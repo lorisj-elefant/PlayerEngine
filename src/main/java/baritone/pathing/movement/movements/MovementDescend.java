@@ -95,6 +95,9 @@ public class MovementDescend extends Movement {
     public static void cost(CalculationContext context, int x, int y, int z, int destX, int destZ, MutableMoveResult res) {
         double frontBreak = 0;
         BlockState destDown = context.get(destX, y - 1, destZ);
+        res.x = destX;
+        res.y = y - 1;
+        res.z = destZ;
         if (destDown.isOf(Blocks.SCAFFOLDING) && destDown.get(ScaffoldingBlock.BOTTOM)) {
             // scaffolding gains a floor when it is not supported
             // we want to avoid breaking unsupported scaffolding, so stop here
@@ -152,9 +155,6 @@ public class MovementDescend extends Movement {
         double walk = waterModifier * (WALK_OFF_BLOCK_COST / fromDown.getBlock().getVelocityMultiplier());
         double fall = waterModifier * Math.max(FALL_N_BLOCKS_COST[1], CENTER_AFTER_FALL_COST);
         totalCost += walk + fall;
-        res.x = destX;
-        res.y = y - 1;
-        res.z = destZ;
         res.cost = totalCost;
         res.oxygenCost = context.oxygenCost(walk / 2 + frontBreak, context.get(x, y+context.height-1, z));
         res.oxygenCost += context.oxygenCost(fall/2, context.get(destX, y+context.height-2, destZ));
