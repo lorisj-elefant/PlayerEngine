@@ -27,14 +27,25 @@ import baritone.api.process.PathingCommandType;
 import baritone.api.utils.Rotation;
 import baritone.api.utils.RotationUtils;
 import baritone.api.utils.input.Input;
+import baritone.entity.CustomFishingBobberEntity;
 import baritone.pathing.movement.MovementHelper;
 import baritone.utils.BaritoneProcessHelper;
 import net.minecraft.block.Blocks;
+import net.minecraft.enchantment.EnchantmentHelper;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.projectile.FishingBobberEntity;
 import net.minecraft.item.FishingRodItem;
+import net.minecraft.item.ItemStack;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.util.Hand;
+import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
+import net.minecraft.world.event.GameEvent;
 
 import javax.annotation.Nullable;
 import java.util.Optional;
@@ -61,7 +72,7 @@ public final class FishingProcess extends BaritoneProcessHelper implements IBari
     private State currentState = State.IDLE;
 
     private BlockPos fishingSpot = null;
-    private FishingBobberEntity bobber = null;
+    private CustomFishingBobberEntity bobber = null;
     private int timeoutTicks = 0;
 
     public FishingProcess(Baritone baritone) {
@@ -184,18 +195,18 @@ public final class FishingProcess extends BaritoneProcessHelper implements IBari
 
     private void handleCastingState() {
         equipFishingRod();
-        baritone.getInputOverrideHandler().setInputForceState(Input.CLICK_RIGHT, true);
+        useFishingRod(ctx.world(), ctx.entity(), Hand.MAIN_HAND);
         logDirect("Casting line...");
         currentState = State.WAITING_FOR_BITE;
         timeoutTicks = 0;
     }
 
     private void handleWaitingForBiteState() {
-        if (this.bobber == null || !this.bobber.isAlive()) {
+        if (this.bobber == null || !this.bobber.isAlive() || timeoutTicks<30) {
             this.bobber = findOurBobber();
-            if (this.bobber == null) {
+            if (this.bobber == null || timeoutTicks<30) {
                 timeoutTicks++;
-                if (timeoutTicks > 40) {
+                if (timeoutTicks > 50) {
                     logDirect("Bobber not found, recasting.");
                     currentState = State.RECAST_DELAY;
                 }
@@ -219,7 +230,7 @@ public final class FishingProcess extends BaritoneProcessHelper implements IBari
 
     private void handleReelingInState() {
         equipFishingRod();
-        baritone.getInputOverrideHandler().setInputForceState(Input.CLICK_RIGHT, true);
+        useFishingRod(ctx.world(), ctx.entity(), Hand.MAIN_HAND);
         logDirect("Reeling in!");
         this.bobber = null;
         currentState = State.WAITING_FOR_ITEMS;
@@ -233,7 +244,7 @@ public final class FishingProcess extends BaritoneProcessHelper implements IBari
                 currentState = State.RECAST_DELAY;
                 timeoutTicks = 10;
             } else {
-                currentState = State.CASTING;
+                currentState = State.PREPARING_TO_CAST;
             }
         }
     }
@@ -283,11 +294,36 @@ public final class FishingProcess extends BaritoneProcessHelper implements IBari
     }
 
     @Nullable
-    private FishingBobberEntity findOurBobber() {
-        return (FishingBobberEntity) StreamSupport.stream(ctx.world().iterateEntities().spliterator(), false)
-                .filter(e -> e instanceof FishingBobberEntity)
-                .filter(e -> ((FishingBobberEntity) e).getPlayerOwner() == ctx.entity())
+    private CustomFishingBobberEntity findOurBobber() {
+        return (CustomFishingBobberEntity) StreamSupport.stream(ctx.world().iterateEntities().spliterator(), false)
+                .filter(e -> e instanceof CustomFishingBobberEntity)
+                .filter(e -> ((CustomFishingBobberEntity) e).getPlayerOwner() == ctx.entity())
                 .findFirst()
                 .orElse(null);
+    }
+
+    public TypedActionResult<ItemStack> useFishingRod(World world, LivingEntity user, Hand hand) {
+        ItemStack itemStack = user.getStackInHand(hand);
+        CustomFishingBobberEntity bobber = findOurBobber();
+        if (bobber != null) {
+            if (!world.isClient) {
+                int i = bobber.use(itemStack);
+                itemStack.damage(i, user, (p) -> p.sendToolBreakStatus(hand));
+            }
+
+            world.playSound(null, user.getX(), user.getY(), user.getZ(), SoundEvents.ENTITY_FISHING_BOBBER_RETRIEVE, SoundCategory.NEUTRAL, 1.0F, 0.4F / (world.getRandom().nextFloat() * 0.4F + 0.8F));
+            user.emitGameEvent(GameEvent.ITEM_INTERACT_FINISH);
+        } else {
+            world.playSound(null, user.getX(), user.getY(), user.getZ(), SoundEvents.ENTITY_FISHING_BOBBER_THROW, SoundCategory.NEUTRAL, 0.5F, 0.4F / (world.getRandom().nextFloat() * 0.4F + 0.8F));
+            if (!world.isClient) {
+                int i = EnchantmentHelper.getLure(itemStack);
+                int j = EnchantmentHelper.getLuckOfTheSea(itemStack);
+                world.spawnEntity(new CustomFishingBobberEntity(user, world, j, i));
+            }
+
+            user.emitGameEvent(GameEvent.ITEM_INTERACT_START);
+        }
+
+        return TypedActionResult.success(itemStack, world.isClient());
     }
 }
