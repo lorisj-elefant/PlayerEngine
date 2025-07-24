@@ -98,6 +98,7 @@ public final class DefaultCommands {
                 new SurfaceCommand(),
                 new ThisWayCommand(),
                 new WaypointsCommand(),
+                new FishCommand(),
                 new CommandAlias("sethome", "Sets your home waypoint", "waypoints save home"),
                 new CommandAlias("home", "Path to your home waypoint", "waypoints goto home"),
                 selCommand
