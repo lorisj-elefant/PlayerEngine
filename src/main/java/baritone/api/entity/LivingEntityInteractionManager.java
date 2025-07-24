@@ -17,36 +17,56 @@
 
 package baritone.api.entity;
 
+import baritone.api.utils.IBucketAccessor;
 import com.mojang.logging.LogUtils;
+
 import java.util.Objects;
 
+import net.minecraft.advancement.criterion.Criteria;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.FluidDrainable;
+import net.minecraft.block.FluidFillable;
 import net.minecraft.block.OperatorBlock;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.pattern.CachedBlockPosition;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffectUtil;
 import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.fluid.Fluids;
+import net.minecraft.item.BucketItem;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemUsage;
 import net.minecraft.item.ItemUsageContext;
+import net.minecraft.item.Items;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.tag.FluidTags;
 import net.minecraft.server.network.ServerPlayNetworkHandler;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.stat.Stats;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.GameMode;
+import net.minecraft.world.RaycastContext;
 import net.minecraft.world.World;
 import net.minecraft.world.event.GameEvent;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
+
+import static net.minecraft.item.BucketItem.getEmptiedStack;
 
 public class LivingEntityInteractionManager {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -137,8 +157,8 @@ public class LivingEntityInteractionManager {
 
     private float continueMining(BlockState state, BlockPos pos, int progress) {
         int i = this.tickCounter - progress;
-        float f = calcBlockBreakingDelta(state, this.livingEntity, this.livingEntity.getWorld(), pos) * (float)(i + 1);
-        int j = (int)(f * 10.0F);
+        float f = calcBlockBreakingDelta(state, this.livingEntity, this.livingEntity.getWorld(), pos) * (float) (i + 1);
+        int j = (int) (f * 10.0F);
         if (j != this.blockBreakingProgress) {
             this.world.setBlockBreakingInfo(this.livingEntity.getId(), pos, j);
             this.blockBreakingProgress = j;
@@ -194,7 +214,7 @@ public class LivingEntityInteractionManager {
                     this.mining = true;
                     this.miningPos = pos.toImmutable();
                     this.brokeBlock = true;
-                    int j = (int)(f * 10.0F);
+                    int j = (int) (f * 10.0F);
                     this.world.setBlockBreakingInfo(this.livingEntity.getId(), pos, j);
                     this.method_41250(pos, true, i, "actual start of destroying");
                     this.blockBreakingProgress = j;
@@ -204,7 +224,7 @@ public class LivingEntityInteractionManager {
                     int k = this.tickCounter - this.startMiningTime;
                     BlockState blockState = this.world.getBlockState(pos);
                     if (!blockState.isAir()) {
-                        float g = calcBlockBreakingDelta(blockState, this.livingEntity, this.livingEntity.getWorld(), pos) * (float)(k + 1);
+                        float g = calcBlockBreakingDelta(blockState, this.livingEntity, this.livingEntity.getWorld(), pos) * (float) (k + 1);
                         if (g >= 0.7F) {
                             this.mining = false;
                             this.world.setBlockBreakingInfo(this.livingEntity.getId(), pos, -1);
@@ -243,7 +263,7 @@ public class LivingEntityInteractionManager {
             return 0.0F;
         } else {
             int i = canHarvest(state, player.getStackInHand(Hand.MAIN_HAND)) ? 30 : 100;
-            return getBlockBreakingSpeed(player, state) / f / (float)i;
+            return getBlockBreakingSpeed(player, state) / f / (float) i;
         }
     }
 
@@ -257,12 +277,12 @@ public class LivingEntityInteractionManager {
             int i = EnchantmentHelper.getEfficiency(entity);
             ItemStack itemStack = this.livingEntity.getStackInHand(Hand.MAIN_HAND);
             if (i > 0 && !itemStack.isEmpty()) {
-                f += (float)(i * i + 1);
+                f += (float) (i * i + 1);
             }
         }
 
         if (StatusEffectUtil.hasHaste(entity)) {
-            f *= 1.0F + (float)(StatusEffectUtil.getHasteAmplifier(entity) + 1) * 0.2F;
+            f *= 1.0F + (float) (StatusEffectUtil.getHasteAmplifier(entity) + 1) * 0.2F;
         }
 
         if (entity.hasStatusEffect(StatusEffects.MINING_FATIGUE)) {
@@ -345,7 +365,12 @@ public class LivingEntityInteractionManager {
             int i = stack.getCount();
             int j = stack.getDamage();
             try {
-                TypedActionResult<ItemStack> typedActionResult = stack.use(world, null, hand);
+                TypedActionResult<ItemStack> typedActionResult;
+                if (stack.getItem() instanceof BucketItem bucketItem) {
+                    typedActionResult = useBucket(bucketItem, world, player, hand);
+                } else {
+                    typedActionResult = stack.use(world, null, hand);
+                }
                 ItemStack itemStack = (ItemStack) typedActionResult.getValue();
                 if (itemStack == stack && itemStack.getCount() == i && itemStack.getMaxUseTime() <= 0 && itemStack.getDamage() == j) {
                     return typedActionResult.getResult();
@@ -369,11 +394,96 @@ public class LivingEntityInteractionManager {
 
                     return typedActionResult.getResult();
                 }
-            }catch (Exception ignored){ return ActionResult.PASS; }
+            } catch (Exception ignored) {
+                return ActionResult.PASS;
+            }
         }
     }
 
-    public boolean shouldCancelInteraction(){
+    public TypedActionResult<ItemStack> useBucket(BucketItem bucket, World world, LivingEntity user, Hand hand) {
+        ItemStack itemStack = user.getStackInHand(hand);
+        BlockHitResult blockHitResult = raycast(world, user, ((IBucketAccessor) bucket).getFluid() == Fluids.EMPTY ? RaycastContext.FluidHandling.SOURCE_ONLY : RaycastContext.FluidHandling.NONE);
+        if (blockHitResult.getType() == HitResult.Type.MISS) {
+            return TypedActionResult.pass(itemStack);
+        } else if (blockHitResult.getType() != HitResult.Type.BLOCK) {
+            return TypedActionResult.pass(itemStack);
+        } else {
+            BlockPos blockPos = blockHitResult.getBlockPos();
+            Direction direction = blockHitResult.getSide();
+            BlockPos blockPos2 = blockPos.offset(direction);
+            if (((IBucketAccessor) bucket).getFluid() == Fluids.EMPTY) {
+                BlockState blockState = world.getBlockState(blockPos);
+                if (blockState.getBlock() instanceof FluidDrainable) {
+                    FluidDrainable fluidDrainable = (FluidDrainable) blockState.getBlock();
+                    ItemStack itemStack2 = fluidDrainable.tryDrainFluid(world, blockPos, blockState);
+                    if (!itemStack2.isEmpty()) {
+                        //user.incrementStat(Stats.USED.getOrCreateStat(this));
+                        fluidDrainable.getBucketFillSound().ifPresent((sound) -> user.playSound(sound, 1.0F, 1.0F));
+                        world.emitGameEvent(user, GameEvent.FLUID_PICKUP, blockPos);
+                        ItemStack itemStack3 = exchangeStack(itemStack, user, itemStack2);
+                        if (!world.isClient) {
+                            Criteria.FILLED_BUCKET.trigger((ServerPlayerEntity) user, itemStack2);
+                        }
+
+                        return TypedActionResult.success(itemStack3, world.isClient());
+                    }
+                }
+
+                return TypedActionResult.fail(itemStack);
+            } else {
+                BlockState blockState = world.getBlockState(blockPos);
+                BlockPos blockPos3 = blockState.getBlock() instanceof FluidFillable && ((IBucketAccessor) bucket).getFluid() == Fluids.WATER ? blockPos : blockPos2;
+                if (bucket.placeFluid(null, world, blockPos3, blockHitResult)) {
+                    bucket.onEmptied(null, world, itemStack, blockPos3);
+                    if (user instanceof ServerPlayerEntity) {
+                        Criteria.PLACED_BLOCK.trigger((ServerPlayerEntity) user, blockPos3, itemStack);
+                    }
+                    return TypedActionResult.success(new ItemStack(Items.BUCKET), world.isClient());
+                } else {
+                    return TypedActionResult.fail(itemStack);
+                }
+            }
+        }
+    }
+
+    public boolean canPlaceOn(LivingEntity entity, BlockPos pos, Direction facing, ItemStack stack) {
+        {
+            BlockPos blockPos = pos.offset(facing.getOpposite());
+            CachedBlockPosition cachedBlockPosition = new CachedBlockPosition(entity.getWorld(), blockPos, false);
+            return stack.canPlaceOn(entity.getWorld().getRegistryManager().get(RegistryKeys.BLOCK), cachedBlockPosition);
+        }
+    }
+
+    protected static BlockHitResult raycast(World world, LivingEntity player, RaycastContext.FluidHandling fluidHandling) {
+        float f = player.getPitch();
+        float g = player.getYaw();
+        Vec3d vec3d = player.getEyePos();
+        float h = MathHelper.cos(-g * ((float) Math.PI / 180F) - (float) Math.PI);
+        float i = MathHelper.sin(-g * ((float) Math.PI / 180F) - (float) Math.PI);
+        float j = -MathHelper.cos(-f * ((float) Math.PI / 180F));
+        float k = MathHelper.sin(-f * ((float) Math.PI / 180F));
+        float l = i * j;
+        float n = h * j;
+        double d = (double) 5.0F;
+        Vec3d vec3d2 = vec3d.add((double) l * (double) 5.0F, (double) k * (double) 5.0F, (double) n * (double) 5.0F);
+        return world.raycast(new RaycastContext(vec3d, vec3d2, RaycastContext.ShapeType.OUTLINE, fluidHandling, player));
+    }
+
+    public static ItemStack exchangeStack(ItemStack inputStack, LivingEntity player, ItemStack outputStack) {
+
+        inputStack.decrement(1);
+        if (inputStack.isEmpty()) {
+            return outputStack;
+        } else {
+            if (!((IInventoryProvider)player).getLivingInventory().insertStack(outputStack)) {
+                player.dropStack(outputStack);
+            }
+
+            return inputStack;
+        }
+    }
+
+    public boolean shouldCancelInteraction() {
         return false;
     }
 
@@ -392,11 +502,12 @@ public class LivingEntityInteractionManager {
                     if (actionResult.isAccepted()) {
                         return actionResult;
                     }
-                }catch (NullPointerException ignored){}
+                } catch (NullPointerException ignored) {
+                }
             }
 
             if (!stack.isEmpty()) {
-                ItemUsageContext itemUsageContext = new ItemUsageContext(player.getWorld(), null, hand, player.getStackInHand(hand), hitResult){
+                ItemUsageContext itemUsageContext = new ItemUsageContext(player.getWorld(), null, hand, player.getStackInHand(hand), hitResult) {
                     @Override
                     public boolean shouldCancelInteraction() {
                         return shouldCancelInteraction();

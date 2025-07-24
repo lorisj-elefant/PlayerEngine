@@ -10,6 +10,7 @@
   "client": [
   ],
   "mixins": [
+    "MixinBucketItem",
     "MixinEntity",
     "MixinItemStack",
     "MixinLivingEntity",
