@@ -172,7 +172,7 @@ public enum WorldScanner implements IWorldScanner {
             if (!section.hasAny(filter::has)) {
                 continue;
             }
-            int yReal = y0 << 4;
+            int yReal = (y0 << 4) + chunk.getBottomY();
             PalettedContainer<BlockState> bsc = section.getContainer();
             for (int yy = 0; yy < 16; yy++) {
                 for (int z = 0; z < 16; z++) {
