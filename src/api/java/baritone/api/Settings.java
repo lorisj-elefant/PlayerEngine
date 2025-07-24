@@ -725,7 +725,7 @@ public final class Settings {
     /**
      * Sets the minimum y level whilst mining - set to 0 to turn off.
      */
-    public final Setting<Integer> minYLevelWhileMining = new Setting<>(0);
+    public final Setting<Integer> minYLevelWhileMining = new Setting<>(-64);
 
     /**
      * This will only allow baritone to mine exposed ores, can be used to stop ore obfuscators on servers that use them.
