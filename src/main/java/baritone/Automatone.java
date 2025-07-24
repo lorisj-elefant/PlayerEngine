@@ -19,11 +19,16 @@ package baritone;
 
 import baritone.command.defaults.DefaultCommands;
 import baritone.command.manager.BaritoneArgumentType;
+import baritone.entity.CustomFishingBobberEntity;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import net.fabricmc.fabric.api.object.builder.v1.entity.FabricEntityTypeBuilder;
 import net.minecraft.command.argument.SingletonArgumentInfo;
+import net.minecraft.entity.EntityDimensions;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.SpawnGroup;
 import net.minecraft.item.Item;
 import net.minecraft.registry.Registries;
-import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.Identifier;
@@ -61,9 +66,20 @@ public final class Automatone implements ModInitializer {
         return threadPool;
     }
 
+    public static final EntityType<CustomFishingBobberEntity> FISHING_BOBBER = FabricEntityTypeBuilder.<CustomFishingBobberEntity>create()
+            .spawnGroup(SpawnGroup.MISC)
+            .entityFactory(CustomFishingBobberEntity::new)
+//            .defaultAttributes(ProjectileEntity::createAttributes)
+            .dimensions(EntityDimensions.changing(EntityType.FISHING_BOBBER.getWidth(), EntityType.FISHING_BOBBER.getHeight()))
+            .trackRangeBlocks(64)
+            .trackedUpdateRate(1)
+            .forceTrackedVelocityUpdates(true)
+            .build();
+
     @Override
     public void onInitialize(ModContainer mod) {
         DefaultCommands.registerAll();
+        Registry.register(Registries.ENTITY_TYPE, id("fishing_bobber"), FISHING_BOBBER);
         ServerArgumentType.register(id("command"), BaritoneArgumentType.class, SingletonArgumentInfo.contextFree(BaritoneArgumentType::baritone), t -> StringArgumentType.greedyString());
     }
 }

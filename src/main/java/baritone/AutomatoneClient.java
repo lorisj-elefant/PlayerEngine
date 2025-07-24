@@ -17,9 +17,11 @@
 
 package baritone;
 
+import baritone.client.CustomFishingBobberRenderer;
 import baritone.command.defaults.ClickCommand;
 import baritone.utils.GuiClick;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
@@ -41,6 +43,7 @@ public final class AutomatoneClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient(ModContainer mod) {
+        EntityRendererRegistry.register(Automatone.FISHING_BOBBER, CustomFishingBobberRenderer::new);
         WorldRenderEvents.BEFORE_DEBUG_RENDER.register(AutomatoneClient::onRenderPass);
         ClientPlayNetworking.registerGlobalReceiver(ClickCommand.OPEN_CLICK_SCREEN, (client, handler, buf, responseSender) -> {
             UUID uuid = buf.readUuid();
