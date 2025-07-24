@@ -20,6 +20,7 @@ package baritone.api.utils;
 import baritone.api.BaritoneAPI;
 import baritone.api.IBaritone;
 import baritone.api.cache.IWorldData;
+import baritone.api.entity.LivingEntityHungerManager;
 import baritone.api.entity.LivingEntityInventory;
 import baritone.api.pathing.calc.Avoidance;
 import net.minecraft.entity.Entity;
@@ -55,6 +56,8 @@ public interface IEntityContext {
     }
 
     @Nullable LivingEntityInventory inventory();
+
+    @Nullable LivingEntityHungerManager hungerManager();
 
     IInteractionController playerController();
 

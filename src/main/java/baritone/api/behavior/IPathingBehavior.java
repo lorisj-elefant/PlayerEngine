@@ -137,4 +137,6 @@ public interface IPathingBehavior extends IBehavior {
      * @return The starting {@link BlockPos} for a new path
      */
     BetterBlockPos pathStart();
+
+    boolean isSafeToCancel();
 }

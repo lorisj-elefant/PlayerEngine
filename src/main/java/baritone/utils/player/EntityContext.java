@@ -19,7 +19,9 @@ package baritone.utils.player;
 
 import baritone.api.BaritoneAPI;
 import baritone.api.cache.IWorldData;
+import baritone.api.entity.IHungerManagerProvider;
 import baritone.api.entity.IInventoryProvider;
+import baritone.api.entity.LivingEntityHungerManager;
 import baritone.api.entity.LivingEntityInventory;
 import baritone.api.pathing.calc.Avoidance;
 import baritone.api.utils.BetterBlockPos;
@@ -63,6 +65,11 @@ public class EntityContext implements IEntityContext {
     @Override
     public @Nullable LivingEntityInventory inventory() {
         return entity instanceof IInventoryProvider ? ((IInventoryProvider) entity).getLivingInventory() : null;
+    }
+
+    @Override
+    public @Nullable LivingEntityHungerManager hungerManager() {
+        return entity instanceof IHungerManagerProvider ? ((IHungerManagerProvider)entity).getHungerManager() : null;
     }
 
     @Override

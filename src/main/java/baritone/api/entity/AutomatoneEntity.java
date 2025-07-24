@@ -44,9 +44,10 @@ import net.minecraft.nbt.NbtList;
 import net.minecraft.util.Arm;
 import net.minecraft.world.World;
 
-public class AutomatoneEntity extends ZombieEntity implements IAutomatone, IInventoryProvider, IInteractionManagerProvider {
+public class AutomatoneEntity extends ZombieEntity implements IAutomatone, IInventoryProvider, IInteractionManagerProvider, IHungerManagerProvider {
     public LivingEntityInteractionManager manager;
     public LivingEntityInventory inventory;
+    public LivingEntityHungerManager hungerManager;
 
     public AutomatoneEntity(EntityType<? extends ZombieEntity> type, World world) {
         super(type, world);
@@ -159,5 +160,10 @@ public class AutomatoneEntity extends ZombieEntity implements IAutomatone, IInve
     @Override
     protected boolean burnsInDaylight() {
         return false;
+    }
+
+    @Override
+    public LivingEntityHungerManager getHungerManager() {
+        return hungerManager;
     }
 }

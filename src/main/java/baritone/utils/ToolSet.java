@@ -162,7 +162,7 @@ public class ToolSet {
     }
 
     private double avoidanceMultiplier(Block b) {
-        return b.getBuiltInRegistryHolder().isIn(baritone.settings().blocksToAvoidBreaking.get()) ? 0.1 : 1;
+        return baritone.settings().blocksToAvoidBreaking.get().contains(b.getBuiltInRegistryHolder().value()) ? 0.1 : 1;
     }
 
     /**
