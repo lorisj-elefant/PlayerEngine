@@ -45,6 +45,10 @@ compileJava {
 
 
 sourceSets {
+    autoclef {
+        compileClasspath += main.compileClasspath + main.runtimeClasspath + main.output
+        runtimeClasspath += main.compileClasspath + main.runtimeClasspath + main.output
+    }
     launch {
         compileClasspath += main.compileClasspath + main.runtimeClasspath + main.output
         runtimeClasspath += main.compileClasspath + main.runtimeClasspath + main.output
@@ -77,6 +81,10 @@ repositories {
     }
 
     mavenLocal()
+
+    flatDir {
+        dir 'libs'
+    }
 }
 
 dependencies {
@@ -86,6 +94,7 @@ dependencies {
 
     modImplementation "org.quiltmc:qsl:${qsl_version}+${minecraft_version}"
     modImplementation "org.quiltmc.quilted-fabric-api:quilted-fabric-api:${quilted_fabric_api_version}-${minecraft_version}"
+    //modImplementation "libs:chatclef:1.20.1-0.18.23"
     implementation 'com.google.code.findbugs:jsr305:3.0.2'
     modImplementation("dev.onyxstudios.cardinal-components-api:cardinal-components-base:${cca_version}") {
         transitive = false
@@ -105,6 +114,10 @@ dependencies {
     compileOnly "com.demonwav.mcdev:annotations:1.0"
 
     testImplementation 'junit:junit:4.12'
+
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.16.0'
+    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.16.0'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.16.0'
 }
 
 task testmodJar(type: Jar, dependsOn: testmodClasses) {
@@ -142,7 +155,7 @@ javadoc {
 
 jar {
     // Добавляем sourceSets.main.output в список
-    from sourceSets.launch.output, sourceSets.main.output
+    from sourceSets.launch.output, sourceSets.main.output, sourceSets.autoclef.output
 
     preserveFileTimestamps = false
     reproducibleFileOrder = true
@@ -171,4 +184,9 @@ publishing {
             }
         }
     }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
+    options.compilerArgs += ["-Xmaxerrs", "500000"]
 }

@@ -1,0 +1,72 @@
+package adris.altoclef.tasks.resources;
+
+import adris.altoclef.AltoClefController;
+
+import adris.altoclef.tasks.ResourceTask;
+import adris.altoclef.tasks.construction.DestroyBlockTask;
+import adris.altoclef.tasks.movement.DefaultGoToDimensionTask;
+import adris.altoclef.tasks.movement.SearchChunkForBlockTask;
+import adris.altoclef.tasksystem.Task;
+import adris.altoclef.util.Dimension;
+import adris.altoclef.util.helpers.WorldHelper;
+import net.minecraft.block.Block;
+import net.minecraft.block.Blocks;
+import net.minecraft.item.Items;
+import net.minecraft.util.math.BlockPos;
+
+public class GetSmithingTemplateTask extends ResourceTask {
+  private final Task _searcher = (Task)new SearchChunkForBlockTask(new Block[] { Blocks.BLACKSTONE });
+  
+  private final int _count;
+  
+  private BlockPos _chestloc = null;
+  
+  public GetSmithingTemplateTask(int count) {
+    super(Items.NETHERITE_UPGRADE_SMITHING_TEMPLATE, count);
+    this._count = count;
+  }
+  
+  protected void onResourceStart(AltoClefController mod) {}
+  
+  protected Task onResourceTick(AltoClefController mod) {
+    if (WorldHelper.getCurrentDimension(mod) != Dimension.NETHER) {
+      setDebugState("Going to nether");
+      return (Task)new DefaultGoToDimensionTask(Dimension.NETHER);
+    } 
+    if (this._chestloc == null)
+      for (BlockPos pos : mod.getBlockScanner().getKnownLocations(new Block[] { Blocks.CHEST })) {
+        if (WorldHelper.isInteractableBlock(mod, pos)) {
+          this._chestloc = pos;
+          break;
+        } 
+      }  
+    if (this._chestloc != null) {
+      setDebugState("Destroying Chest");
+      if (WorldHelper.isInteractableBlock(mod, this._chestloc))
+        return (Task)new DestroyBlockTask(this._chestloc);
+      this._chestloc = null;
+      for (BlockPos pos : mod.getBlockScanner().getKnownLocations(new Block[] { Blocks.CHEST })) {
+        if (WorldHelper.isInteractableBlock(mod, pos)) {
+          this._chestloc = pos;
+          break;
+        } 
+      } 
+    } 
+    setDebugState("Searching for/Traveling around bastion");
+    return this._searcher;
+  }
+  
+  protected void onResourceStop(AltoClefController mod, Task interruptTask) {}
+  
+  protected boolean isEqualResource(ResourceTask other) {
+    return other instanceof adris.altoclef.tasks.resources.GetSmithingTemplateTask;
+  }
+  
+  protected String toDebugStringName() {
+    return "Collect " + this._count + " smithing templates";
+  }
+  
+  protected boolean shouldAvoidPickingUp(AltoClefController mod) {
+    return false;
+  }
+}
