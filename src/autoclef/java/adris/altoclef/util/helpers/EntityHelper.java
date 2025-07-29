@@ -15,7 +15,6 @@ import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.PiglinEntity;
 import net.minecraft.entity.mob.SlimeEntity;
 import net.minecraft.entity.mob.ZombifiedPiglinEntity;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 
@@ -24,9 +23,8 @@ public class EntityHelper {
   
   public static boolean isAngryAtPlayer(AltoClefController mod, Entity mob) {
     boolean hostile = isProbablyHostileToPlayer(mod, mob);
-    if (mob instanceof LivingEntity) {
-      LivingEntity entity = (LivingEntity)mob;
-      return (hostile && entity.canSee((Entity)mod.getPlayer()));
+    if (mob instanceof MobEntity entity) {
+      return (hostile && entity.getTarget()==mod.getPlayer());
     } 
     return hostile;
   }
@@ -67,7 +65,7 @@ public class EntityHelper {
     return false;
   }
   
-  public static double calculateResultingPlayerDamage(PlayerEntity player, DamageSource src, double damageAmount) {
+  public static double calculateResultingPlayerDamage(LivingEntity player, DamageSource src, double damageAmount) {
     DamageSourceWrapper source = DamageSourceWrapper.of(src);
     if (player.isInvulnerableTo(src))
       return 0.0D; 

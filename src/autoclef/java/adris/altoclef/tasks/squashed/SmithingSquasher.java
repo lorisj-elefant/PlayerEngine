@@ -1,4 +1,3 @@
-// File: adris/altoclef/tasks/squashed/SmithingSquasher.java
 package adris.altoclef.tasks.squashed;
 
 import adris.altoclef.tasks.ResourceTask;

@@ -1,4 +1,21 @@
 /*
+ * This file is part of Baritone.
+ *
+ * Baritone is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Baritone is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/*
  * Requiem
  * Copyright (C) 2017-2021 Ladysnake
  *
@@ -32,8 +49,18 @@
  * The GNU General Public License gives permission to release a modified version without this exception;
  * this exception also makes it possible to release a modified version which carries forward this exception.
  */
-package baritone.api.entity;
+package io.github.ladysnake.otomaton;
 
+import adris.altoclef.AltoClefController;
+import baritone.api.IBaritone;
+import baritone.api.entity.IAutomatone;
+import baritone.api.entity.IHungerManagerProvider;
+import baritone.api.entity.IInteractionManagerProvider;
+import baritone.api.entity.IInventoryProvider;
+import baritone.api.entity.LivingEntityHungerManager;
+import baritone.api.entity.LivingEntityInteractionManager;
+import baritone.api.entity.LivingEntityInventory;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.ItemEntity;
@@ -48,6 +75,7 @@ public class AutomatoneEntity extends ZombieEntity implements IAutomatone, IInve
     public LivingEntityInteractionManager manager;
     public LivingEntityInventory inventory;
     public LivingEntityHungerManager hungerManager;
+    public AltoClefController controller;
 
     public AutomatoneEntity(EntityType<? extends ZombieEntity> type, World world) {
         super(type, world);
@@ -55,6 +83,8 @@ public class AutomatoneEntity extends ZombieEntity implements IAutomatone, IInve
         manager = new LivingEntityInteractionManager(this);
         inventory = new LivingEntityInventory(this);
         setCanPickUpLoot(true);
+        if(!world.isClient)
+            controller = new AltoClefController(IBaritone.KEY.get(this));
     }
 
     @Override
@@ -93,6 +123,9 @@ public class AutomatoneEntity extends ZombieEntity implements IAutomatone, IInve
         goalSelector.clear((g)->true);
         targetSelector.clear((t)->true);
         setCanPickUpLoot(true);
+        lastAttackedTicks++;
+        if(!this.getWorld().isClient)
+            controller.serverTick();
         super.tick();
     }
 
@@ -102,6 +135,12 @@ public class AutomatoneEntity extends ZombieEntity implements IAutomatone, IInve
             this.knockDownwards();
         }
         super.tickMovement();
+    }
+
+    @Override
+    public boolean tryAttack(Entity target) {
+        lastAttackedTicks = 0;
+        return super.tryAttack(target);
     }
 
     @Override

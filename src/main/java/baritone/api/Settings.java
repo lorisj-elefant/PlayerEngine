@@ -194,17 +194,17 @@ public final class Settings {
     /**
      * Blocks that Baritone is allowed to place (as throwaway, for sneak bridging, pillaring, etc.)
      */
-    public final Setting<List<Item>> acceptableThrowawayItems = new Setting<>(List.of(Blocks.DIRT.asItem(), Blocks.NETHERRACK.asItem(), Blocks.BASALT.asItem(), Blocks.STONE.asItem(), Blocks.BLACKSTONE.asItem(), Blocks.GRANITE.asItem(), Blocks.DIORITE.asItem(), Blocks.ANDESITE.asItem(), Blocks.SOUL_SOIL.asItem()));
+    public final Setting<List<Item>> acceptableThrowawayItems = new Setting<>(new ArrayList<>(List.of(Blocks.DIRT.asItem(), Blocks.NETHERRACK.asItem(), Blocks.BASALT.asItem(), Blocks.STONE.asItem(), Blocks.BLACKSTONE.asItem(), Blocks.GRANITE.asItem(), Blocks.DIORITE.asItem(), Blocks.ANDESITE.asItem(), Blocks.SOUL_SOIL.asItem())));
 
     /**
      * Blocks that Baritone will attempt to avoid (Used in avoidance)
      */
-    public final Setting<List<Block>> blocksToAvoid = new Setting<>(List.of());
+    public final Setting<List<Block>> blocksToAvoid = new Setting<>(new ArrayList<>(List.of()));
 
     /**
      * Blocks that Baritone is not allowed to break
      */
-    public final Setting<List<Block>> blocksToAvoidBreaking = new Setting<>(List.of(Blocks.CRAFTING_TABLE, Blocks.FURNACE, Blocks.CAMPFIRE, Blocks.SMOKER, Blocks.BLAST_FURNACE, Blocks.CHEST, Blocks.TRAPPED_CHEST));
+    public final Setting<List<Block>> blocksToAvoidBreaking = new Setting<>(new ArrayList<>(List.of(Blocks.CRAFTING_TABLE, Blocks.FURNACE, Blocks.CAMPFIRE, Blocks.SMOKER, Blocks.BLAST_FURNACE, Blocks.CHEST, Blocks.TRAPPED_CHEST)));
 
     /**
      * A list of blocks to be treated as if they're air.

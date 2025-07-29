@@ -1,4 +1,3 @@
-// File: adris/altolef/control/SlotHandler.java
 package adris.altoclef.control;
 
 import adris.altoclef.AltoClefController;
@@ -39,7 +38,6 @@ public class SlotHandler {
         this._controller = controller;
     }
 
-    // Симуляция курсора на сервере
     public ItemStack getCursorStack() {
         return _cursorStack;
     }
@@ -48,19 +46,16 @@ public class SlotHandler {
         _cursorStack = (stack == null || stack.isEmpty()) ? ItemStack.EMPTY : stack;
     }
 
-    // Таймеры больше не нужны, серверные операции мгновенны.
     public boolean canDoSlotAction() {
         return true;
     }
 
     public void registerSlotAction() {
-        // Уведомляем трекер, что инвентарь изменился.
         _controller.getItemStorage().registerSlotAction();
     }
 
     public void clickSlot(Slot slot, int mouseButton, SlotActionType type) {
         if (slot == null || slot.equals(Slot.UNDEFINED)) {
-            // Клик "мимо" инвентаря = выбросить предмет с курсора
             if (!_cursorStack.isEmpty()) {
                 _controller.getEntity().dropStack(_cursorStack.copy());
                 setCursorStack(ItemStack.EMPTY);
@@ -73,7 +68,7 @@ public class SlotHandler {
         int index = slot.getIndex();
 
         if (inventory == null) {
-            Debug.logWarning("Попытка кликнуть по слоту без инвентаря: " + slot);
+            Debug.logWarning("Attempt to click a slot without an inventory: " + slot);
             return;
         }
 
@@ -87,15 +82,11 @@ public class SlotHandler {
                 break;
 
             case QUICK_MOVE:
-                // Упрощенная логика shift-клика: переместить в "другой" инвентарь.
-                // Требует контекста, который должен предоставляться задачей.
-                // Например, из инвентаря игрока в открытый сундук.
-                // Пока что просто выбрасываем ошибку, чтобы найти все места использования.
-                Debug.logError("QUICK_MOVE не реализован в серверном SlotHandler. Это должно обрабатываться задачей.");
+                Debug.logError("QUICK_MOVE is NYI.");
                 break;
 
             default:
-                Debug.logWarning("Неподдерживаемый SlotActionType в серверном SlotHandler: " + type);
+                Debug.logWarning("Unsupported SlotActionType: " + type);
                 break;
         }
         registerSlotAction();
@@ -109,11 +100,9 @@ public class SlotHandler {
             return;
         }
 
-        // 1. Найти предмет
         for (int i = 0; i < inventory.main.size(); i++) {
             ItemStack potential = inventory.main.get(i);
             if (potential.isOf(toEquip)) {
-                // 2. Поменять местами
                 inventory.setStack(PlayerSlot.OFFHAND_SLOT_INDEX, potential);
                 inventory.main.set(i, offhandStack);
                 registerSlotAction();
@@ -128,7 +117,6 @@ public class SlotHandler {
             return true;
         }
 
-        // 1. Ищем в хотбаре
         for (int i = 0; i < 9; i++) {
             int finalI = i;
             if (Arrays.stream(toEquip).allMatch((it) -> it == inventory.getStack(finalI).getItem())) {
@@ -138,7 +126,6 @@ public class SlotHandler {
             }
         }
 
-        // 2. Ищем в инвентаре и меняем местами с текущим слотом хотбара
         for (int i = 9; i < inventory.main.size(); i++) {
             int finalI = i;
             if (Arrays.stream(toEquip).allMatch((it) -> it == inventory.getStack(finalI).getItem())) {
@@ -158,7 +145,6 @@ public class SlotHandler {
             return true;
         }
 
-        // 1. Ищем в хотбаре
         for (int i = 0; i < 9; i++) {
             if (inventory.getStack(i).isOf(toEquip)) {
                 inventory.selectedSlot = i;
@@ -167,7 +153,6 @@ public class SlotHandler {
             }
         }
 
-        // 2. Ищем в инвентаре и меняем местами с текущим слотом хотбара
         for (int i = 9; i < inventory.main.size(); i++) {
             if (inventory.getStack(i).isOf(toEquip)) {
                 ItemStack handStack = inventory.getMainHandStack();
@@ -188,17 +173,15 @@ public class SlotHandler {
             int emptySlot = inventory.getEmptySlot();
             if (emptySlot != -1) {
                 if (LivingEntityInventory.isValidHotbarIndex(emptySlot)) {
-                    // Просто переключаемся на пустой слот хотбара
                     inventory.selectedSlot = emptySlot;
                 } else {
-                    // Меняем предмет в руке с пустым слотом в инвентаре
                     inventory.setStack(emptySlot, equip);
                     inventory.setStack(inventory.selectedSlot, ItemStack.EMPTY);
                 }
                 registerSlotAction();
                 return true;
             }
-            return false; // Нет места для снятия
+            return false;
         }
         return true;
     }
@@ -223,8 +206,7 @@ public class SlotHandler {
     }
 
     public void refreshInventory() {
-        // На сервере это не имеет смысла, инвентарь всегда "актуален".
-        // Оставляем метод пустым для совместимости.
+
     }
 
     public void forceDeequipRightClickableItem() {
@@ -273,21 +255,18 @@ public class SlotHandler {
             if (item instanceof ArmorItem armorItem) {
                 EquipmentSlot slotType = armorItem.getArmorSlot().getEquipmentSlot();
 
-                // Skip if already wearing this or a better piece of armor (simplification)
                 if (_controller.getEntity().getEquippedStack(slotType).isOf(item)) {
                     continue;
                 }
 
-                // Find the armor piece in inventory
                 for (int i = 0; i < inventory.size(); i++) {
                     ItemStack stackInSlot = inventory.getStack(i);
                     if (stackInSlot.isOf(item)) {
-                        // Swap with currently equipped armor
                         ItemStack currentlyEquipped = _controller.getEntity().getEquippedStack(slotType).copy();
                         _controller.getEntity().equipStack(slotType, stackInSlot.copy());
                         inventory.setStack(i, currentlyEquipped);
                         registerSlotAction();
-                        break; // Move to the next armor target
+                        break;
                     }
                 }
             }

@@ -34,7 +34,7 @@ public class CollectBlockByOneTask extends ResourceTask {
   protected void onResourceStart(AltoClefController mod) {}
   
   protected Task onResourceTick(AltoClefController mod) {
-    return (Task)new MineAndCollectTask(this.item, 1, this.blocks, this.requirement);
+    return (Task)new MineAndCollectTask(this.item, count, this.blocks, this.requirement);
   }
   
   protected void onResourceStop(AltoClefController mod, Task interruptTask) {}

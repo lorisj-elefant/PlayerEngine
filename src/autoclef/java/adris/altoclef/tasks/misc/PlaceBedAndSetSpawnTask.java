@@ -3,10 +3,6 @@ package adris.altoclef.tasks.misc;
 import adris.altoclef.AltoClefController;
 import adris.altoclef.Debug;
 import adris.altoclef.TaskCatalogue;
-import adris.altoclef.eventbus.EventBus;
-import adris.altoclef.eventbus.Subscription;
-import adris.altoclef.eventbus.events.ChatMessageEvent;
-import adris.altoclef.eventbus.events.GameOverlayEvent;
 import adris.altoclef.multiversion.blockpos.BlockPosVer;
 import adris.altoclef.tasks.DoToClosestBlockTask;
 import adris.altoclef.tasks.InteractWithBlockTask;
@@ -26,8 +22,6 @@ import adris.altoclef.util.time.TimerGame;
 import baritone.api.utils.input.Input;
 import net.minecraft.block.BedBlock;
 import net.minecraft.block.Block;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
@@ -91,11 +85,7 @@ public class PlaceBedAndSetSpawnTask extends Task {
   private BlockPos currentBreak;
   
   private boolean spawnSet;
-  
-  private Subscription<ChatMessageEvent> respawnPointSetMessageCheck;
-  
-  private Subscription<GameOverlayEvent> respawnFailureMessageCheck;
-  
+
   private boolean sleepAttemptMade;
   
   private boolean wasSleeping;
@@ -134,32 +124,9 @@ public class PlaceBedAndSetSpawnTask extends Task {
     this.spawnSet = false;
     this.sleepAttemptMade = false;
     this.wasSleeping = false;
-    this.respawnPointSetMessageCheck = EventBus.subscribe(ChatMessageEvent.class, evt -> {
-          String msg = evt.toString();
-          if (msg.contains("Respawn point set")) {
-            this.spawnSet = true;
-            this.inBedTimer.reset();
-          } 
-        });
-    this.respawnFailureMessageCheck = EventBus.subscribe(GameOverlayEvent.class, evt -> {
-          String[] NEUTRAL_MESSAGES = { "You can sleep only at night", "You can only sleep at night", "You may not rest now; there are monsters nearby" };
-          for (String checkMessage : NEUTRAL_MESSAGES) {
-            if (evt.message.contains(checkMessage)) {
-              if (!this.sleepAttemptMade)
-                this.bedInteractTimeout.reset(); 
-              this.sleepAttemptMade = true;
-            } 
-          } 
-        });
     Debug.logInternal("Started onStart() method");
     Debug.logInternal("Current bed region: " + String.valueOf(this.currentBedRegion));
     Debug.logInternal("Spawn set: " + this.spawnSet);
-  }
-  
-  public void resetSleep() {
-    this.spawnSet = false;
-    this.sleepAttemptMade = false;
-    this.wasSleeping = false;
   }
   
   protected Task onTick() {
@@ -177,21 +144,7 @@ public class PlaceBedAndSetSpawnTask extends Task {
     if (WorldHelper.getCurrentDimension(controller) != Dimension.OVERWORLD) {
       setDebugState("Going to the overworld first.");
       return (Task)new DefaultGoToDimensionTask(Dimension.OVERWORLD);
-    } 
-    Screen screen = (MinecraftClient.getInstance()).currentScreen;
-    if (screen instanceof net.minecraft.client.gui.screen.SleepingChatScreen) {
-      this.progressChecker.reset();
-      setDebugState("Sleeping...");
-      this.wasSleeping = true;
-      this.spawnSet = true;
-      return null;
-    } 
-    if (this.sleepAttemptMade && 
-      this.bedInteractTimeout.elapsed()) {
-      Debug.logMessage("Failed to get \"Respawn point set\" message or sleeping, assuming that this bed already contains our spawn.");
-      this.spawnSet = true;
-      return null;
-    } 
+    }
     if (mod.getBlockScanner().anyFound(blockPos -> ((WorldHelper.canReach(controller, blockPos) && blockPos.isCenterWithinDistance((Position)mod.getPlayer().getPos(), 40.0D) && mod.getItemStorage().hasItem(ItemHelper.BED)) || (WorldHelper.canReach(controller, blockPos) && !mod.getItemStorage().hasItem(ItemHelper.BED))),
         
         ItemHelper.itemsToBlocks(ItemHelper.BED))) {
@@ -330,8 +283,6 @@ public class PlaceBedAndSetSpawnTask extends Task {
   
   protected void onStop(Task interruptTask) {
     controller.getBehaviour().pop();
-    EventBus.unsubscribe(this.respawnPointSetMessageCheck);
-    EventBus.unsubscribe(this.respawnFailureMessageCheck);
     Debug.logInternal("Tracking stopped for beds");
     Debug.logInternal("Behaviour popped");
     Debug.logInternal("Unsubscribed from respawn point set message");

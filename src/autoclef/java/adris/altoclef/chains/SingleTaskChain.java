@@ -26,12 +26,16 @@ public abstract class SingleTaskChain extends TaskChain {
       if (this.mainTask != null)
         this.mainTask.reset(); 
     } 
-    if (this.mainTask != null)
+    if (this.mainTask != null) {
+      if(this.mainTask.controller==null){
+        this.mainTask.controller = controller;
+      }
       if (this.mainTask.isFinished() || this.mainTask.stopped()) {
         onTaskFinish(this.mod);
       } else {
         this.mainTask.tick(this);
-      }  
+      }
+    }
   }
   
   protected void onStop() {

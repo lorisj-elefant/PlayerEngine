@@ -16,18 +16,22 @@ import net.minecraft.util.math.BlockPos;
 
 public class UserBlockRangeTracker extends Tracker {
   final int AVOID_BREAKING_RANGE = 16;
-  
-  final Block[] USER_INDICATOR_BLOCKS;
-  
-  final Block[] USER_BLOCKS_TO_AVOID_BREAKING;
-  
-  private final Set<BlockPos> _dontBreakBlocks;
+
+  final Block[] USER_INDICATOR_BLOCKS = Streams.concat(
+          Arrays.stream(ItemHelper.itemsToBlocks(ItemHelper.BED))
+          // maybe add these in later, no need
+          // Arrays.asList(Blocks.CHEST, Blocks.TRAPPED_CHEST, Blocks.FLETCHING_TABLE, Blocks.ANVIL).stream()
+  ).toArray(Block[]::new);
+
+  final Block[] USER_BLOCKS_TO_AVOID_BREAKING = Streams.concat(
+          Arrays.asList(Blocks.COBBLESTONE).stream(),
+          Arrays.stream(ItemHelper.itemsToBlocks(ItemHelper.LOG))
+  ).toArray(Block[]::new);
+
+  private final Set<BlockPos> _dontBreakBlocks = new HashSet<>();
   
   public UserBlockRangeTracker(TrackerManager manager) {
     super(manager);
-    this.USER_INDICATOR_BLOCKS = (Block[])Streams.concat(new Stream[] { Arrays.stream(ItemHelper.itemsToBlocks(ItemHelper.BED)) }).toArray(x$0 -> new Block[x$0]);
-    this.USER_BLOCKS_TO_AVOID_BREAKING = (Block[])Streams.concat(new Stream[] { Arrays.<Block>asList(new Block[] { Blocks.COBBLESTONE }).stream(), Arrays.stream(ItemHelper.itemsToBlocks(ItemHelper.LOG)) }).toArray(x$0 -> new Block[x$0]);
-    this._dontBreakBlocks = new HashSet<>();
   }
   
   public boolean isNearUserTrackedBlock(BlockPos pos) {

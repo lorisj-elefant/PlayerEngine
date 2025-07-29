@@ -58,7 +58,7 @@ public class DoToClosestEntityTask extends AbstractDoToClosestObjectTask<Entity>
     }
 
     protected boolean isValid(AltoClefController mod, Entity obj) {
-        return obj.isAlive() && mod.getEntityTracker().isEntityReachable(obj);
+        return obj.isAlive() && mod.getEntityTracker().isEntityReachable(obj) && obj!=mod.getEntity();
     }
 
     protected void onStart() {

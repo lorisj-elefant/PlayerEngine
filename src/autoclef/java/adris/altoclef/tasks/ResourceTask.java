@@ -1,16 +1,19 @@
-// File: adris/altoclef/tasks/ResourceTask.java
 package adris.altoclef.tasks;
 
 import adris.altoclef.AltoClefController;
 import adris.altoclef.BotBehaviour;
+import adris.altoclef.multiversion.blockpos.BlockPosVer;
+import adris.altoclef.tasks.container.PickupFromContainerTask;
 import adris.altoclef.tasks.movement.DefaultGoToDimensionTask;
 import adris.altoclef.tasks.movement.PickupDroppedItemTask;
 import adris.altoclef.tasks.resources.MineAndCollectTask;
 import adris.altoclef.tasksystem.ITaskCanForce;
 import adris.altoclef.tasksystem.Task;
+import adris.altoclef.trackers.storage.ContainerCache;
 import adris.altoclef.util.Dimension;
 import adris.altoclef.util.ItemTarget;
 import adris.altoclef.util.MiningRequirement;
+import adris.altoclef.util.helpers.StlHelper;
 import adris.altoclef.util.helpers.StorageHelper;
 import adris.altoclef.util.helpers.WorldHelper;
 import net.minecraft.block.Block;
@@ -18,9 +21,11 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3i;
+import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 public abstract class ResourceTask extends Task implements ITaskCanForce {
@@ -34,6 +39,8 @@ public abstract class ResourceTask extends Task implements ITaskCanForce {
   // Not all resource tasks need these, but they are common.
   private boolean _forceDimension = false;
   private Dimension _targetDimension;
+  private ContainerCache currentContainer;
+  private boolean allowContainers = false;
 
   public ResourceTask(ItemTarget... itemTargets) {
     this._itemTargets = itemTargets;
@@ -81,6 +88,32 @@ public abstract class ResourceTask extends Task implements ITaskCanForce {
         return _pickupTask;
       }
     }
+
+    // Check for chests and grab resources from them.
+    if (currentContainer == null && allowContainers) {
+      List<ContainerCache> containersWithItem = mod.getItemStorage().getContainersWithItem(Arrays.stream(_itemTargets).reduce(new Item[0], (items, target) -> ArrayUtils.addAll(items, target.getMatches()), ArrayUtils::addAll));
+      if (!containersWithItem.isEmpty()) {
+        ContainerCache closest = containersWithItem.stream().min(StlHelper.compareValues(container -> BlockPosVer.getSquaredDistance(container.getBlockPos(),mod.getPlayer().getPos()))).get();
+        if (closest.getBlockPos().isWithinDistance(new Vec3i((int) mod.getPlayer().getPos().x, (int) mod.getPlayer().getPos().y, (int) mod.getPlayer().getPos().z), mod.getModSettings().getResourceChestLocateRange())) {
+          currentContainer = closest;
+        }
+      }
+    }
+    if (currentContainer != null) {
+      Optional<ContainerCache> container = mod.getItemStorage().getContainerAtPosition(currentContainer.getBlockPos());
+      if (container.isPresent()) {
+        if (Arrays.stream(_itemTargets).noneMatch(target -> container.get().hasItem(target.getMatches()))) {
+          currentContainer = null;
+        } else {
+          // We have a current chest, grab from it.
+          setDebugState("Picking up from container");
+          return new PickupFromContainerTask(currentContainer.getBlockPos(), _itemTargets);
+        }
+      } else {
+        currentContainer = null;
+      }
+    }
+
 
     // We may just mine if a block is found.
     if (mineIfPresent != null) {

@@ -146,7 +146,7 @@ public interface LookHelper {
   }
   
   static Vec3d getCameraPos(Entity entity) {
-    boolean isPlayerSneaking = (entity instanceof net.minecraft.entity.player.PlayerEntity && entity.isSneaking());
+    boolean isPlayerSneaking = (entity instanceof LivingEntity && entity.isSneaking());
     if (isPlayerSneaking)
       return RayTraceUtils.inferSneakingEyePosition(entity); 
     return entity.getCameraPosVec(1.0F);

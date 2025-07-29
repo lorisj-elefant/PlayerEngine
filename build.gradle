@@ -50,8 +50,8 @@ sourceSets {
         runtimeClasspath += main.compileClasspath + main.runtimeClasspath + main.output
     }
     launch {
-        compileClasspath += main.compileClasspath + main.runtimeClasspath + main.output
-        runtimeClasspath += main.compileClasspath + main.runtimeClasspath + main.output
+        compileClasspath += main.compileClasspath + main.runtimeClasspath + main.output + autoclef.compileClasspath + autoclef.runtimeClasspath + autoclef.output
+        runtimeClasspath += main.compileClasspath + main.runtimeClasspath + main.output + autoclef.compileClasspath + autoclef.runtimeClasspath + autoclef.output
     }
     testmod {
         compileClasspath += launch.compileClasspath + launch.runtimeClasspath + launch.output

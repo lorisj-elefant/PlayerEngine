@@ -1,4 +1,3 @@
-// File: adris/altoclef/tasks/container/SmeltInSmokerTask.java
 package adris.altoclef.tasks.container;
 
 import adris.altoclef.AltoClefController;
@@ -37,9 +36,10 @@ import java.util.Optional;
 public class SmeltInSmokerTask extends ResourceTask {
 
   private final SmeltTarget[] _targets;
-  private final TimerGame _smeltTimer = new TimerGame(5); // 5 секунд на плавку в коптильне
+  private final TimerGame _smeltTimer = new TimerGame(5);
   private BlockPos _smokerPos = null;
   private boolean _isSmelting = false;
+  private SmokerCache cache;
 
   public SmeltInSmokerTask(SmeltTarget... targets) {
     super(extractItemTargets(targets));
@@ -79,6 +79,19 @@ public class SmeltInSmokerTask extends ResourceTask {
     if (allDone) {
       setDebugState("Done smoking.");
       return null;
+    }
+
+    SmeltTarget currentTarget = Arrays.stream(_targets).filter(t -> controller.getItemStorage().getItemCount(t.getItem()) < t.getItem().getTargetCount()).findFirst().orElse(null);
+    if (currentTarget == null) return null;
+
+    if (!controller.getItemStorage().hasItem(currentTarget.getMaterial())) {
+      setDebugState("Collecting raw food: " + currentTarget.getMaterial());
+      return TaskCatalogue.getItemTask(currentTarget.getMaterial());
+    }
+
+    if (StorageHelper.calculateInventoryFuelCount(controller) < 1) {
+      setDebugState("Collecting fuel.");
+      return new CollectFuelTask(1.0);
     }
 
     if (_smokerPos == null || !controller.getWorld().getBlockState(_smokerPos).isOf(Blocks.SMOKER)) {
@@ -130,19 +143,6 @@ public class SmeltInSmokerTask extends ResourceTask {
       return null;
     }
 
-    SmeltTarget currentTarget = Arrays.stream(_targets).filter(t -> controller.getItemStorage().getItemCount(t.getItem()) < t.getItem().getTargetCount()).findFirst().orElse(null);
-    if (currentTarget == null) return null;
-
-    if (!controller.getItemStorage().hasItem(currentTarget.getMaterial())) {
-      setDebugState("Collecting raw food: " + currentTarget.getMaterial());
-      return TaskCatalogue.getItemTask(currentTarget.getMaterial());
-    }
-
-    if (((MixinAbstractFurnaceBlockEntity)smoker).getPropertyDelegate().get(0) <= 0 && StorageHelper.calculateInventoryFuelCount(controller) < 1) {
-      setDebugState("Collecting fuel.");
-      return new CollectFuelTask(1.0);
-    }
-
     LivingEntityInventory playerInv = ((IInventoryProvider) controller.getEntity()).getLivingInventory();
 
     if (((MixinAbstractFurnaceBlockEntity)smoker).getPropertyDelegate().get(0) <= 1 && smokerInventory.getStack(SmokerSlot.INPUT_SLOT_FUEL).isEmpty()) {
@@ -191,5 +191,13 @@ public class SmeltInSmokerTask extends ResourceTask {
   @Override
   protected String toDebugStringName() {
     return "Smelting in Smoker";
+  }
+
+  static class SmokerCache {
+    public ItemStack materialSlot = ItemStack.EMPTY;
+    public ItemStack fuelSlot = ItemStack.EMPTY;
+    public ItemStack outputSlot = ItemStack.EMPTY;
+    public double burningFuelCount;
+    public double burnPercentage;
   }
 }

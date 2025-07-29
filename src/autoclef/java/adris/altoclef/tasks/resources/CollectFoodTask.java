@@ -1,4 +1,3 @@
-// File: adris/altoclef/tasks/resources/CollectFoodTask.java
 package adris.altoclef.tasks.resources;
 
 import adris.altoclef.AltoClefController;

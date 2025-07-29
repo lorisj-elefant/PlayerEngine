@@ -1,4 +1,3 @@
-// File: adris/altoclef/chains/UnstuckChain.java
 package adris.altoclef.chains;
 
 import adris.altoclef.AltoClefController;
@@ -7,11 +6,8 @@ import adris.altoclef.tasks.construction.DestroyBlockTask;
 import adris.altoclef.tasks.movement.GetOutOfWaterTask;
 import adris.altoclef.tasks.movement.GetToBlockTask;
 import adris.altoclef.tasks.movement.SafeRandomShimmyTask;
-import adris.altoclef.tasksystem.Task;
 import adris.altoclef.tasksystem.TaskRunner;
-import adris.altoclef.util.helpers.WorldHelper;
 import adris.altoclef.util.time.TimerGame;
-import baritone.api.IBaritone;
 import baritone.api.utils.input.Input;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -22,7 +18,6 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 import java.util.LinkedList;
-import java.util.Optional;
 
 public class UnstuckChain extends SingleTaskChain {
   private final LinkedList<Vec3d> _posHistory = new LinkedList<>();

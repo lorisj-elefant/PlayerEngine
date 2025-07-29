@@ -1,4 +1,3 @@
-// File: adris/altoclef/tasks/container/SmeltInFurnaceTask.java
 package adris.altoclef.tasks.container;
 
 import adris.altoclef.AltoClefController;
@@ -37,7 +36,7 @@ import java.util.Optional;
 public class SmeltInFurnaceTask extends ResourceTask {
 
   private final SmeltTarget[] _targets;
-  private final TimerGame _smeltTimer = new TimerGame(10); // 10 секунд на плавку одного предмета
+  private final TimerGame _smeltTimer = new TimerGame(10);
   private BlockPos _furnacePos = null;
   private boolean _isSmelting = false;
 

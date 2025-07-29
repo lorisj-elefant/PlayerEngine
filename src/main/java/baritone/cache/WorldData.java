@@ -23,7 +23,10 @@ import baritone.api.cache.IWaypointCollection;
 import baritone.api.cache.IWorldData;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.RegistryKey;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+
+import java.util.ArrayList;
 
 /**
  * Data about a world, from baritone's point of view. Includes cached chunks, waypoints, and map data.
@@ -55,7 +58,18 @@ public class WorldData implements IWorldData {
 
     @Override
     public ICachedWorld getCachedWorld() {
-        throw new UnsupportedOperationException();
+        return new ICachedWorld(){
+
+            @Override
+            public boolean isCached(int blockX, int blockZ) {
+                return false;
+            }
+
+            @Override
+            public ArrayList<BlockPos> getLocationsOf(String block, int maximum, int centerX, int centerZ, int maxRegionDistanceSq) {
+                return new ArrayList<>();
+            }
+        };
     }
 
     @Override

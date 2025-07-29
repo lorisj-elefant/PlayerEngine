@@ -15,7 +15,6 @@ import java.util.Optional;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.Vec3d;
 
 public class PlayerDefenseChain extends SingleTaskChain {
@@ -40,7 +39,10 @@ public class PlayerDefenseChain extends SingleTaskChain {
   public PlayerDefenseChain(TaskRunner runner) {
     super(runner);
     this.mod = runner.getMod();
-    EventBus.subscribe(PlayerDamageEvent.class, evt -> onPlayerDamage(evt.source.getAttacker()));
+    EventBus.subscribe(PlayerDamageEvent.class, evt -> {
+      if(controller.getPlayer()!=evt.target) return;
+      onPlayerDamage(evt.source.getAttacker());
+    });
     EventBus.subscribe(EntitySwungEvent.class, evt -> onEntitySwung(evt.entity));
   }
   
@@ -119,15 +121,15 @@ public class PlayerDefenseChain extends SingleTaskChain {
   public float getPriority() {
     if (this._currentlyAttackingPlayer != null) {
       Optional<PlayerEntity> currentPlayerEntity = controller.getEntityTracker().getPlayerEntity(this._currentlyAttackingPlayer);
-      if (!currentPlayerEntity.isPresent() || !((PlayerEntity)currentPlayerEntity.get()).isAlive())
+      if (!currentPlayerEntity.isPresent() || !currentPlayerEntity.get().isAlive())
         this._currentlyAttackingPlayer = null; 
     } 
-    String[] playerNames = (String[])this._damageTargets.keySet().toArray(x$0 -> new String[x$0]);
+    String[] playerNames = this._damageTargets.keySet().toArray(x$0 -> new String[x$0]);
     for (String potentialAttacker : playerNames) {
       if (potentialAttacker == null) {
         this._damageTargets.remove(potentialAttacker);
       } else {
-        PlayerEntity potentialPlayer = controller.getEntityTracker().getPlayerEntity(potentialAttacker).orElse(null);
+        LivingEntity potentialPlayer = controller.getEntityTracker().getPlayerEntity(potentialAttacker).orElse(null);
         if (potentialPlayer == null || !potentialPlayer.isAlive() || ((DamageTarget)this._damageTargets.get(potentialAttacker)).forgetAttackTimer.elapsed()) {
           System.out.println("Either forgot or killed player: " + potentialAttacker + " (no longer attacking)");
           this._damageTargets.remove(potentialAttacker);

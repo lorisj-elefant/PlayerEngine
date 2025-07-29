@@ -2,9 +2,6 @@ package adris.altoclef.trackers;
 
 import adris.altoclef.AltoClefController;
 import adris.altoclef.Debug;
-import adris.altoclef.eventbus.EventBus;
-import adris.altoclef.eventbus.events.ChunkLoadEvent;
-import adris.altoclef.eventbus.events.ChunkUnloadEvent;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -12,6 +9,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 
@@ -22,8 +20,12 @@ public class SimpleChunkTracker {
   
   public SimpleChunkTracker(AltoClefController mod) {
     this.mod = mod;
-    EventBus.subscribe(ChunkLoadEvent.class, evt -> onLoad(evt.chunk.getPos()));
-    EventBus.subscribe(ChunkUnloadEvent.class, evt -> onUnload(evt.chunkPos));
+    ServerChunkEvents.CHUNK_LOAD.register((evt, chunk)-> {
+      onLoad(chunk.getPos());
+    });
+    ServerChunkEvents.CHUNK_UNLOAD.register((evt, chunk)->{
+      onUnload(chunk.getPos());
+    });
   }
   
   private void onLoad(ChunkPos pos) {

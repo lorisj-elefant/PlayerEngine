@@ -23,7 +23,7 @@
     "entrypoints": {
       "init": "baritone.Automatone",
       "client_init": "baritone.AutomatoneClient",
-      "cardinal-components": "baritone.AutomatoneComponents"
+      "cardinal-components": "io.github.ladysnake.otomaton.AutomatoneComponents"
     },
     "depends": [
       {
@@ -47,13 +47,14 @@
         "version": "*"
       }]
   },
-  "mixin": "mixins.automatone.json",
+  "mixin": ["mixins.automatone.json","mixins.altoclef.json"],
   "minecraft": {
     "environment": "*"
   },
   "cardinal-components": [
     "automatone:core",
     "automatone:controller",
+    "altoclef:controller",
     "automatone:selection_manager",
     "automatone:world_data_provider"
   ]

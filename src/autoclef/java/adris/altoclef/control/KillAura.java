@@ -127,7 +127,7 @@ public class KillAura {
   }
 
   public float getAttackCooldownProgressPerTick(LivingEntity entity) {
-    return (float)((double)1.0F / entity.getAttributeValue(EntityAttributes.GENERIC_ATTACK_SPEED) * (double)20.0F);
+    return (float)((double)1.0F / 4f * (double)20.0F);
   }
 
   public float getAttackCooldownProgress(LivingEntity entity, float baseTime) {

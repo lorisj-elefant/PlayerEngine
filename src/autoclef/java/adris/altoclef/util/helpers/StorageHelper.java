@@ -1,4 +1,3 @@
-// File: adris/altoclef/util/helpers/StorageHelper.java
 package adris.altoclef.util.helpers;
 
 import adris.altoclef.AltoClefController;
@@ -6,10 +5,12 @@ import adris.altoclef.Debug;
 import adris.altoclef.multiversion.item.ItemVer;
 import adris.altoclef.util.ItemTarget;
 import adris.altoclef.util.MiningRequirement;
+import adris.altoclef.util.Pair;
 import adris.altoclef.util.RecipeTarget;
 import adris.altoclef.util.slots.Slot;
 import baritone.api.entity.IInventoryProvider;
 import baritone.api.entity.LivingEntityInventory;
+import baritone.utils.ToolSet;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.AbstractFurnaceBlockEntity;
@@ -24,17 +25,11 @@ import java.util.function.Predicate;
 
 public class StorageHelper {
 
-  /**
-   * @return Возвращает ItemStack в указанном слоте.
-   */
   public static ItemStack getItemStackInSlot(Slot slot) {
     if (slot == null || slot.equals(Slot.UNDEFINED)) return ItemStack.EMPTY;
     return slot.getStack();
   }
 
-  /**
-   * @return Возвращает ItemStack в симулированном курсоре.
-   */
   public static ItemStack getItemStackInCursorSlot(AltoClefController controller) {
     return controller.getSlotHandler().getCursorStack();
   }
@@ -115,10 +110,8 @@ public class StorageHelper {
   }
 
   public static Optional<Slot> getBestToolSlot(AltoClefController controller, BlockState state) {
-    // This logic requires Automatone's ToolSet, which would be part of the IBaritone interface.
-    // It iterates through the entity's inventory to find the best tool.
-    // TODO: Implement with Automatone's ToolSet
-    return Optional.empty();
+    int bestSlot = new ToolSet(controller.getPlayer()).getBestSlot(state.getBlock(), false);
+    return Optional.of(new Slot(controller.getInventory().main, bestSlot));
   }
 
   public static boolean shouldSaveStack(AltoClefController controller, Block block, ItemStack stack) {
@@ -172,7 +165,7 @@ public class StorageHelper {
   }
 
   public static boolean hasRecipeMaterialsOrTarget(AltoClefController controller, RecipeTarget... targets) {
-    HashMap<Item, Integer> required = new HashMap<>();
+    HashMap<Item, Pair<ItemTarget, Integer>> required = new HashMap<>();
     for (RecipeTarget target : targets) {
       int craftsNeeded = (int) Math.ceil((double) (target.getTargetCount() - controller.getItemStorage().getItemCount(target.getOutputItem())) / target.getRecipe().outputCount());
       if (craftsNeeded <= 0) continue;
@@ -180,12 +173,13 @@ public class StorageHelper {
       for (ItemTarget ingredient : target.getRecipe().getSlots()) {
         if (ingredient == null || ingredient.isEmpty()) continue;
         Item item = ingredient.getMatches()[0];
-        required.put(item, required.getOrDefault(item, 0) + ingredient.getTargetCount() * craftsNeeded);
+        required.put(item, new Pair<>(ingredient, required.getOrDefault(item, new Pair<>(ingredient,0)).getRight() + ingredient.getTargetCount() * craftsNeeded));
       }
     }
 
     for (Item item : required.keySet()) {
-      if (controller.getItemStorage().getItemCount(item) < required.get(item)) {
+      Pair<ItemTarget, Integer> req = required.get(item);
+      if (controller.getItemStorage().getItemCount(req.getLeft()) < req.getRight()) {
         return false;
       }
     }

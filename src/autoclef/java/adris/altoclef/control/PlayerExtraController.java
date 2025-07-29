@@ -14,22 +14,18 @@ public class PlayerExtraController {
   
   private BlockPos blockBreakPos;
   
-  private double blockBreakProgress;
-  
   public PlayerExtraController(AltoClefController mod) {
     this.mod = mod;
-    EventBus.subscribe(BlockBreakingEvent.class, evt -> onBlockBreak(evt.blockPos, evt.progress));
+    EventBus.subscribe(BlockBreakingEvent.class, evt -> onBlockBreak(evt.blockPos));
     EventBus.subscribe(BlockBreakingCancelEvent.class, evt -> onBlockStopBreaking());
   }
   
-  private void onBlockBreak(BlockPos pos, double progress) {
+  private void onBlockBreak(BlockPos pos) {
     this.blockBreakPos = pos;
-    this.blockBreakProgress = progress;
   }
   
   private void onBlockStopBreaking() {
     this.blockBreakPos = null;
-    this.blockBreakProgress = 0.0D;
   }
   
   public BlockPos getBreakingBlockPos() {
@@ -38,10 +34,6 @@ public class PlayerExtraController {
   
   public boolean isBreakingBlock() {
     return (this.blockBreakPos != null);
-  }
-  
-  public double getBreakingBlockProgress() {
-    return this.blockBreakProgress;
   }
   
   public boolean inRange(Entity entity) {

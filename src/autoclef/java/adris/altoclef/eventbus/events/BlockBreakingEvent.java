@@ -5,10 +5,7 @@ import net.minecraft.util.math.BlockPos;
 public class BlockBreakingEvent {
   public BlockPos blockPos;
   
-  public double progress;
-  
-  public BlockBreakingEvent(BlockPos blockPos, double progress) {
+  public BlockBreakingEvent(BlockPos blockPos) {
     this.blockPos = blockPos;
-    this.progress = progress;
   }
 }

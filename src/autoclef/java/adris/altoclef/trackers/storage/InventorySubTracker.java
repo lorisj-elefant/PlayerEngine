@@ -1,4 +1,3 @@
-// File: adris/altoclef/trackers/storage/InventorySubTracker.java
 package adris.altoclef.trackers.storage;
 
 import adris.altoclef.AltoClefController;

@@ -26,7 +26,7 @@ import baritone.api.command.argument.ICommandArgument;
 import baritone.api.command.exception.CommandException;
 import baritone.api.command.exception.CommandNotEnoughArgumentsException;
 import baritone.api.command.manager.ICommandManager;
-import baritone.api.entity.AutomatoneEntity;
+import baritone.api.entity.IAutomatone;
 import baritone.command.argument.ArgConsumer;
 import baritone.command.manager.BaritoneArgumentType;
 import baritone.command.manager.BaritoneCommandManager;
@@ -190,9 +190,11 @@ public final class DefaultCommands {
     private static int runCommand(ServerCommandSource source, Entity target, String command) throws CommandSyntaxException {
         if (!(target instanceof LivingEntity)) throw EntityArgumentType.ENTITY_NOT_FOUND_EXCEPTION.create();
         try {
-            List<AutomatoneEntity> automatoneEntities = target.getWorld().getEntitiesByClass(AutomatoneEntity.class, target.getBoundingBox().expand(100, 100, 100), (e)->true);
-            for(AutomatoneEntity entity: automatoneEntities){
-                runCommand(source, command, BaritoneAPI.getProvider().getBaritone(entity));
+            List<LivingEntity> automatoneEntities = target.getWorld().getEntitiesByClass(LivingEntity.class, target.getBoundingBox().expand(100, 100, 100), (e)->true);
+            for(LivingEntity entity: automatoneEntities){
+                if(entity instanceof IAutomatone) {
+                    runCommand(source, command, BaritoneAPI.getProvider().getBaritone(entity));
+                }
             }
             return Command.SINGLE_SUCCESS;
         } catch (baritone.api.command.exception.CommandException e) {

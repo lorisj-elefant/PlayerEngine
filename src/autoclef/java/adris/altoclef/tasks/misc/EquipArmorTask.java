@@ -1,4 +1,3 @@
-// File: adris/altoclef/tasks/misc/EquipArmorTask.java
 package adris.altoclef.tasks.misc;
 
 import adris.altoclef.AltoClefController;

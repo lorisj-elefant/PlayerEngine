@@ -17,7 +17,6 @@
 
 package io.github.ladysnake.otomaton;
 
-import baritone.api.entity.AutomatoneEntity;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricEntityTypeBuilder;
 import net.minecraft.entity.EntityDimensions;

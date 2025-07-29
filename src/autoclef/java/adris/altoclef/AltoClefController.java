@@ -34,19 +34,15 @@ import baritone.api.entity.LivingEntityInventory;
 import baritone.api.utils.IEntityContext;
 import baritone.api.utils.IInteractionController;
 import baritone.autoclef.AltoClefSettings;
-import dev.onyxstudios.cca.api.v3.component.tick.ServerTickingComponent;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.Inventory;
 import net.minecraft.item.Item;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
 
 import java.util.Arrays;
 import java.util.List;
 
-public class AltoClefController implements ServerTickingComponent {
-
+public class AltoClefController {
     private final IBaritone _baritone;
     private final IEntityContext _ctx;
 
@@ -80,12 +76,8 @@ public class AltoClefController implements ServerTickingComponent {
 
     private boolean _paused = false;
     private Task _storedTask;
-
-    // AI Command & API
     private AICommandBridge aiBridge;
     private static long lastHeartbeatTime = System.nanoTime();
-
-    // stopping logic
     public boolean isStopping = false;
 
     private PlayerEntity owner;
@@ -93,21 +85,18 @@ public class AltoClefController implements ServerTickingComponent {
     public AltoClefController(IBaritone baritone) {
         this._baritone = baritone;
         this._ctx = baritone.getEntityContext();
-
-        // Инициализация всех систем. Это заменяет onInitializeLoad()
         _commandExecutor = new CommandExecutor(this);
         _taskRunner = new TaskRunner(this);
         _trackerManager = new TrackerManager(this);
         _userTaskChain = new UserTaskChain(_taskRunner);
         _mobDefenseChain = new MobDefenseChain(_taskRunner);
-        //new DeathMenuChain(_taskRunner); // TODO: Адаптировать под сервер
-        new PlayerInteractionFixChain(_taskRunner); // TODO: Адаптировать под сервер
+        new PlayerInteractionFixChain(_taskRunner);
         _mlgBucketChain = new MLGBucketFallChain(_taskRunner);
         new UnstuckChain(_taskRunner);
         new PreEquipItemChain(_taskRunner);
         new WorldSurvivalChain(_taskRunner);
         _foodChain = new FoodChain(_taskRunner);
-        new PlayerDefenseChain(_taskRunner); // TODO: Адаптировать под сервер
+        new PlayerDefenseChain(_taskRunner);
 
         _storageTracker = new ItemStorageTracker(this, _trackerManager, container -> this._containerSubTracker = container);
         _entityTracker = new EntityTracker(_trackerManager);
@@ -126,8 +115,6 @@ public class AltoClefController implements ServerTickingComponent {
         _botBehaviour = new BotBehaviour(this);
         initializeCommands();
 
-        // Загрузка настроек. На сервере может потребоваться другая логика,
-        // но пока сохраняем оригинальную для портирования.
         Settings.load(newSettings -> {
             this._settings = newSettings;
             List<Item> baritoneCanPlace = Arrays.stream(this._settings.getThrowawayItems(this,true)).toList();
@@ -145,10 +132,7 @@ public class AltoClefController implements ServerTickingComponent {
         Playground.IDLE_TEST_INIT_FUNCTION(this);
     }
 
-    // Этот метод будет вызываться каждый серверный тик благодаря ServerTickingComponent
-    @Override
     public void serverTick() {
-        // Логика из onClientTick()
         _inputControls.onTickPre();
         _storageTracker.setDirty();
         _miscBlockTracker.tick();
@@ -156,6 +140,7 @@ public class AltoClefController implements ServerTickingComponent {
         _blockScanner.tick();
         _taskRunner.tick();
         _inputControls.onTickPost();
+        _baritone.serverTick();
 
         long now = System.nanoTime();
         if (now - lastHeartbeatTime > 60_000_000_000L) {
@@ -179,8 +164,6 @@ public class AltoClefController implements ServerTickingComponent {
     }
 
     private void initializeBaritoneSettings() {
-        // Этот метод полностью переносится, так как он работает с настройками Baritone,
-        // которые теперь являются частью Automatone и доступны через IBaritone API.
         getExtraBaritoneSettings().canWalkOnEndPortal(false);
         getExtraBaritoneSettings().avoidBlockPlace(_entityStuckTracker::isBlockedByEntity);
         getExtraBaritoneSettings().avoidBlockBreak(_userBlockRangeTracker::isNearUserTrackedBlock);
@@ -194,8 +177,6 @@ public class AltoClefController implements ServerTickingComponent {
         getBaritoneSettings().allowParkourPlace.set(false);
         getBaritoneSettings().allowDiagonalDescend.set(false);
         getBaritoneSettings().allowDiagonalAscend.set(false);
-        // blocksToAvoid и другие списки нужно будет заполнить, используя Registries.BLOCK
-        // ... (логика заполнения списков)
         getBaritoneSettings().fadePath.set(true);
         getBaritoneSettings().mineScanDroppedItems.set(false);
         getBaritoneSettings().mineDropLoiterDurationMSThanksLouca.set(0L);
@@ -209,8 +190,6 @@ public class AltoClefController implements ServerTickingComponent {
 
     private void initializeCommands() {
         try {
-            // Система команд потребует полной переработки для интеграции с серверными командами Automatone,
-            // но пока оставляем вызов для сохранения структуры.
             AltoClefCommands.init(this);
         } catch (Exception e) {
             e.printStackTrace();
@@ -326,24 +305,12 @@ public class AltoClefController implements ServerTickingComponent {
         return _mlgBucketChain;
     }
 
-    // --- Logging ---
-    // TODO: Адаптировать под серверную отправку сообщений
     public void log(String message) {
         Debug.logMessage(message);
     }
 
     public void logWarning(String message) {
         Debug.logWarning(message);
-    }
-
-    @Override
-    public void readFromNbt(NbtCompound nbtCompound) {
-
-    }
-
-    @Override
-    public void writeToNbt(NbtCompound nbtCompound) {
-
     }
 
     public static boolean inGame(){
@@ -377,9 +344,7 @@ public class AltoClefController implements ServerTickingComponent {
     public void setChatClefEnabled(boolean enabled) {
         getAiBridge().setEnabled(enabled);
         if (!enabled) {
-            // actually stop tasks
             getUserTaskChain().cancel(this);
-            // also disable idle, but we can re-enable it as soon as any task runs
             getTaskRunner().disable();
         }
     }
@@ -391,7 +356,6 @@ public class AltoClefController implements ServerTickingComponent {
             int end = Math.min(start + maxLength, message.length());
             String chunk = message.substring(start, end);
             if (chunk.length() > 0 && !chunk.isBlank()) {
-                //only send if not whitespace and is not empty
                 Debug.logCharacterMessage(chunk, character, isPublic);
             }
             start = end;

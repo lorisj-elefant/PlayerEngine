@@ -165,8 +165,20 @@ public class TaskCatalogue {
     shear("cobweb", Blocks.COBWEB, new Item[] { Items.COBWEB }).dontMineIfPresent();
     colorfulTasks("wool", color -> color.wool, (color, count) -> new CollectWoolTask(color.color, count.intValue()));
     shear("leaves", ItemHelper.itemsToBlocks(ItemHelper.LEAVES), ItemHelper.LEAVES).dontMineIfPresent();
-    for (CataloguedResource resource : woodTasks("leaves", woodItems -> woodItems.leaves, (woodItems, count) -> woodItems.isNetherWood() ? (new MineAndCollectTask(woodItems.leaves, count.intValue(), new Block[] { Block.getBlockFromItem(woodItems.leaves) }, MiningRequirement.HAND)).forceDimension(Dimension.NETHER) : new ShearAndCollectBlockTask(woodItems.leaves, count.intValue(), new Block[] { Block.getBlockFromItem(woodItems.leaves) })))
-      resource.dontMineIfPresent(); 
+    for (CataloguedResource resource : woodTasks(
+            "leaves",
+            woodItems -> woodItems.leaves,
+            (woodItems, count) -> {
+              if (woodItems.isNetherWood()) {
+                // Nether "leaves" aren't sheared, they can simply be mined.
+                return new MineAndCollectTask(woodItems.leaves, count, new Block[]{Block.getBlockFromItem(woodItems.leaves)}, MiningRequirement.HAND).forceDimension(Dimension.NETHER);
+              } else {
+                return new ShearAndCollectBlockTask(woodItems.leaves, count, Block.getBlockFromItem(woodItems.leaves));
+              }
+            })
+    ) {
+      resource.dontMineIfPresent();
+    }
     mine("bamboo", Blocks.BAMBOO, Items.BAMBOO);
     shear("vine", Blocks.VINE, new Item[] { Items.VINE }).dontMineIfPresent();
     shear("grass", Blocks.GRASS, new Item[] { Items.GRASS }).dontMineIfPresent();
@@ -594,8 +606,10 @@ public class TaskCatalogue {
     if (blocks.length != 0)
       result.mineIfPresent(); 
     result.forceDimension(Dimension.OVERWORLD);
-    if (nameToResourceTask.containsKey(name))
-      throw new IllegalStateException("Tried cataloguing " + name + " twice!"); 
+    if (nameToResourceTask.containsKey(name)) {
+      return result;
+      //throw new IllegalStateException("Tried cataloguing " + name + " twice!");
+    }
     nameToResourceTask.put(name, result);
     nameToItemMatches.put(name, matches);
     resourcesObtainable.addAll(Arrays.asList(matches));

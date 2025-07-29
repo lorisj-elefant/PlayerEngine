@@ -15,8 +15,9 @@
  * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package baritone;
+package io.github.ladysnake.otomaton;
 
+import baritone.KeepName;
 import baritone.api.BaritoneAPI;
 import baritone.api.IBaritone;
 import baritone.api.cache.IWorldProvider;
@@ -29,15 +30,21 @@ import dev.onyxstudios.cca.api.v3.entity.EntityComponentFactoryRegistry;
 import dev.onyxstudios.cca.api.v3.entity.EntityComponentInitializer;
 import dev.onyxstudios.cca.api.v3.world.WorldComponentFactoryRegistry;
 import dev.onyxstudios.cca.api.v3.world.WorldComponentInitializer;
-import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
 
 @KeepName
 public final class AutomatoneComponents implements EntityComponentInitializer, WorldComponentInitializer {
+
+
     @Override
     public void registerEntityComponentFactories(EntityComponentFactoryRegistry registry) {
-        registry.registerFor(LivingEntity.class, IInteractionController.KEY, EntityInteractionController::new);
-        registry.registerFor(LivingEntity.class, ISelectionManager.KEY, SelectionManager::new);
-        registry.registerFor(LivingEntity.class, IBaritone.KEY, BaritoneAPI.getProvider().componentFactory());
+        registry.registerFor(AutomatoneEntity.class, IInteractionController.KEY, EntityInteractionController::new);
+        registry.registerFor(AutomatoneEntity.class, ISelectionManager.KEY, SelectionManager::new);
+        registry.registerFor(AutomatoneEntity.class, IBaritone.KEY, BaritoneAPI.getProvider().componentFactory());
+
+        registry.registerFor(PlayerEntity.class, IInteractionController.KEY, EntityInteractionController::new);
+        registry.registerFor(PlayerEntity.class, ISelectionManager.KEY, SelectionManager::new);
+        registry.registerFor(PlayerEntity.class, IBaritone.KEY, BaritoneAPI.getProvider().componentFactory());
     }
 
     @Override

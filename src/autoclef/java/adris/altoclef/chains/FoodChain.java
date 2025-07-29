@@ -1,4 +1,3 @@
-// File: adris/altoclef/chains/FoodChain.java
 package adris.altoclef.chains;
 
 import adris.altoclef.AltoClefController;
@@ -7,24 +6,19 @@ import adris.altoclef.multiversion.FoodComponentWrapper;
 import adris.altoclef.multiversion.item.ItemVer;
 import adris.altoclef.tasks.resources.CollectFoodTask;
 import adris.altoclef.tasks.speedrun.DragonBreathTracker;
-import adris.altoclef.tasksystem.Task;
 import adris.altoclef.tasksystem.TaskRunner;
 import adris.altoclef.util.ItemTarget;
 import adris.altoclef.util.helpers.ConfigHelper;
-import adris.altoclef.util.helpers.ItemHelper;
 import adris.altoclef.util.helpers.WorldHelper;
 import baritone.api.utils.input.Input;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.entity.mob.HostileEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.util.Pair;
 import net.minecraft.util.math.BlockPos;
 
-import java.util.Objects;
 import java.util.Optional;
 
 public class FoodChain extends SingleTaskChain {
@@ -223,6 +217,10 @@ public class FoodChain extends SingleTaskChain {
 
   public void shouldStop(boolean shouldStopInput) {
     this.shouldStop = shouldStopInput;
+  }
+
+  public boolean isShouldStop(){
+    return shouldStop;
   }
 
   static class FoodChainConfig {

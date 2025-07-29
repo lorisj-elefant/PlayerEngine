@@ -3,13 +3,13 @@ package adris.altoclef.tasks.movement;
 import adris.altoclef.AltoClefController;
 import adris.altoclef.Debug;
 import adris.altoclef.eventbus.EventBus;
-import adris.altoclef.eventbus.Subscription;
-import adris.altoclef.eventbus.events.ChunkLoadEvent;
 import adris.altoclef.tasksystem.Task;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3d;
@@ -31,8 +31,6 @@ abstract class ChunkSearchTask extends Task {
   private boolean _first = true;
   
   private boolean _finished = false;
-  
-  private Subscription<ChunkLoadEvent> _onChunkLoad;
   
   public ChunkSearchTask(BlockPos startPoint) {
     this._startPoint = startPoint;
@@ -58,16 +56,15 @@ abstract class ChunkSearchTask extends Task {
       synchronized (this._searchMutex) {
         searchChunkOrQueueSearch(controller, startPos);
       } 
-    } 
-    this._onChunkLoad = EventBus.subscribe(ChunkLoadEvent.class, evt -> {
-          WorldChunk chunk = evt.chunk;
-          if (chunk == null)
-            return; 
-          synchronized (this._searchMutex) {
-            if (!this._searchedAlready.contains(chunk.getPos()))
-              this._justLoaded.add(chunk.getPos()); 
-          } 
-        });
+    }
+    ServerChunkEvents.CHUNK_LOAD.register((evt, chunk)->{
+      if (chunk == null)
+        return;
+      synchronized (this._searchMutex) {
+        if (!this._searchedAlready.contains(chunk.getPos()))
+          this._justLoaded.add(chunk.getPos());
+      }
+    });
   }
   
   protected Task onTick() {
@@ -108,7 +105,6 @@ abstract class ChunkSearchTask extends Task {
   }
   
   protected void onStop(Task interruptTask) {
-    EventBus.unsubscribe(this._onChunkLoad);
   }
   
   public boolean isFinished() {

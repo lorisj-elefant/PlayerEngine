@@ -1,11 +1,8 @@
 package adris.altoclef.player2api;
 
 import adris.altoclef.AltoClefController;
-import adris.altoclef.Debug;
 import adris.altoclef.commandsystem.Command;
 import adris.altoclef.commandsystem.CommandExecutor;
-import adris.altoclef.eventbus.EventBus;
-import adris.altoclef.eventbus.events.ChatMessageEvent;
 import adris.altoclef.player2api.status.AgentStatus;
 import adris.altoclef.player2api.status.StatusUtils;
 import adris.altoclef.player2api.status.WorldStatus;
@@ -16,7 +13,8 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import net.minecraft.network.message.MessageType;
+
+import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 
 public class AICommandBridge {
   private ConversationHistory conversationHistory = null;
@@ -52,24 +50,23 @@ public class AICommandBridge {
   public AICommandBridge(CommandExecutor cmdExecutor, AltoClefController mod) {
     this.mod = mod;
     this.cmdExecutor = cmdExecutor;
-    EventBus.subscribe(ChatMessageEvent.class, evt -> {
-          if (!getPlayerMode())
-            return; 
-          String message = evt.messageContent();
-          String sender = evt.senderName();
-          float distance = StatusUtils.getUserNameDistance(mod, sender);
-          if (distance > 200.0F) {
-            System.out.printf("[AIBridge/CharMessageEvent]/Ignoring message, distance too high: %.2f%n", new Object[] { Float.valueOf(distance) });
-            return;
-          } 
-          MessageType messageType = evt.messageType();
-          String receiver = mod.getPlayer().getName().getString();
-          System.out.printf("[AIBridge/CharMessageEvent]/MESSAGE (%s) SENDER (%s) MESSAGE TYPE (%s), DISTANCE(%.2f%n)", new Object[] { message, sender, messageType, Float.valueOf(distance) });
-          if (sender != null && !Objects.equals(sender, receiver)) {
-            String wholeMessage = "Other players: [" + sender + "] " + message;
-            addMessageToQueue(wholeMessage + "| Remember to roleplay as " + wholeMessage);
-          } 
-        });
+    ServerMessageEvents.CHAT_MESSAGE.register((evt, senderEntity, params) -> {
+      if (!getPlayerMode())
+        return;
+      String message = evt.getContent();
+      String sender = senderEntity.getName().getString();
+      float distance = StatusUtils.getUserNameDistance(mod, sender);
+      if (distance > 200.0F) {
+        System.out.printf("[AIBridge/CharMessageEvent]/Ignoring message, distance too high: %.2f%n", new Object[] { Float.valueOf(distance) });
+        return;
+      }
+      String receiver = mod.getPlayer().getName().getString();
+      System.out.printf("[AIBridge/CharMessageEvent]/MESSAGE (%s) SENDER (%s), DISTANCE(%.2f%n)", new Object[] { message, sender, Float.valueOf(distance) });
+      if (sender != null && !Objects.equals(sender, receiver)) {
+        String wholeMessage = "Other players: [" + sender + "] " + message;
+        addMessageToQueue(wholeMessage + "| Remember to roleplay as " + wholeMessage);
+      }
+    });
   }
   
   private void updateInfo() {

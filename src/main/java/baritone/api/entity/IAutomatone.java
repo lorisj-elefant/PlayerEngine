@@ -36,14 +36,6 @@ package baritone.api.entity;
 
 import baritone.api.IBaritone;
 
-/**
- * Player entities that implement this class:
- * <ul>
- *     <li>will <em>not</em> keep chunks loaded</li>
- *     <li>will <em>not</em> be counted in sleep checks</li>
- *     <li>should be counted as fake players by other mods</li>
- * </ul>
- */
 public interface IAutomatone {
     default IBaritone getBaritone() {
         return IBaritone.KEY.get(this);

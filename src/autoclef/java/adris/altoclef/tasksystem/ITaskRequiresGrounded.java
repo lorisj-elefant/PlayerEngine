@@ -13,7 +13,7 @@ public interface ITaskRequiresGrounded extends ITaskCanForce {
     if (interruptingCandidate instanceof ITaskOverridesGrounded)
       return false;
 
-    LivingEntity player = interruptingCandidate.controller.getPlayer();
+    LivingEntity player = ((Task)this).controller.getPlayer();
     return !(player.isOnGround() || player.isSwimming() || player.isTouchingWater() || player.isClimbing());
   }
 }

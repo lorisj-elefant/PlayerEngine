@@ -16,15 +16,18 @@ public class SatisfyMiningRequirementTask extends Task {
   protected void onStart() {}
   
   protected Task onTick() {
-    switch (this.requirement.ordinal()) {
-      case 2:
-        return (Task)TaskCatalogue.getItemTask(Items.WOODEN_PICKAXE, 1);
-      case 3:
-        return (Task)TaskCatalogue.getItemTask(Items.STONE_PICKAXE, 1);
-      case 4:
-        return (Task)TaskCatalogue.getItemTask(Items.IRON_PICKAXE, 1);
-      case 5:
-        return (Task)TaskCatalogue.getItemTask(Items.DIAMOND_PICKAXE, 1);
+    switch (this.requirement) {
+      case HAND:
+        // Will never happen if you program this right
+        break;
+      case WOOD:
+        return TaskCatalogue.getItemTask(Items.WOODEN_PICKAXE, 1);
+      case STONE:
+        return TaskCatalogue.getItemTask(Items.STONE_PICKAXE, 1);
+      case IRON:
+        return TaskCatalogue.getItemTask(Items.IRON_PICKAXE, 1);
+      case DIAMOND:
+        return TaskCatalogue.getItemTask(Items.DIAMOND_PICKAXE, 1);
     } 
     return null;
   }

@@ -1,4 +1,3 @@
-// File: adris/altoclef/tasks/construction/DestroyBlockTask.java
 package adris.altoclef.tasks.construction;
 
 import adris.altoclef.tasksystem.ITaskRequiresGrounded;

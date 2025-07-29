@@ -8,7 +8,7 @@ import java.util.function.Predicate;
 
 public abstract class Task {
 
-  protected AltoClefController controller;
+  public AltoClefController controller;
 
   private String oldDebugState = "";
   private String debugState = "";
@@ -185,6 +185,9 @@ public abstract class Task {
     // Our task can declare that is FORCES itself to be active NOW.
     return (subTask.thisOrChildSatisfies(task -> {
       if (task instanceof ITaskCanForce canForce) {
+        if(toInterruptWith!=null && toInterruptWith.controller==null){
+          toInterruptWith.controller = this.controller;
+        }
         return !canForce.shouldForce(toInterruptWith);
       }
       return true;

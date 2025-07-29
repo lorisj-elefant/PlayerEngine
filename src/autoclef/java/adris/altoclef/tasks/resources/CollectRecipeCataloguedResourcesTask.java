@@ -40,21 +40,24 @@ public class CollectRecipeCataloguedResourcesTask extends Task {
           CraftingRecipe recipe = target.getRecipe();
           for (int i = 0; i < recipe.getSlotCount(); i++) {
             ItemTarget slot = recipe.getSlot(i);
-            if (slot != null && !slot.isEmpty()) {
-              int numberOfRepeats = (int)Math.floor(-0.1D + weNeed / target.getRecipe().outputCount()) + 1;
-              if (!slot.isCatalogueItem()) {
-                if ((slot.getMatches()).length != 1) {
-                  if (!this._ignoreUncataloguedSlots)
-                    Debug.logWarning("Recipe collection for recipe " + String.valueOf(recipe) + " slot " + i + " is not catalogued. Please define an explicit collectRecipeSubTask() function for this item target:" + String.valueOf(slot)); 
-                } else {
-                  Item item = slot.getMatches()[0];
-                  itemCount.put(item, Integer.valueOf(((Integer)itemCount.getOrDefault(item, Integer.valueOf(0))).intValue() + numberOfRepeats));
-                } 
+            if (slot == null || slot.isEmpty()) continue;
+            int numberOfRepeats = (int) Math.floor(-0.1 + (double) weNeed / target.getRecipe().outputCount()) + 1;
+            if (!slot.isCatalogueItem()) {
+              if (slot.getMatches().length != 1) {
+                if (!_ignoreUncataloguedSlots) {
+                  Debug.logWarning("Recipe collection for recipe " + recipe + " slot " + i
+                          + " is not catalogued. Please define an explicit"
+                          + " collectRecipeSubTask() function for this item target:" + slot
+                  );
+                }
               } else {
-                String targetName = slot.getCatalogueName();
-                catalogueCount.put(targetName, Integer.valueOf(((Integer)catalogueCount.getOrDefault(targetName, Integer.valueOf(0))).intValue() + numberOfRepeats));
-              } 
-            } 
+                Item item = slot.getMatches()[0];
+                itemCount.put(item, itemCount.getOrDefault(item, 0) + numberOfRepeats);
+              }
+            } else {
+              String targetName = slot.getCatalogueName();
+              catalogueCount.put(targetName, catalogueCount.getOrDefault(targetName, 0) + numberOfRepeats);
+            }
           } 
         } 
       } 

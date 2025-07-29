@@ -45,9 +45,9 @@ public class EntityTracker extends Tracker {
   
   private final EntityLocateBlacklist entityBlacklist = new EntityLocateBlacklist();
   
-  private final HashMap<PlayerEntity, List<Entity>> entitiesCollidingWithPlayerAccumulator = new HashMap<>();
+  private final HashMap<LivingEntity, List<Entity>> entitiesCollidingWithPlayerAccumulator = new HashMap<>();
   
-  private final HashMap<PlayerEntity, HashSet<Entity>> entitiesCollidingWithPlayer = new HashMap<>();
+  private final HashMap<LivingEntity, HashSet<Entity>> entitiesCollidingWithPlayer = new HashMap<>();
   
   public EntityTracker(TrackerManager manager) {
     super(manager);
@@ -60,18 +60,18 @@ public class EntityTracker extends Tracker {
     return type;
   }
   
-  private void registerPlayerCollision(PlayerEntity player, Entity entity) {
+  private void registerPlayerCollision(LivingEntity player, Entity entity) {
     if (!this.entitiesCollidingWithPlayerAccumulator.containsKey(player))
       this.entitiesCollidingWithPlayerAccumulator.put(player, new ArrayList<>()); 
     this.entitiesCollidingWithPlayerAccumulator.get(player).add(entity);
   }
   
-  public boolean isCollidingWithPlayer(PlayerEntity player, Entity entity) {
+  public boolean isCollidingWithPlayer(LivingEntity player, Entity entity) {
     return (this.entitiesCollidingWithPlayer.containsKey(player) && ((HashSet)this.entitiesCollidingWithPlayer.get(player)).contains(entity));
   }
   
   public boolean isCollidingWithPlayer(Entity entity) {
-    return isCollidingWithPlayer((PlayerEntity)this.mod.getPlayer(), entity);
+    return isCollidingWithPlayer(this.mod.getPlayer(), entity);
   }
   
   public Optional<ItemEntity> getClosestItemDrop(Item... items) {
@@ -292,9 +292,9 @@ public class EntityTracker extends Tracker {
       if (mod.getWorld() == null)
         return; 
       this.entitiesCollidingWithPlayer.clear();
-      for (Map.Entry<PlayerEntity, List<Entity>> collisions : this.entitiesCollidingWithPlayerAccumulator.entrySet()) {
+      for (Map.Entry<LivingEntity, List<Entity>> collisions : this.entitiesCollidingWithPlayerAccumulator.entrySet()) {
         this.entitiesCollidingWithPlayer.put(collisions.getKey(), new HashSet<>());
-        ((HashSet)this.entitiesCollidingWithPlayer.get(collisions.getKey())).addAll(collisions.getValue());
+        this.entitiesCollidingWithPlayer.get(collisions.getKey()).addAll(collisions.getValue());
       } 
       this.entitiesCollidingWithPlayerAccumulator.clear();
       for (Entity entity : mod.getWorld().iterateEntities()) {
@@ -302,7 +302,7 @@ public class EntityTracker extends Tracker {
         type = squashType(type);
         if (entity == null || !entity.isAlive())
           continue; 
-        if (type == PlayerEntity.class && entity.equals(this.mod.getPlayer()))
+        if (type == LivingEntity.class && entity.equals(this.mod.getPlayer()))
           continue; 
         if (!this.entityMap.containsKey(type))
           this.entityMap.put(type, new ArrayList<>()); 

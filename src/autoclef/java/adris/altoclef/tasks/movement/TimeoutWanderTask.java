@@ -172,7 +172,7 @@ public class TimeoutWanderTask extends Task implements ITaskRequiresGrounded {
       List<Entity> closeEntities = mod.getEntityTracker().getCloseEntities();
       for (Entity CloseEntities : closeEntities) {
         if (CloseEntities instanceof net.minecraft.entity.mob.MobEntity && CloseEntities
-          .getPos().isInRange((Position)mod.getPlayer().getPos(), 1.0D)) {
+          .getPos().isInRange((Position)mod.getPlayer().getPos(), 1.0D) && (CloseEntities!=mod.getEntity())) {
           setDebugState("Killing annoying entity.");
           return (Task)new KillEntitiesTask(new Class[] { CloseEntities.getClass() });
         } 

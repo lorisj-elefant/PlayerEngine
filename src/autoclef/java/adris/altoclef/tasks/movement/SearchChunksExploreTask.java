@@ -3,12 +3,12 @@ package adris.altoclef.tasks.movement;
 import adris.altoclef.AltoClefController;
 import adris.altoclef.Debug;
 import adris.altoclef.eventbus.EventBus;
-import adris.altoclef.eventbus.Subscription;
-import adris.altoclef.eventbus.events.ChunkLoadEvent;
 import adris.altoclef.tasksystem.Task;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.minecraft.util.math.ChunkPos;
 
 public abstract class SearchChunksExploreTask extends Task {
@@ -18,14 +18,14 @@ public abstract class SearchChunksExploreTask extends Task {
   
   private ChunkSearchTask searcher;
   
-  private Subscription<ChunkLoadEvent> _chunkLoadedSubscription;
-  
   protected ChunkPos getBestChunkOverride(AltoClefController mod, List<ChunkPos> chunks) {
     return null;
   }
   
   protected void onStart() {
-    this._chunkLoadedSubscription = EventBus.subscribe(ChunkLoadEvent.class, evt -> onChunkLoad(evt.chunk.getPos()));
+    ServerChunkEvents.CHUNK_LOAD.register((evt, chunk)->{
+      onChunkLoad(chunk.getPos());
+    });
     resetSearch();
   }
   
@@ -51,7 +51,6 @@ public abstract class SearchChunksExploreTask extends Task {
   }
   
   protected void onStop(Task interruptTask) {
-    EventBus.unsubscribe(this._chunkLoadedSubscription);
   }
   
   private void onChunkLoad(ChunkPos pos) {

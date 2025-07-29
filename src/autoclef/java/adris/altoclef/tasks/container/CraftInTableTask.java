@@ -1,4 +1,3 @@
-// File: adris/altoclef/tasks/container/CraftInTableTask.java
 package adris.altoclef.tasks.container;
 
 import adris.altoclef.AltoClefController;
@@ -74,7 +73,13 @@ public class CraftInTableTask extends ResourceTask {
       return null; // All target items have been crafted
     }
 
-    // 2. Find or place a crafting table
+    // 2. Collect resources for crafting
+    if (!StorageHelper.hasRecipeMaterialsOrTarget(controller, _targets)) {
+      setDebugState("Collecting ingredients");
+      return new CollectRecipeCataloguedResourcesTask(false, _targets);
+    }
+
+    // 3. Find or place a crafting table
     if (_craftingTablePos == null || !controller.getWorld().getBlockState(_craftingTablePos).isOf(Blocks.CRAFTING_TABLE)) {
       Optional<BlockPos> nearestTable = controller.getBlockScanner().getNearestBlock(Blocks.CRAFTING_TABLE);
       if (nearestTable.isPresent()) {
@@ -86,7 +91,7 @@ public class CraftInTableTask extends ResourceTask {
       }
     }
 
-    // 3. If table is needed but missing or far, get/build one
+    // 4. If table is needed but missing or far, get/build one
     if (_craftingTablePos == null) {
       if (controller.getItemStorage().hasItem(Items.CRAFTING_TABLE)) {
         setDebugState("Placing crafting table.");
@@ -96,16 +101,10 @@ public class CraftInTableTask extends ResourceTask {
       return TaskCatalogue.getItemTask(Items.CRAFTING_TABLE, 1);
     }
 
-    // 4. Go to the crafting table
+    // 5. Go to the crafting table
     if (!_craftingTablePos.isWithinDistance(new Vec3i((int) controller.getEntity().getPos().x, (int) controller.getEntity().getPos().y, (int) controller.getEntity().getPos().z), 3.5)) {
       setDebugState("Going to crafting table at: " + _craftingTablePos.toShortString());
       return new GetToBlockTask(_craftingTablePos);
-    }
-
-    // 5. Collect resources for crafting
-    if (!StorageHelper.hasRecipeMaterialsOrTarget(controller, _targets)) {
-      setDebugState("Collecting ingredients");
-      return new CollectRecipeCataloguedResourcesTask(false, _targets);
     }
 
     // 6. Perform the craft

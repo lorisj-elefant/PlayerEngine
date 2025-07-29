@@ -1,4 +1,3 @@
-// File: adris/altoclef/tasks/container/PickupFromContainerTask.java
 package adris.altoclef.tasks.container;
 
 import adris.altoclef.AltoClefController;

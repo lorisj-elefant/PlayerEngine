@@ -1,4 +1,3 @@
-// File: adris/altoclef/tasks/container/StoreInContainerTask.java
 package adris.altoclef.tasks.container;
 
 import adris.altoclef.Debug;

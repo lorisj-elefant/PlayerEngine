@@ -41,7 +41,7 @@ public class MovementProgressChecker {
         this.mineChecker.reset();
       } 
       this.lastBreakingBlock = breakBlock;
-      this.mineChecker.setProgress(Double.valueOf(mod.getControllerExtras().getBreakingBlockProgress()));
+      this.mineChecker.setProgress(0d);
       return !this.mineChecker.failed();
     } 
     this.mineChecker.reset();

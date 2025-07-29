@@ -104,10 +104,10 @@ public class MLGBucketTask extends Task {
     World world = controller.getWorld();
     LivingEntity clientPlayerEntity = controller.getPlayer();
     assert clientPlayerEntity != null;
-    double totalFallDistance = ((PlayerEntity)clientPlayerEntity).fallDistance + clientPlayerEntity.getY() - pos.getY() - 1.0D;
+    double totalFallDistance = (clientPlayerEntity).fallDistance + clientPlayerEntity.getY() - pos.getY() - 1.0D;
     double baseFallDamage = MathHelper.ceil(totalFallDistance - 3.0D);
     assert world != null;
-    return EntityHelper.calculateResultingPlayerDamage((PlayerEntity)clientPlayerEntity, DamageSourceVer.getFallDamageSource((World)world), baseFallDamage);
+    return EntityHelper.calculateResultingPlayerDamage(clientPlayerEntity, DamageSourceVer.getFallDamageSource((World)world), baseFallDamage);
   }
   
   private static void moveLeftRight(AltoClefController controller, int delta) {
