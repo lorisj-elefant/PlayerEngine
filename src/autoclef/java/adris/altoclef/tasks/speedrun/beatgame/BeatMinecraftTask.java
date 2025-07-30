@@ -1461,8 +1461,8 @@ public class BeatMinecraftTask extends Task {
             setDebugState("Crafting Ender Eyes");
             return (Task) TaskCatalogue.getItemTask(Items.ENDER_EYE, targetEyes);
         }
-        switch (WorldHelper.getCurrentDimension(mod).ordinal()) {
-            case 1:
+        switch (WorldHelper.getCurrentDimension(mod)) {
+            case OVERWORLD:
                 toGather = null;
                 maxPriority = 0.0D;
                 if (!this.gatherResources.isEmpty()) {
@@ -1556,7 +1556,7 @@ public class BeatMinecraftTask extends Task {
                     this.goToNetherTask = (Task) new DefaultGoToDimensionTask(Dimension.NETHER);
                 this.lastTask = this.goToNetherTask;
                 return this.goToNetherTask;
-            case 2:
+            case NETHER:
                 if (isTaskRunning(mod, (Task) this.safeNetherPortalTask))
                     return (Task) this.safeNetherPortalTask;
                 if (mod.getPlayer().getNetherPortalCooldown() != 0 && this.safeNetherPortalTask == null) {
@@ -1663,7 +1663,7 @@ public class BeatMinecraftTask extends Task {
                 }
                 this.gotToBiome = true;
                 return getEnderPearlTask(mod, enderPearlTarget);
-            case 3:
+            case END:
                 throw new UnsupportedOperationException("You're in the end. Don't collect eyes here.");
         }
         return null;

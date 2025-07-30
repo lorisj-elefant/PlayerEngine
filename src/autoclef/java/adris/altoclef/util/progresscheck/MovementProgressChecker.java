@@ -10,7 +10,7 @@ public class MovementProgressChecker {
   
   private final IProgressChecker<Double> mineChecker;
   
-  private BlockPos lastBreakingBlock = null;
+  public BlockPos lastBreakingBlock = null;
   
   public MovementProgressChecker(double distanceTimeout, double minDistance, double mineTimeout, double minMineProgress, int attempts) {
     this.distanceChecker = (IProgressChecker<Vec3d>)new ProgressCheckerRetry((IProgressChecker)new DistanceProgressChecker(distanceTimeout, minDistance), attempts);

@@ -81,6 +81,32 @@ public class SmeltInFurnaceTask extends ResourceTask {
       return null;
     }
 
+    // 3. Find a target to smelt
+    SmeltTarget currentTarget = null;
+    for (SmeltTarget target : _targets) {
+      if (controller.getItemStorage().getItemCount(target.getItem()) < target.getItem().getTargetCount()) {
+        currentTarget = target;
+        break;
+      }
+    }
+    if (currentTarget == null) {
+      Debug.logWarning("Smelting task is running, but all targets are met. This should not happen.");
+      return null;
+    }
+
+    // 4. Ensure we have materials
+    if (!controller.getItemStorage().hasItem(currentTarget.getMaterial())) {
+      setDebugState("Collecting materials for smelting: " + currentTarget.getMaterial());
+      return TaskCatalogue.getItemTask(currentTarget.getMaterial());
+    }
+
+    // 5. Ensure we have fuel
+    double fuelNeeded = 1; // Simplification: 1 fuel per operation
+    if (StorageHelper.calculateInventoryFuelCount(controller) < fuelNeeded) {
+      setDebugState("Collecting fuel.");
+      return new CollectFuelTask(fuelNeeded);
+    }
+
     // Find or place a furnace.
     if (_furnacePos == null || !controller.getWorld().getBlockState(_furnacePos).isOf(Blocks.FURNACE)) {
       Optional<BlockPos> nearestFurnace = controller.getBlockScanner().getNearestBlock(Blocks.FURNACE);
@@ -135,31 +161,7 @@ public class SmeltInFurnaceTask extends ResourceTask {
       return null;
     }
 
-    // 3. Find a target to smelt
-    SmeltTarget currentTarget = null;
-    for (SmeltTarget target : _targets) {
-      if (controller.getItemStorage().getItemCount(target.getItem()) < target.getItem().getTargetCount()) {
-        currentTarget = target;
-        break;
-      }
-    }
-    if (currentTarget == null) {
-      Debug.logWarning("Smelting task is running, but all targets are met. This should not happen.");
-      return null;
-    }
 
-    // 4. Ensure we have materials
-    if (!controller.getItemStorage().hasItem(currentTarget.getMaterial())) {
-      setDebugState("Collecting materials for smelting: " + currentTarget.getMaterial());
-      return TaskCatalogue.getItemTask(currentTarget.getMaterial());
-    }
-
-    // 5. Ensure we have fuel
-    double fuelNeeded = 1; // Simplification: 1 fuel per operation
-    if (((MixinAbstractFurnaceBlockEntity)furnace).getPropertyDelegate().get(0) <= 0 && StorageHelper.calculateInventoryFuelCount(controller) < fuelNeeded) {
-      setDebugState("Collecting fuel.");
-      return new CollectFuelTask(fuelNeeded);
-    }
 
     // 6. Put items into furnace
     ItemStack materialSlot = furnaceInventory.getStack(FurnaceSlot.INPUT_SLOT_MATERIALS);

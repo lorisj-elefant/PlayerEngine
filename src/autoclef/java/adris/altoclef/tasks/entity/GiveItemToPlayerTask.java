@@ -77,19 +77,23 @@ public class GiveItemToPlayerTask extends Task {
       LookHelper.lookAt(mod, targetPos);
       for (int i = 0; i < this.throwTarget.size(); i++) {
         ItemTarget target = this.throwTarget.get(i);
+        int neededToThrow = target.getTargetCount();
         if (target.getTargetCount() > 0) {
           Optional<Slot> has = mod.getItemStorage().getSlotsWithItemPlayerInventory(false, target.getMatches()).stream().findFirst();
           if (has.isPresent()) {
-            Slot currentlyPresent = has.get();
-            System.out.println("Currently present: " + String.valueOf(currentlyPresent));
-            if (Slot.isCursor(currentlyPresent)) {
-              ItemStack stack = StorageHelper.getItemStackInSlot(currentlyPresent);
-              target = new ItemTarget(target, target.getTargetCount() - stack.getCount());
-              this.throwTarget.set(i, target);
-              Debug.logMessage("THROWING: " + String.valueOf(has.get()));
-              return (Task)new ThrowCursorTask();
-            } 
-            mod.getSlotHandler().clickSlot(currentlyPresent, 0, SlotActionType.PICKUP);
+            Slot slot = has.get();
+            ItemStack stack = StorageHelper.getItemStackInSlot(slot);
+            int amountToThrow = Math.min(neededToThrow, stack.getCount());
+
+            // Выбрасываем предметы
+            mod.getSlotHandler().forceEquipSlot(mod, slot); // Выбираем слот (перемещаем в хотбар и выбираем)
+            mod.getPlayer().dropStack(mod.getPlayer().getMainHandStack(), amountToThrow).setPickupDelay(40);
+            mod.getInventory().setStack(mod.getInventory().selectedSlot, ItemStack.EMPTY);
+            // Обновляем счетчик того, что нужно выбросить
+            this.throwTarget.set(i, new ItemTarget(target, neededToThrow - amountToThrow));
+
+            // Возвращаемся, чтобы обработать следующий предмет в следующем тике.
+            // Это предотвращает спам и дает игре время обработать выброс.
             return null;
           } 
         } 

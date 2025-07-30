@@ -33,7 +33,7 @@ public class ContainerCache {
     this.itemCounts.clear();
     this._emptySlots = 0;
     int start = 0;
-    int end = screenHandler.size() - 36;
+    int end = screenHandler.size();
     boolean isFurnace = screenHandler instanceof net.minecraft.screen.FurnaceScreenHandler;
     for (int i = start; i < end; i++) {
       ItemStack stack = screenHandler.getStack(i).copy();

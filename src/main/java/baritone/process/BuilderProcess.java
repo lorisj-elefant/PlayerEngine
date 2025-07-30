@@ -465,10 +465,10 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
             int max = baritone.settings().buildRepeatCount.get();
             numRepeats++;
             if (repeat.equals(new Vec3i(0, 0, 0)) || (max != -1 && numRepeats >= max)) {
-                logDirect("Done building");
-                if (baritone.settings().desktopNotifications.get() && baritone.settings().notificationOnBuildFinished.get()) {
-                    NotificationHelper.notify("Done building", false);
-                }
+//                logDirect("Done building");
+//                if (baritone.settings().desktopNotifications.get() && baritone.settings().notificationOnBuildFinished.get()) {
+//                    NotificationHelper.notify("Done building", false);
+//                }
                 onLostControl();
                 return null;
             }

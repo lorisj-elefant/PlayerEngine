@@ -12,6 +12,7 @@ import adris.altoclef.util.SmeltTarget;
 import adris.altoclef.util.helpers.StorageHelper;
 import adris.altoclef.util.time.TimerGame;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.passive.*;
 import net.minecraft.item.Item;
@@ -20,6 +21,7 @@ import net.minecraft.item.ItemStack;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 public class CollectMeatTask extends Task {
 
@@ -30,6 +32,8 @@ public class CollectMeatTask extends Task {
           new CollectFoodTask.CookableFoodTarget("mutton", SheepEntity.class),
           new CollectFoodTask.CookableFoodTarget("rabbit", RabbitEntity.class)
   };
+  private static final double NEARBY_PICKUP_RADIUS = 15.0;
+
 
   private final double _unitsNeeded;
   private final TimerGame _checkNewOptionsTimer = new TimerGame(10);
@@ -76,12 +80,20 @@ public class CollectMeatTask extends Task {
 
     // Strategy: Find the best meat source.
     // 1. Pick up any dropped raw/cooked meat.
-    for (CollectFoodTask.CookableFoodTarget cookable : COOKABLE_MEATS) {
-      if (controller.getEntityTracker().itemDropped(cookable.getRaw(), cookable.getCooked())) {
-        setDebugState("Picking up dropped meat");
-        _currentResourceTask = new PickupDroppedItemTask(new ItemTarget(cookable.getRaw(), cookable.getCooked()), true);
-        return _currentResourceTask;
-      }
+//    for (CollectFoodTask.CookableFoodTarget cookable : COOKABLE_MEATS) {
+//      if (controller.getEntityTracker().itemDropped(cookable.getRaw(), cookable.getCooked())) {
+//        setDebugState("Picking up dropped meat");
+//        _currentResourceTask = new PickupDroppedItemTask(new ItemTarget(cookable.getRaw(), cookable.getCooked()), true);
+//        return _currentResourceTask;
+//      }
+//    }
+    Item[] allMeats = Arrays.stream(COOKABLE_MEATS).flatMap(meat -> Stream.of(meat.getRaw(), meat.getCooked())).toArray(Item[]::new);
+    Optional<ItemEntity> closestDrop = controller.getEntityTracker().getClosestItemDrop(controller.getPlayer().getPos(), allMeats);
+
+    if (closestDrop.isPresent() && closestDrop.get().distanceTo(controller.getPlayer()) < NEARBY_PICKUP_RADIUS) {
+      setDebugState("Picking up nearby dropped meat");
+      _currentResourceTask = new PickupDroppedItemTask(new ItemTarget(allMeats, 9999), true);
+      return _currentResourceTask;
     }
 
     // 2. Kill animals for meat (pick the best one).
