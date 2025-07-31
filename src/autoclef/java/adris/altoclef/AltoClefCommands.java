@@ -3,6 +3,8 @@ package adris.altoclef;
 import adris.altoclef.commands.AttackPlayerOrMobCommand;
 import adris.altoclef.commands.DepositCommand;
 import adris.altoclef.commands.EquipCommand;
+import adris.altoclef.commands.FarmCommand;
+import adris.altoclef.commands.FishCommand;
 import adris.altoclef.commands.FollowCommand;
 import adris.altoclef.commands.FoodCommand;
 import adris.altoclef.commands.GamerCommand;
@@ -23,6 +25,6 @@ import adris.altoclef.commandsystem.CommandException;
 public class AltoClefCommands {
   public static void init(AltoClefController controller) throws CommandException {
     controller.getCommandExecutor().registerNewCommand(new GetCommand(), new EquipCommand(), new DepositCommand(), new GotoCommand(), new IdleCommand(), new HeroCommand(), new LocateStructureCommand(), new StopCommand(), new FoodCommand(),
-            new MeatCommand(), new ReloadSettingsCommand(), new ResetMemoryCommand(), new GamerCommand(), new FollowCommand(), new GiveCommand(), new ScanCommand(), new AttackPlayerOrMobCommand(), new SetAIBridgeEnabledCommand());
+            new MeatCommand(), new ReloadSettingsCommand(), new ResetMemoryCommand(), new GamerCommand(), new FollowCommand(), new GiveCommand(), new ScanCommand(), new AttackPlayerOrMobCommand(), new SetAIBridgeEnabledCommand(), new FarmCommand(), new FishCommand());
   }
 }

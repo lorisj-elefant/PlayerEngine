@@ -94,7 +94,6 @@ dependencies {
 
     modImplementation "org.quiltmc:qsl:${qsl_version}+${minecraft_version}"
     modImplementation "org.quiltmc.quilted-fabric-api:quilted-fabric-api:${quilted_fabric_api_version}-${minecraft_version}"
-    //modImplementation "libs:chatclef:1.20.1-0.18.23"
     implementation 'com.google.code.findbugs:jsr305:3.0.2'
     modImplementation("dev.onyxstudios.cardinal-components-api:cardinal-components-base:${cca_version}") {
         transitive = false

@@ -29,22 +29,17 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(MobEntity.class)
-public abstract class MixinMobEntity extends LivingEntity {
+@Mixin(LivingEntity.class)
+public abstract class MixinMobEntity {
     @Shadow public abstract void setMovementSpeed(float movementSpeed);
-
-    protected MixinMobEntity(EntityType<? extends LivingEntity> entityType, World world) {
-        super(entityType, world);
-    }
-
 
     @Inject(method = "tickNewAi", at = @At("HEAD"), cancellable = true)
     private void cancelAiTick(CallbackInfo ci) {
-        if (BaritoneProvider.INSTANCE.isPathing(this)) {
+        if (BaritoneProvider.INSTANCE.isPathing((LivingEntity)(Object) this)) {
             // mobs tend to set their movement speed to 0, preventing any movement
-            float forwardSpeed = this.forwardSpeed;
-            this.setMovementSpeed((float) this.getAttributeValue(EntityAttributes.GENERIC_MOVEMENT_SPEED));
-            this.forwardSpeed = forwardSpeed;
+            float forwardSpeed = ((LivingEntity)(Object) this).forwardSpeed;
+            this.setMovementSpeed((float) ((LivingEntity)(Object) this).getAttributeValue(EntityAttributes.GENERIC_MOVEMENT_SPEED));
+            ((LivingEntity)(Object) this).forwardSpeed = forwardSpeed;
             ci.cancel();
         }
     }

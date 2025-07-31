@@ -22,7 +22,7 @@ public class MovementProgressChecker {
   }
   
   public MovementProgressChecker(int attempts) {
-    this(6.0D, 0.1D, 0.5D, 0.001D, attempts);
+    this(6.0D, 0.1D, 10.0D, 0.001D, attempts);
   }
   
   public MovementProgressChecker() {

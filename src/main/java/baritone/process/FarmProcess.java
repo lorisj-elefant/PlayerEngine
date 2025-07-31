@@ -141,7 +141,6 @@ public final class FarmProcess extends BaritoneProcessHelper implements IFarmPro
 
         Harvest(CropBlock blockCrops) {
             this(blockCrops, blockCrops::isMature);
-            // max age is 7 for wheat, carrots, and potatoes, but 3 for beetroot
         }
 
         Harvest(Block block, Predicate<BlockState> readyToHarvest) {
@@ -199,7 +198,6 @@ public final class FarmProcess extends BaritoneProcessHelper implements IFarmPro
         List<BlockPos> bonemealable = new ArrayList<>();
         List<BlockPos> openSoulsand = new ArrayList<>();
         for (BlockPos pos : locations) {
-            //check if the target block is out of range.
             if (range != 0 && pos.getSquaredDistance(center) > range * range) {
                 continue;
             }

@@ -41,7 +41,7 @@ public abstract class ResourceTask extends Task implements ITaskCanForce {
   private boolean _forceDimension = false;
   private Dimension _targetDimension;
   private ContainerCache currentContainer;
-  private boolean allowContainers = false;
+  protected boolean allowContainers = false;
 
   public ResourceTask(ItemTarget... itemTargets) {
     this._itemTargets = itemTargets;

@@ -83,8 +83,10 @@ public class Baritone implements IBaritone {
     private final IEntityContext playerContext;
 
     public BlockStateInterface bsi;
+    public AltoClefSettings altoClefSettings;
 
     public Baritone(LivingEntity player) {
+        this.altoClefSettings = new AltoClefSettings();
         this.settings = new Settings();
         this.gameEventHandler = new GameEventHandler(this);
 
@@ -217,7 +219,7 @@ public class Baritone implements IBaritone {
     }
 
     public AltoClefSettings getExtraBaritoneSettings() {
-        return AltoClefSettings.getInstance();
+        return altoClefSettings;
     }
 
     @Override

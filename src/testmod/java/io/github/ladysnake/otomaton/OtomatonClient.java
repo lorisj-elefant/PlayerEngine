@@ -17,14 +17,20 @@
 
 package io.github.ladysnake.otomaton;
 
+import io.github.ladysnake.otomaton.client.render.RenderAutomaton;
+import io.github.ladysnake.otomaton.network.AutomatonSpawnPacket;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 import net.minecraft.client.render.entity.ZombieEntityRenderer;
 import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.qsl.base.api.entrypoint.client.ClientModInitializer;
+import org.quiltmc.qsl.networking.api.client.ClientPlayNetworking;
 
 public class OtomatonClient implements ClientModInitializer {
     @Override
     public void onInitializeClient(ModContainer mod) {
         EntityRendererRegistry.register(Otomaton.FAKE_PLAYER, ZombieEntityRenderer::new);
+        EntityRendererRegistry.register(Otomaton.AUTOMATONE, RenderAutomaton::new);
+
+        ClientPlayNetworking.registerGlobalReceiver(Otomaton.SPAWN_PACKET_ID, AutomatonSpawnPacket::handle);
     }
 }

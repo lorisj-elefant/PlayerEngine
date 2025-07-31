@@ -27,7 +27,7 @@ import net.minecraft.world.GameRules;
 
 public class LivingEntityHungerManager {
     private int foodLevel = 20;
-    private float foodSaturationLevel = 5.0F;
+    private float foodSaturationLevel = 20.0F;
     private float exhaustion;
     private int foodTickTimer;
     private int prevFoodLevel = 20;

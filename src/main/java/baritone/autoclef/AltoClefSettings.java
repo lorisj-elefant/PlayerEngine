@@ -29,7 +29,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
 
 public class AltoClefSettings {
-    private static final AltoClefSettings _instance = new AltoClefSettings();
     private final Object breakMutex = new Object();
     private final Object placeMutex = new Object();
     private final Object propertiesMutex = new Object();
@@ -51,10 +50,6 @@ public class AltoClefSettings {
     private boolean canWalkOnEndPortal = false;
 
     public AltoClefSettings() {
-    }
-
-    public static AltoClefSettings getInstance() {
-        return _instance;
     }
 
     public void canWalkOnEndPortal(boolean canWalk) {

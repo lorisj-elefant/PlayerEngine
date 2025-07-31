@@ -56,7 +56,7 @@ public class LivingEntityInventory implements Inventory, Nameable {
     public final DefaultedList<ItemStack> offHand;
     private final List<DefaultedList<ItemStack>> combinedInventory;
     public int selectedSlot;
-    public final LivingEntity player;
+    public LivingEntity player;
     private int changeCount;
 
     public LivingEntityInventory(LivingEntity player) {

@@ -33,6 +33,8 @@ public class Otomaton implements ModInitializer {
     public static final Logger LOGGER = LogManager.getLogger("Otomaton");
     public static final String MOD_ID = "otomaton";
 
+    public static final Identifier SPAWN_PACKET_ID = new Identifier(MOD_ID, "spawn_automatone");
+
     public static Identifier id(String path) {
         return new Identifier(MOD_ID, path);
     }
@@ -47,8 +49,19 @@ public class Otomaton implements ModInitializer {
             .forceTrackedVelocityUpdates(true)
             .build();
 
+    public static final EntityType<AutomatoneEntity2> AUTOMATONE = FabricEntityTypeBuilder.<AutomatoneEntity2>createLiving()
+            .spawnGroup(SpawnGroup.MISC)
+            .entityFactory(AutomatoneEntity2::new)
+            .defaultAttributes(ZombieEntity::createAttributes)
+            .dimensions(EntityDimensions.changing(EntityType.PLAYER.getWidth(), EntityType.PLAYER.getHeight()))
+            .trackRangeBlocks(64)
+            .trackedUpdateRate(1)
+            .forceTrackedVelocityUpdates(true)
+            .build();
+
     @Override
     public void onInitialize() {
         Registry.register(Registries.ENTITY_TYPE, id("fake_player"), FAKE_PLAYER);
+        Registry.register(Registries.ENTITY_TYPE, id("automatone"), AUTOMATONE);
     }
 }

@@ -1,7 +1,6 @@
 package adris.altoclef.player2api;
 
-import adris.altoclef.player2api.Player2APIService;
-import adris.altoclef.player2api.Utils;
+import adris.altoclef.player2api.utils.Utils;
 import adris.altoclef.player2api.status.ObjectStatus;
 import com.google.gson.JsonObject;
 import java.io.BufferedReader;

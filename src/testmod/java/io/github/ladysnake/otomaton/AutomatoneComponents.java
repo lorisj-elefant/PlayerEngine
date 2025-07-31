@@ -45,6 +45,10 @@ public final class AutomatoneComponents implements EntityComponentInitializer, W
         registry.registerFor(PlayerEntity.class, IInteractionController.KEY, EntityInteractionController::new);
         registry.registerFor(PlayerEntity.class, ISelectionManager.KEY, SelectionManager::new);
         registry.registerFor(PlayerEntity.class, IBaritone.KEY, BaritoneAPI.getProvider().componentFactory());
+
+        registry.registerFor(AutomatoneEntity2.class, IInteractionController.KEY, EntityInteractionController::new);
+        registry.registerFor(AutomatoneEntity2.class, ISelectionManager.KEY, SelectionManager::new);
+        registry.registerFor(AutomatoneEntity2.class, IBaritone.KEY, BaritoneAPI.getProvider().componentFactory());
     }
 
     @Override

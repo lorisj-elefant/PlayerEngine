@@ -8,6 +8,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EquipmentSlot;
@@ -24,12 +25,12 @@ public class StatusUtils {
       ItemStack stack = mod.getBaritone().getEntityContext().inventory().getStack(i);
       if (!stack.isEmpty()) {
         String name = ItemHelper.stripItemName(stack.getItem());
-        counts.put(name, Integer.valueOf(((Integer)counts.getOrDefault(name, Integer.valueOf(0))).intValue() + stack.getCount()));
+        counts.put(name, counts.getOrDefault(name, 0) + stack.getCount());
       } 
     } 
     ObjectStatus status = new ObjectStatus();
     for (Map.Entry<String, Integer> entry : counts.entrySet())
-      status.add(entry.getKey(), ((Integer)entry.getValue()).toString()); 
+      status.add(entry.getKey(), entry.getValue().toString());
     return status.toString();
   }
   
@@ -46,56 +47,56 @@ public class StatusUtils {
   
   public static String getSpawnPosString(AltoClefController mod) {
     BlockPos spawnPos = mod.getWorld().getSpawnPos();
-    return String.format("(%d, %d, %d)", new Object[] { Integer.valueOf(spawnPos.getX()), Integer.valueOf(spawnPos.getY()), Integer.valueOf(spawnPos.getZ()) });
+    return String.format("(%d, %d, %d)", spawnPos.getX(), spawnPos.getY(), spawnPos.getZ());
   }
   
   public static String getTaskStatusString(AltoClefController mod) {
     List<Task> tasks = mod.getUserTaskChain().getTasks();
     if (tasks.isEmpty())
       return "No tasks currently running."; 
-    return ((Task)tasks.get(0)).toString();
+    return tasks.get(0).toString();
   }
   
   public static String getNearbyBlocksString(AltoClefController mod) {
     int radius = 12;
     BlockPos center = mod.getPlayer().getBlockPos();
     Map<String, Integer> blockCounts = new HashMap<>();
-    for (int dx = -12; dx <= 12; dx++) {
-      for (int dy = -12; dy <= 12; dy++) {
-        for (int dz = -12; dz <= 12; dz++) {
+    for (int dx = -radius; dx <= radius; dx++) {
+      for (int dy = -radius; dy <= radius; dy++) {
+        for (int dz = -radius; dz <= radius; dz++) {
           BlockPos pos = center.add(dx, dy, dz);
           String blockName = mod.getWorld().getBlockState(pos).getBlock().getTranslationKey().replace("block.minecraft.", "");
           if (!blockName.equals("air"))
-            blockCounts.put(blockName, Integer.valueOf(((Integer)blockCounts.getOrDefault(blockName, Integer.valueOf(0))).intValue() + 1)); 
+            blockCounts.put(blockName, blockCounts.getOrDefault(blockName, 0) + 1);
         } 
       } 
     } 
     ObjectStatus status = new ObjectStatus();
     for (Map.Entry<String, Integer> entry : blockCounts.entrySet())
-      status.add(entry.getKey(), ((Integer)entry.getValue()).toString()); 
+      status.add(entry.getKey(), entry.getValue().toString());
     return status.toString();
   }
   
   public static String getOxygenString(AltoClefController mod) {
-    return String.format("%s/300", new Object[] { Integer.toString(mod.getPlayer().getAir()) });
+    return String.format("%s/300", mod.getPlayer().getAir());
   }
   
   public static String getNearbyHostileMobs(AltoClefController mod) {
     int radius = 32;
     List<String> descriptions = new ArrayList<>();
-    for (Entity entity : mod.getEntityTracker().getCloseEntities()) {
-      if (entity instanceof net.minecraft.entity.mob.HostileEntity && entity.distanceTo((Entity)mod.getPlayer()) < 32.0F) {
+    for (Entity entity : mod.getWorld().iterateEntities()) {
+      if (entity instanceof net.minecraft.entity.mob.HostileEntity && entity.distanceTo(mod.getPlayer()) < radius) {
         String type = entity.getType().getTranslationKey();
         String niceName = type.replace("entity.minecraft.", "");
         String position = entity.getPos().floorAlongAxes(EnumSet.allOf(Direction.Axis.class)).toString();
-        descriptions.add(niceName + " at " + niceName);
+        descriptions.add(niceName + " at " + position);
       } 
     } 
     if (descriptions.isEmpty())
-      return String.format("no nearby hostile mobs within %d", new Object[] { Integer.valueOf(32) }); 
-    return "[" + String.join(",", (CharSequence[])descriptions.stream()
+      return String.format("no nearby hostile mobs within %d", radius);
+    return "[" + String.join(",", descriptions.stream()
         .map(s -> "\"" + s + "\"")
-        .toArray(x$0 -> new String[x$0])) + "]";
+        .toArray(String[]::new)) + "]";
   }
   
   public static String getEquippedArmorStatusString(AltoClefController mod) {
@@ -120,32 +121,31 @@ public class StatusUtils {
   }
   
   public static String getNearbyPlayers(AltoClefController mod) {
-    int radius = 32;
-    List<String> descriptions = new ArrayList<>();
+      List<String> descriptions = new ArrayList<>();
     for (Entity entity : mod.getEntityTracker().getCloseEntities()) {
       if (entity instanceof PlayerEntity) {
         PlayerEntity player = (PlayerEntity)entity;
-        if (entity.distanceTo((Entity)mod.getPlayer()) < 32.0F) {
+        if (entity.distanceTo(mod.getPlayer()) < 32.0F) {
           String username = player.getName().getString();
-          if (username != mod.getPlayer().getName().getString()) {
+          if (!Objects.equals(username, mod.getPlayer().getName().getString())) {
             String position = entity.getPos().floorAlongAxes(EnumSet.allOf(Direction.Axis.class)).toString();
-            descriptions.add(username + " at " + username);
+            descriptions.add(username + " at " + position);
           } 
         } 
       } 
     } 
     if (descriptions.isEmpty())
-      return String.format("no nearby users within %d", new Object[] { Integer.valueOf(32) }); 
-    return "[" + String.join(",", (CharSequence[])descriptions.stream()
+      return String.format("no nearby users within %d", 32);
+    return "[" + String.join(",", descriptions.stream()
         .map(s -> "\"" + s + "\"")
-        .toArray(x$0 -> new String[x$0])) + "]";
+        .toArray(String[]::new)) + "]";
   }
   
   public static float getUserNameDistance(AltoClefController mod, String targetUsername) {
     for (PlayerEntity player : mod.getWorld().getPlayers()) {
       String username = player.getName().getString();
       if (username.equals(targetUsername))
-        return player.distanceTo((Entity)mod.getPlayer()); 
+        return player.distanceTo(mod.getPlayer());
     } 
     return Float.MAX_VALUE;
   }
@@ -157,7 +157,7 @@ public class StatusUtils {
   public static String getTimeString(AltoClefController mod) {
     ObjectStatus status = new ObjectStatus();
     status.add("isDay", Boolean.toString(mod.getWorld().isDay()));
-    status.add("timeOfDay", String.format("%d/24,000", new Object[] { Long.valueOf(mod.getWorld().getTimeOfDay() % 24000L) }));
+    status.add("timeOfDay", String.format("%d/24,000", mod.getWorld().getTimeOfDay() % 24000L));
     return status.toString();
   }
   

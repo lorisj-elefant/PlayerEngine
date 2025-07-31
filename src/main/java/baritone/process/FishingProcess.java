@@ -51,10 +51,6 @@ import javax.annotation.Nullable;
 import java.util.Optional;
 import java.util.stream.StreamSupport;
 
-/**
- * Процесс автоматической рыбалки для Baritone.
- * Управляет поиском места, забросом удочки, ожиданием клева и сматыванием лески.
- */
 public final class FishingProcess extends BaritoneProcessHelper implements IBaritoneProcess {
 
     private enum State {
@@ -79,9 +75,6 @@ public final class FishingProcess extends BaritoneProcessHelper implements IBari
         super(baritone);
     }
 
-    /**
-     * Запускает процесс рыбалки.
-     */
     public void fish() {
         this.active = true;
         this.currentState = State.IDLE;
@@ -110,13 +103,13 @@ public final class FishingProcess extends BaritoneProcessHelper implements IBari
     @Override
     public PathingCommand onTick(boolean calcFailed, boolean isSafeToCancel) {
         if (findFishingRodSlot() == -1) {
-            logDirect("No fishing rod in hotbar!");
+            //logDirect("No fishing rod in hotbar!");
             onLostControl();
             return null;
         }
 
         if (calcFailed) {
-            logDirect("Failed to path to water, stopping.");
+            //logDirect("Failed to path to water, stopping.");
             onLostControl();
             return null;
         }
@@ -157,11 +150,11 @@ public final class FishingProcess extends BaritoneProcessHelper implements IBari
         Optional<BlockPos> spot = findWaterSpot();
         if (spot.isPresent()) {
             fishingSpot = spot.get().up();
-            logDirect("Found a fishing spot. Walking to " + fishingSpot);
+            //logDirect("Found a fishing spot. Walking to " + fishingSpot);
             currentState = State.WALKING_TO_WATER;
             return new PathingCommand(new GoalBlock(fishingSpot), PathingCommandType.SET_GOAL_AND_PATH);
         } else {
-            logDirect("No suitable water spot found nearby.");
+            //logDirect("No suitable water spot found nearby.");
             onLostControl();
             return null;
         }
@@ -170,7 +163,7 @@ public final class FishingProcess extends BaritoneProcessHelper implements IBari
     private PathingCommand handleWalkingState() {
         Goal goal = new GoalBlock(fishingSpot);
         if (goal.isInGoal(ctx.feetPos())) {
-            logDirect("Arrived at fishing spot.");
+            //logDirect("Arrived at fishing spot.");
             currentState = State.PREPARING_TO_CAST;
             timeoutTicks = 0;
             return new PathingCommand(null, PathingCommandType.REQUEST_PAUSE);
@@ -196,18 +189,18 @@ public final class FishingProcess extends BaritoneProcessHelper implements IBari
     private void handleCastingState() {
         equipFishingRod();
         useFishingRod(ctx.world(), ctx.entity(), Hand.MAIN_HAND);
-        logDirect("Casting line...");
+        //logDirect("Casting line...");
         currentState = State.WAITING_FOR_BITE;
         timeoutTicks = 0;
     }
 
     private void handleWaitingForBiteState() {
-        if (this.bobber == null || !this.bobber.isAlive() || timeoutTicks<30) {
+        if (this.bobber == null || !this.bobber.isAlive() || timeoutTicks<60) {
             this.bobber = findOurBobber();
-            if (this.bobber == null || timeoutTicks<30) {
+            if (this.bobber == null || timeoutTicks<60) {
                 timeoutTicks++;
-                if (timeoutTicks > 50) {
-                    logDirect("Bobber not found, recasting.");
+                if (timeoutTicks > 70) {
+                    //logDirect("Bobber not found, recasting.");
                     currentState = State.RECAST_DELAY;
                 }
                 return;
@@ -216,14 +209,14 @@ public final class FishingProcess extends BaritoneProcessHelper implements IBari
 
 
         if (this.bobber.getVelocity().y < -0.04) {
-            logDirect("Fish on the hook!");
+            //logDirect("Fish on the hook!");
             currentState = State.REELING_IN;
             return;
         }
 
         timeoutTicks++;
         if (timeoutTicks > 1200) {
-            logDirect("No bite for a long time, recasting.");
+            //logDirect("No bite for a long time, recasting.");
             currentState = State.RECAST_DELAY;
         }
     }
@@ -231,7 +224,7 @@ public final class FishingProcess extends BaritoneProcessHelper implements IBari
     private void handleReelingInState() {
         equipFishingRod();
         useFishingRod(ctx.world(), ctx.entity(), Hand.MAIN_HAND);
-        logDirect("Reeling in!");
+        //logDirect("Reeling in!");
         this.bobber = null;
         currentState = State.WAITING_FOR_ITEMS;
         timeoutTicks = 20;

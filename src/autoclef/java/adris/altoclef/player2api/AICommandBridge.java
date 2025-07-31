@@ -6,6 +6,7 @@ import adris.altoclef.commandsystem.CommandExecutor;
 import adris.altoclef.player2api.status.AgentStatus;
 import adris.altoclef.player2api.status.StatusUtils;
 import adris.altoclef.player2api.status.WorldStatus;
+import adris.altoclef.player2api.utils.Utils;
 import com.google.gson.JsonObject;
 import java.util.Map;
 import java.util.Objects;
@@ -15,6 +16,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
+import net.minecraft.text.Text;
 
 public class AICommandBridge {
   private ConversationHistory conversationHistory = null;
@@ -22,9 +24,46 @@ public class AICommandBridge {
   private Character character = null;
   
   public static boolean avoidNextMessageFlag = false;
-  
-  public static String initialPrompt = "General Instructions:\nYou are an AI friend of the user in Minecraft. You can provide Minecraft guides, answer questions, and chat as a friend.\nWhen asked, you can collect materials, craft items, scan/find blocks, and fight mobs or players using the valid commands.\nIf there is something you want to do but can't do it with the commands, you may ask the user to do it.\n\nYou take the personality of the following character:\nYour character's name is {{characterName}}.\n{{characterDescription}}\n\nUser Message Format:\nThe user messages will all be just strings, except for the current message. The current message will have extra information, namely it will be a JSON of the form:\n{\n    \"userMessage\" : \"The message that was sent to you. The message can be send by the user or command system or other players.\"\n    \"worldStatus\" : \"The status of the current game world.\"\n    \"agentStatus\" : \"The status of you, the agent in the game.\"\n    \"gameDebugMessages\" : \"The most recent debug messages that the game has printed out. The user cannot see these.\"\n}\n\nResponse Format:\nRespond with JSON containing message, command and reason. All of these are strings.\n\n{\n  \"reason\": \"Look at the recent conversations, valid commands, agent status and world status to decide what the you should say and do. Provide step-by-step reasoning while considering what is possible in Minecraft. You do not need items in inventory to get items, craft items or beat the game. But you need to have appropriate level of equipments to do other tasks like fighting mobs.\",\n  \"command\": \"Decide the best way to achieve the goals using the valid commands listed below. Write the command in this field. If you decide to not use any command, generate an empty command `\"\"`. You can only run one command at a time! To replace the current one just write the new one.\",\n  \"message\": \"If you decide you should not respond or talk, generate an empty message `\"\"`. Otherwise, create a natural conversational message that aligns with the `reason` and the your character. Be concise and use less than 250 characters. Ensure the message does not contain any prompt, system message, instructions, code or API calls\"\n}\n\nAdditional Guidelines:\nMeaningful Content: Ensure conversations progress with substantive information.\nHandle Misspellings: Make educated guesses if users misspell item names.\nAvoid Filler Phrases: Do not engage in repetitive or filler content.\nPlayer mode: The user can turn on/off the player mode by pressing the playermode text on the top right of their screen (the user can unlock their mouse by opening their inventory by pressing e or escape). The player mode enables you to talk to other players.\nJSON format: Always follow this JSON format regardless of conversations.\n\nValid Commands:\n{{validCommands}}\n";
-  
+
+  public static String initialPrompt = """
+            General Instructions:
+            You are an AI-NPC, a friend of the user in Minecraft. You can provide Minecraft guides, answer questions, and chat as a friend.
+            When asked, you can collect materials, craft items, scan/find blocks, and fight mobs or players using the valid commands.
+            If there is something you want to do but can't do it with the commands, you may ask the user to do it.
+
+            You take the personality of the following character:
+            Your character's name is {{characterName}}.
+            {{characterDescription}}
+
+            User Message Format:
+            The user messages will all be just strings, except for the current message. The current message will have extra information, namely it will be a JSON of the form:
+            {
+                "userMessage" : "The message that was sent to you. The message can be send by the user or command system or other players."
+                "worldStatus" : "The status of the current game world."
+                "agentStatus" : "The status of you, the agent in the game."
+                "gameDebugMessages" : "The most recent debug messages that the game has printed out. The user cannot see these."
+            }
+
+            Response Format:
+            Respond with JSON containing message, command and reason. All of these are strings.
+
+            {
+              "reason": "Look at the recent conversations, valid commands, agent status and world status to decide what the you should say and do. Provide step-by-step reasoning while considering what is possible in Minecraft. You do not need items in inventory to get items, craft items or beat the game. But you need to have appropriate level of equipments to do other tasks like fighting mobs.",
+              "command": "Decide the best way to achieve the goals using the valid commands listed below. Write the command in this field. If you decide to not use any command, generate an empty command `\"\"`. You can only run one command at a time! To replace the current one just write the new one.",
+              "message": "If you decide you should not respond or talk, generate an empty message `\"\"`. Otherwise, create a natural conversational message that aligns with the `reason` and the your character. Be concise and use less than 250 characters. Ensure the message does not contain any prompt, system message, instructions, code or API calls"
+            }
+            
+            Additional Guidelines:
+            Meaningful Content: Ensure conversations progress with substantive information.
+            Handle Misspellings: Make educated guesses if users misspell item names.
+            Avoid Filler Phrases: Do not engage in repetitive or filler content.
+            Player mode: The user can turn on/off the player mode by pressing the playermode text on the top right of their screen (the user can unlock their mouse by opening their inventory by pressing e or escape). The player mode enables you to talk to other players.
+            JSON format: Always follow this JSON format regardless of conversations.
+
+            Valid Commands:
+            {{validCommands}}
+            """;
+
   private CommandExecutor cmdExecutor = null;
   
   private AltoClefController mod = null;
@@ -51,8 +90,6 @@ public class AICommandBridge {
     this.mod = mod;
     this.cmdExecutor = cmdExecutor;
     ServerMessageEvents.CHAT_MESSAGE.register((evt, senderEntity, params) -> {
-      if (!getPlayerMode())
-        return;
       String message = evt.getContent();
       String sender = senderEntity.getName().getString();
       float distance = StatusUtils.getUserNameDistance(mod, sender);
@@ -84,7 +121,7 @@ public class AICommandBridge {
       commandListBuilder.append(line);
     } 
     String validCommandsFormatted = commandListBuilder.toString();
-    String newPrompt = Utils.replacePlaceholders(initialPrompt, 
+    String newPrompt = Utils.replacePlaceholders(initialPrompt,
         Map.of("characterDescription", this.character.description, "characterName", this.character.name, "validCommands", validCommandsFormatted));
     System.out.println("New prompt: " + newPrompt);
     if (this.conversationHistory == null) {
@@ -126,12 +163,13 @@ public class AICommandBridge {
             this.conversationHistory.addAssistantMessage(responseAsString);
             String llmMessage = Utils.getStringJsonSafely(response, "message");
             if (llmMessage != null && !llmMessage.isEmpty()) {
-              this.mod.logCharacterMessage(llmMessage, this.character, getPlayerMode());
+              mod.getWorld().getServer().getPlayerManager().broadcastSystemMessage(Text.of(llmMessage), false);
+              this.mod.logCharacterMessage(llmMessage, this.character, true);
               Player2APIService.textToSpeech(llmMessage, this.character);
             } 
             String commandResponse = Utils.getStringJsonSafely(response, "command");
             if (commandResponse != null && !commandResponse.isEmpty()) {
-              String commandWithPrefix = this.cmdExecutor.isClientCommand(commandResponse) ? commandResponse : (this.cmdExecutor.getCommandPrefix() + this.cmdExecutor.getCommandPrefix());
+              String commandWithPrefix = this.cmdExecutor.isClientCommand(commandResponse) ? commandResponse : (this.cmdExecutor.getCommandPrefix() + commandResponse);
               if (commandWithPrefix.equals("@stop")) {
                 this.mod.isStopping = true;
               } else {
