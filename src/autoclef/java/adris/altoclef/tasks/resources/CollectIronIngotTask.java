@@ -31,13 +31,10 @@ public class CollectIronIngotTask extends ResourceTask {
   protected void onResourceStop(AltoClefController mod, Task interruptTask) {
     mod.getBehaviour().pop();
   }
-  
+
+  @Override
   protected boolean isEqualResource(ResourceTask other) {
-    if (other instanceof adris.altoclef.tasks.resources.CollectIronIngotTask) {
-      adris.altoclef.tasks.resources.CollectIronIngotTask same = (adris.altoclef.tasks.resources.CollectIronIngotTask)other;
-      if (same.count == this.count);
-    } 
-    return false;
+    return other instanceof CollectIronIngotTask same && same.count == count;
   }
   
   protected String toDebugStringName() {

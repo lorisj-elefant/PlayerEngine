@@ -128,7 +128,7 @@ public abstract class CustomBaritoneGoalTask extends Task implements ITaskRequir
         return this.unstuckTask;
       }
       if(stuckCheck.lastBreakingBlock!=null){
-        controller.getBaritone().getPathingBehavior().forceCancel();
+        mod.getBaritone().getCustomGoalProcess().setGoalAndPath(this.cachedGoal);
       }
       this.stuckCheck.reset();
     } 

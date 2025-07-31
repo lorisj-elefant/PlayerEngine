@@ -207,6 +207,9 @@ public class TimeoutWanderTask extends Task implements ITaskRequiresGrounded {
       if (!this._forceExplore) {
         this.failCounter++;
         Debug.logMessage("Failed exploring.");
+        if(progressChecker.lastBreakingBlock!=null){
+
+        }
       } 
     } 
     return null;

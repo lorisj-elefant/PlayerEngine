@@ -64,10 +64,13 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.ItemEntity;
+import net.minecraft.entity.ai.control.LookControl;
 import net.minecraft.entity.mob.ZombieEntity;
+import net.minecraft.fluid.Fluid;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
+import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.Arm;
 import net.minecraft.world.World;
 
@@ -82,9 +85,16 @@ public class AutomatoneEntity extends ZombieEntity implements IAutomatone, IInve
         this.setStepHeight(0.6f);
         manager = new LivingEntityInteractionManager(this);
         inventory = new LivingEntityInventory(this);
+        hungerManager = new LivingEntityHungerManager();
         setCanPickUpLoot(true);
         if(!world.isClient)
             controller = new AltoClefController(IBaritone.KEY.get(this));
+        lookControl = new LookControl(this){
+            @Override
+            public void tick() {
+
+            }
+        };
     }
 
     @Override
@@ -120,6 +130,7 @@ public class AutomatoneEntity extends ZombieEntity implements IAutomatone, IInve
     public void tick() {
         manager.update();
         inventory.updateItems();
+        //hungerManager.update(this);
         goalSelector.clear((g)->true);
         targetSelector.clear((t)->true);
         setCanPickUpLoot(true);
@@ -156,6 +167,15 @@ public class AutomatoneEntity extends ZombieEntity implements IAutomatone, IInve
                 }
             }
         }
+    }
+
+    protected void swimUpward(TagKey<Fluid> tag) {
+        this.setVelocity(this.getVelocity().add((double)0.0F, (double)0.04F, (double)0.0F));
+    }
+
+    @Override
+    protected boolean canConvertInWater() {
+        return false;
     }
 
     @Override
