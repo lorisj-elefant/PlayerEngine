@@ -17,7 +17,7 @@
 
 package io.github.ladysnake.otomaton.client.render;
 
-import io.github.ladysnake.otomaton.AutomatoneEntity2;
+import io.github.ladysnake.otomaton.AutomatoneEntity;
 import io.github.ladysnake.otomaton.client.util.ImageDownloadAlt;
 import io.github.ladysnake.otomaton.client.util.ResourceDownloader;
 import net.minecraft.client.MinecraftClient;
@@ -28,7 +28,6 @@ import net.minecraft.client.render.entity.feature.ArmorFeatureRenderer;
 import net.minecraft.client.render.entity.feature.ElytraFeatureRenderer;
 import net.minecraft.client.render.entity.feature.HeadFeatureRenderer;
 import net.minecraft.client.render.entity.feature.PlayerHeldItemFeatureRenderer;
-import net.minecraft.client.render.entity.feature.ShoulderParrotFeatureRenderer;
 import net.minecraft.client.render.entity.feature.StuckArrowsFeatureRenderer;
 import net.minecraft.client.render.entity.feature.StuckStingersFeatureRenderer;
 import net.minecraft.client.render.entity.feature.TridentRiptideFeatureRenderer;
@@ -53,7 +52,7 @@ import net.minecraft.util.math.Vec3d;
 
 import java.io.File;
 
-public class RenderAutomaton extends LivingEntityRenderer<AutomatoneEntity2, PlayerEntityModel<AutomatoneEntity2>> {
+public class RenderAutomaton extends LivingEntityRenderer<AutomatoneEntity, PlayerEntityModel<AutomatoneEntity>> {
     public RenderAutomaton(EntityRendererFactory.Context ctx) {
         super(ctx, new PlayerEntityModel(ctx.getPart(EntityModelLayers.PLAYER), false), 0.5F);
         boolean slim = false;
@@ -66,17 +65,17 @@ public class RenderAutomaton extends LivingEntityRenderer<AutomatoneEntity2, Pla
         this.addFeature(new StuckStingersFeatureRenderer(this));
     }
 
-    public void render(AutomatoneEntity2 automatoneEntity, float f, float g, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i) {
+    public void render(AutomatoneEntity automatoneEntity, float f, float g, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i) {
         this.setModelPose(automatoneEntity);
         super.render(automatoneEntity, f, g, matrixStack, vertexConsumerProvider, i);
     }
 
-    public Vec3d getPositionOffset(AutomatoneEntity2 automatoneEntity2, float f) {
-        return automatoneEntity2.isInSneakingPose() ? new Vec3d((double) 0.0F, (double) -0.125F, (double) 0.0F) : super.getPositionOffset(automatoneEntity2, f);
+    public Vec3d getPositionOffset(AutomatoneEntity automatoneEntity, float f) {
+        return automatoneEntity.isInSneakingPose() ? new Vec3d((double) 0.0F, (double) -0.125F, (double) 0.0F) : super.getPositionOffset(automatoneEntity, f);
     }
 
-    private void setModelPose(AutomatoneEntity2 player) {
-        PlayerEntityModel<AutomatoneEntity2> playerEntityModel = (PlayerEntityModel) this.getModel();
+    private void setModelPose(AutomatoneEntity player) {
+        PlayerEntityModel<AutomatoneEntity> playerEntityModel = (PlayerEntityModel) this.getModel();
         if (player.isSpectator()) {
             playerEntityModel.setVisible(false);
             playerEntityModel.head.visible = true;
@@ -107,7 +106,7 @@ public class RenderAutomaton extends LivingEntityRenderer<AutomatoneEntity2, Pla
 
     }
 
-    private static BipedEntityModel.ArmPose getArmPose(AutomatoneEntity2 player, Hand hand) {
+    private static BipedEntityModel.ArmPose getArmPose(AutomatoneEntity player, Hand hand) {
         ItemStack itemStack = player.getStackInHand(hand);
         if (itemStack.isEmpty()) {
             return BipedEntityModel.ArmPose.EMPTY;
@@ -150,7 +149,7 @@ public class RenderAutomaton extends LivingEntityRenderer<AutomatoneEntity2, Pla
     }
 
     @Override
-    public Identifier getTexture(AutomatoneEntity2 npc) {
+    public Identifier getTexture(AutomatoneEntity npc) {
         if (npc.textureLocation == null) {
             try {
                 boolean fixSkin = true;
@@ -173,12 +172,12 @@ public class RenderAutomaton extends LivingEntityRenderer<AutomatoneEntity2, Pla
         }
     }
 
-    protected void scale(AutomatoneEntity2 automatoneEntity, MatrixStack matrixStack, float f) {
+    protected void scale(AutomatoneEntity automatoneEntity, MatrixStack matrixStack, float f) {
         float g = 0.9375F;
         matrixStack.scale(0.9375F, 0.9375F, 0.9375F);
     }
 
-    protected void setupTransforms(AutomatoneEntity2 automatoneEntity, MatrixStack matrixStack, float f, float g, float h) {
+    protected void setupTransforms(AutomatoneEntity automatoneEntity, MatrixStack matrixStack, float f, float g, float h) {
         float i = automatoneEntity.getLeaningPitch(h);
         if (automatoneEntity.isFallFlying()) {
             super.setupTransforms(automatoneEntity, matrixStack, f, g, h);

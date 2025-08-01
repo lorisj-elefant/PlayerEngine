@@ -35,20 +35,15 @@ import net.minecraft.entity.player.PlayerEntity;
 @KeepName
 public final class AutomatoneComponents implements EntityComponentInitializer, WorldComponentInitializer {
 
-
     @Override
     public void registerEntityComponentFactories(EntityComponentFactoryRegistry registry) {
-        registry.registerFor(AutomatoneEntity.class, IInteractionController.KEY, EntityInteractionController::new);
-        registry.registerFor(AutomatoneEntity.class, ISelectionManager.KEY, SelectionManager::new);
-        registry.registerFor(AutomatoneEntity.class, IBaritone.KEY, BaritoneAPI.getProvider().componentFactory());
-
         registry.registerFor(PlayerEntity.class, IInteractionController.KEY, EntityInteractionController::new);
         registry.registerFor(PlayerEntity.class, ISelectionManager.KEY, SelectionManager::new);
         registry.registerFor(PlayerEntity.class, IBaritone.KEY, BaritoneAPI.getProvider().componentFactory());
 
-        registry.registerFor(AutomatoneEntity2.class, IInteractionController.KEY, EntityInteractionController::new);
-        registry.registerFor(AutomatoneEntity2.class, ISelectionManager.KEY, SelectionManager::new);
-        registry.registerFor(AutomatoneEntity2.class, IBaritone.KEY, BaritoneAPI.getProvider().componentFactory());
+        registry.registerFor(AutomatoneEntity.class, IInteractionController.KEY, EntityInteractionController::new);
+        registry.registerFor(AutomatoneEntity.class, ISelectionManager.KEY, SelectionManager::new);
+        registry.registerFor(AutomatoneEntity.class, IBaritone.KEY, BaritoneAPI.getProvider().componentFactory());
     }
 
     @Override

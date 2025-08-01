@@ -163,7 +163,7 @@ public class AICommandBridge {
             this.conversationHistory.addAssistantMessage(responseAsString);
             String llmMessage = Utils.getStringJsonSafely(response, "message");
             if (llmMessage != null && !llmMessage.isEmpty()) {
-              mod.getWorld().getServer().getPlayerManager().broadcastSystemMessage(Text.of(llmMessage), false);
+              mod.getWorld().getServer().getPlayerManager().broadcastSystemMessage(Text.of("<"+character.shortName+"> "+ llmMessage), false);
               this.mod.logCharacterMessage(llmMessage, this.character, true);
               Player2APIService.textToSpeech(llmMessage, this.character);
             } 

@@ -17,20 +17,41 @@
 
 package io.github.ladysnake.otomaton;
 
+import com.mojang.blaze3d.platform.InputUtil;
+import io.github.ladysnake.otomaton.client.gui.CharacterSelectionScreen;
 import io.github.ladysnake.otomaton.client.render.RenderAutomaton;
 import io.github.ladysnake.otomaton.network.AutomatonSpawnPacket;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
-import net.minecraft.client.render.entity.ZombieEntityRenderer;
+import net.minecraft.client.option.KeyBind;
+import org.lwjgl.glfw.GLFW;
 import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.qsl.base.api.entrypoint.client.ClientModInitializer;
 import org.quiltmc.qsl.networking.api.client.ClientPlayNetworking;
 
 public class OtomatonClient implements ClientModInitializer {
+
+    private static KeyBind openCharacterScreenKeybind;
+
     @Override
     public void onInitializeClient(ModContainer mod) {
-        EntityRendererRegistry.register(Otomaton.FAKE_PLAYER, ZombieEntityRenderer::new);
         EntityRendererRegistry.register(Otomaton.AUTOMATONE, RenderAutomaton::new);
 
         ClientPlayNetworking.registerGlobalReceiver(Otomaton.SPAWN_PACKET_ID, AutomatonSpawnPacket::handle);
+        openCharacterScreenKeybind = KeyBindingHelper.registerKeyBinding(new KeyBind(
+                "key.automatone.open_character_screen",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_H,
+                "category.automatone.keys"
+        ));
+
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            if (openCharacterScreenKeybind.wasPressed()) {
+                if (client.world != null) {
+                    client.setScreen(new CharacterSelectionScreen());
+                }
+            }
+        });
     }
 }

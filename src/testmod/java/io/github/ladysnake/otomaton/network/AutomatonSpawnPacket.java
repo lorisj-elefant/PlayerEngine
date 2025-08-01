@@ -20,9 +20,8 @@ package io.github.ladysnake.otomaton.network;
 import adris.altoclef.player2api.Character;
 import adris.altoclef.player2api.utils.CharacterUtils;
 import baritone.api.entity.LivingEntityInventory;
-import io.github.ladysnake.otomaton.AutomatoneEntity2;
+import io.github.ladysnake.otomaton.AutomatoneEntity;
 import io.github.ladysnake.otomaton.Otomaton;
-import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import net.fabricmc.fabric.api.networking.v1.FabricPacket;
 import net.fabricmc.fabric.api.networking.v1.PacketType;
@@ -56,7 +55,7 @@ public class AutomatonSpawnPacket implements FabricPacket {
     private final Character character;
     private final LivingEntityInventory inventory;
 
-    private AutomatonSpawnPacket(AutomatoneEntity2 entity) {
+    private AutomatonSpawnPacket(AutomatoneEntity entity) {
         this.id = entity.getId();
         this.uuid = entity.getUuid();
         this.pos = entity.getPos();
@@ -81,7 +80,7 @@ public class AutomatonSpawnPacket implements FabricPacket {
         this.inventory.readNbt(buf.readNbt().getList("inv", 10));
     }
 
-    public static Packet<ClientPlayPacketListener> create(AutomatoneEntity2 entity) {
+    public static Packet<ClientPlayPacketListener> create(AutomatoneEntity entity) {
         PacketByteBuf buf = new PacketByteBuf(Unpooled.buffer());
         new AutomatonSpawnPacket(entity).write(buf);
         return ServerPlayNetworking.createS2CPacket(Otomaton.SPAWN_PACKET_ID, buf);
@@ -115,7 +114,7 @@ public class AutomatonSpawnPacket implements FabricPacket {
         AutomatonSpawnPacket packet = new AutomatonSpawnPacket(var3);
         client.execute(() -> {
             ClientWorld world = var2.getWorld();
-            AutomatoneEntity2 entity = new AutomatoneEntity2(Otomaton.AUTOMATONE, world);
+            AutomatoneEntity entity = new AutomatoneEntity(Otomaton.AUTOMATONE, world);
             entity.setId(packet.id);
             entity.setUuid(packet.uuid);
             entity.syncPacketPositionCodec(packet.pos.x, packet.pos.y, packet.pos.z);

@@ -52,6 +52,8 @@
 package io.github.ladysnake.otomaton;
 
 import adris.altoclef.AltoClefController;
+import adris.altoclef.player2api.Character;
+import adris.altoclef.player2api.utils.CharacterUtils;
 import baritone.api.IBaritone;
 import baritone.api.entity.IAutomatone;
 import baritone.api.entity.IHungerManagerProvider;
@@ -60,41 +62,59 @@ import baritone.api.entity.IInventoryProvider;
 import baritone.api.entity.LivingEntityHungerManager;
 import baritone.api.entity.LivingEntityInteractionManager;
 import baritone.api.entity.LivingEntityInventory;
+import io.github.ladysnake.otomaton.network.AutomatonSpawnPacket;
+import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.ItemEntity;
-import net.minecraft.entity.ai.control.LookControl;
-import net.minecraft.entity.mob.ZombieEntity;
-import net.minecraft.fluid.Fluid;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
-import net.minecraft.registry.tag.TagKey;
+import net.minecraft.network.listener.ClientPlayPacketListener;
+import net.minecraft.network.packet.Packet;
+import net.minecraft.text.Text;
 import net.minecraft.util.Arm;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.Vec3i;
+import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
 
-public class AutomatoneEntity extends ZombieEntity implements IAutomatone, IInventoryProvider, IInteractionManagerProvider, IHungerManagerProvider {
+public class AutomatoneEntity extends LivingEntity implements IAutomatone, IInventoryProvider, IInteractionManagerProvider, IHungerManagerProvider {
     public LivingEntityInteractionManager manager;
     public LivingEntityInventory inventory;
     public LivingEntityHungerManager hungerManager;
     public AltoClefController controller;
+    public Character character;
+    public Identifier textureLocation;
+    protected Vec3d lastVelocity;
 
-    public AutomatoneEntity(EntityType<? extends ZombieEntity> type, World world) {
+    public AutomatoneEntity(EntityType<? extends AutomatoneEntity> type, World world) {
         super(type, world);
+        init();
+        setCharacter(CharacterUtils.requestFirstCharacter());
+    }
+
+    public void init(){
         this.setStepHeight(0.6f);
+        setMovementSpeed(0.4f);
         manager = new LivingEntityInteractionManager(this);
         inventory = new LivingEntityInventory(this);
         hungerManager = new LivingEntityHungerManager();
-        setCanPickUpLoot(true);
-        if(!world.isClient)
+        if(!getWorld().isClient) {
             controller = new AltoClefController(IBaritone.KEY.get(this));
-        lookControl = new LookControl(this){
-            @Override
-            public void tick() {
+            controller.getAiBridge().sendGreeting();
+        }
+    }
 
-            }
-        };
+    public AutomatoneEntity(World world, Character character){
+        this(Otomaton.AUTOMATONE, world);
+        init();
+        setCharacter(character);
     }
 
     @Override
@@ -128,12 +148,10 @@ public class AutomatoneEntity extends ZombieEntity implements IAutomatone, IInve
 
     @Override
     public void tick() {
+        this.lastVelocity = this.getVelocity();
         manager.update();
         inventory.updateItems();
         //hungerManager.update(this);
-        goalSelector.clear((g)->true);
-        targetSelector.clear((t)->true);
-        setCanPickUpLoot(true);
         lastAttackedTicks++;
         if(!this.getWorld().isClient)
             controller.serverTick();
@@ -146,36 +164,61 @@ public class AutomatoneEntity extends ZombieEntity implements IAutomatone, IInve
             this.knockDownwards();
         }
         super.tickMovement();
+        this.headYaw = this.getYaw();
+        pickupItems();
     }
 
-    @Override
-    public boolean tryAttack(Entity target) {
-        lastAttackedTicks = 0;
-        return super.tryAttack(target);
-    }
-
-    @Override
-    protected void loot(ItemEntity itemEntity) {
-        if (!this.getWorld().isClient) {
-            ItemStack itemStack = itemEntity.getStack();
-            int i = itemStack.getCount();
-            if (this.getLivingInventory().insertStack(itemStack)) {
-                this.sendPickup(itemEntity, i);
-                if (itemStack.isEmpty()) {
-                    itemEntity.discard();
-                    itemStack.setCount(i);
+    public void pickupItems(){
+        if (!this.getWorld().isClient && this.isAlive() && !this.dead && this.getWorld().getGameRules().getBoolean(GameRules.DO_MOB_GRIEFING)) {
+            Vec3i vec3i  = new Vec3i(1, 0, 1);
+            for(ItemEntity itemEntity : this.getWorld().getNonSpectatingEntities(ItemEntity.class, this.getBoundingBox().expand((double)vec3i.getX(), (double)vec3i.getY(), (double)vec3i.getZ()))) {
+                if (!itemEntity.isRemoved() && !itemEntity.getStack().isEmpty() && !itemEntity.cannotPickup()) {
+                    ItemStack itemStack = itemEntity.getStack();
+                    int i = itemStack.getCount();
+                    if (this.getLivingInventory().insertStack(itemStack)) {
+                        this.sendPickup(itemEntity, i);
+                        if (itemStack.isEmpty()) {
+                            itemEntity.discard();
+                            itemStack.setCount(i);
+                        }
+                    }
                 }
             }
         }
     }
 
-    protected void swimUpward(TagKey<Fluid> tag) {
-        this.setVelocity(this.getVelocity().add((double)0.0F, (double)0.04F, (double)0.0F));
-    }
-
     @Override
-    protected boolean canConvertInWater() {
-        return false;
+    public boolean tryAttack(Entity target) {
+        lastAttackedTicks = 0;
+        float f = (float)this.getAttributeValue(EntityAttributes.GENERIC_ATTACK_DAMAGE);
+        float g = (float)this.getAttributeValue(EntityAttributes.GENERIC_ATTACK_KNOCKBACK);
+        if (target instanceof LivingEntity) {
+            f += EnchantmentHelper.getAttackDamage(this.getMainHandStack(), ((LivingEntity)target).getGroup());
+            g += (float)EnchantmentHelper.getKnockback(this);
+        }
+
+        int i = EnchantmentHelper.getFireAspect(this);
+        if (i > 0) {
+            target.setOnFireFor(i * 4);
+        }
+
+        boolean bl = target.damage(this.getDamageSources().mobAttack(this), f);
+        if (bl) {
+            if (g > 0.0F && target instanceof LivingEntity) {
+                ((LivingEntity)target).takeKnockback((double)(g * 0.5F), (double) MathHelper.sin(this.getYaw() * ((float)Math.PI / 180F)), (double)(-MathHelper.cos(this.getYaw() * ((float)Math.PI / 180F))));
+                this.setVelocity(this.getVelocity().multiply(0.6, (double)1.0F, 0.6));
+            }
+
+//            if (target instanceof PlayerEntity) {
+//                PlayerEntity playerEntity = (PlayerEntity)target;
+//                this.disablePlayerShield(playerEntity, this.getMainHandStack(), playerEntity.isUsingItem() ? playerEntity.getActiveItem() : ItemStack.EMPTY);
+//            }
+
+            this.applyDamageEffects(this, target);
+            this.onAttacking(target);
+        }
+
+        return bl;
     }
 
     @Override
@@ -217,12 +260,32 @@ public class AutomatoneEntity extends ZombieEntity implements IAutomatone, IInve
     }
 
     @Override
-    protected boolean burnsInDaylight() {
-        return false;
+    public LivingEntityHungerManager getHungerManager() {
+        return hungerManager;
+    }
+
+    public Character getCharacter() {
+        return character;
+    }
+
+    public void setCharacter(Character character) {
+        this.character = character;
+    }
+
+    public Vec3d lerpVelocity(float delta) {
+        return this.lastVelocity.lerp(this.getVelocity(), (double)delta);
     }
 
     @Override
-    public LivingEntityHungerManager getHungerManager() {
-        return hungerManager;
+    public Packet<ClientPlayPacketListener> createSpawnPacket() {
+        return AutomatonSpawnPacket.create(this);
+    }
+
+    @Override
+    public Text getDisplayName() {
+        if(character==null){
+            return super.getDisplayName();
+        }
+        return Text.literal(character.shortName);
     }
 }

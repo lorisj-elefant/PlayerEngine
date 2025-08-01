@@ -17,6 +17,7 @@
 
 package io.github.ladysnake.otomaton;
 
+import io.github.ladysnake.otomaton.network.AutomatoneSpawnRequestPacket;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricEntityTypeBuilder;
 import net.minecraft.entity.EntityDimensions;
@@ -28,18 +29,20 @@ import net.minecraft.util.Identifier;
 import net.minecraft.registry.Registry;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.quiltmc.qsl.networking.api.ServerPlayNetworking;
 
 public class Otomaton implements ModInitializer {
     public static final Logger LOGGER = LogManager.getLogger("Otomaton");
     public static final String MOD_ID = "otomaton";
 
     public static final Identifier SPAWN_PACKET_ID = new Identifier(MOD_ID, "spawn_automatone");
+    public static final Identifier SPAWN_REQUEST_PACKET_ID = new Identifier(MOD_ID, "request_spawn_automatone");
 
     public static Identifier id(String path) {
         return new Identifier(MOD_ID, path);
     }
 
-    public static final EntityType<AutomatoneEntity> FAKE_PLAYER = FabricEntityTypeBuilder.<ZombieEntity>createLiving()
+    public static final EntityType<AutomatoneEntity> AUTOMATONE = FabricEntityTypeBuilder.<AutomatoneEntity>createLiving()
             .spawnGroup(SpawnGroup.MISC)
             .entityFactory(AutomatoneEntity::new)
             .defaultAttributes(ZombieEntity::createAttributes)
@@ -49,19 +52,10 @@ public class Otomaton implements ModInitializer {
             .forceTrackedVelocityUpdates(true)
             .build();
 
-    public static final EntityType<AutomatoneEntity2> AUTOMATONE = FabricEntityTypeBuilder.<AutomatoneEntity2>createLiving()
-            .spawnGroup(SpawnGroup.MISC)
-            .entityFactory(AutomatoneEntity2::new)
-            .defaultAttributes(ZombieEntity::createAttributes)
-            .dimensions(EntityDimensions.changing(EntityType.PLAYER.getWidth(), EntityType.PLAYER.getHeight()))
-            .trackRangeBlocks(64)
-            .trackedUpdateRate(1)
-            .forceTrackedVelocityUpdates(true)
-            .build();
-
     @Override
     public void onInitialize() {
-        Registry.register(Registries.ENTITY_TYPE, id("fake_player"), FAKE_PLAYER);
         Registry.register(Registries.ENTITY_TYPE, id("automatone"), AUTOMATONE);
+
+        ServerPlayNetworking.registerGlobalReceiver(SPAWN_REQUEST_PACKET_ID, AutomatoneSpawnRequestPacket::handle);
     }
 }
