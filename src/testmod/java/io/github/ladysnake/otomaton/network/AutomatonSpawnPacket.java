@@ -20,7 +20,7 @@ package io.github.ladysnake.otomaton.network;
 import adris.altoclef.player2api.Character;
 import adris.altoclef.player2api.utils.CharacterUtils;
 import baritone.api.entity.LivingEntityInventory;
-import io.github.ladysnake.otomaton.AutomatoneEntity;
+import io.github.ladysnake.otomaton.companion.AutomatoneEntity;
 import io.github.ladysnake.otomaton.Otomaton;
 import io.netty.buffer.Unpooled;
 import net.fabricmc.fabric.api.networking.v1.FabricPacket;

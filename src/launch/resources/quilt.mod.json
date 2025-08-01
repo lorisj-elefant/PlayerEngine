@@ -56,6 +56,7 @@
     "automatone:controller",
     "altoclef:controller",
     "automatone:selection_manager",
-    "automatone:world_data_provider"
+    "automatone:world_data_provider",
+    "automatone:companion_manager"
   ]
 }

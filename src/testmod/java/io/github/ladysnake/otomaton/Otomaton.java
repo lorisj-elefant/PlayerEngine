@@ -17,6 +17,9 @@
 
 package io.github.ladysnake.otomaton;
 
+import io.github.ladysnake.otomaton.companion.AutomatoneEntity;
+import io.github.ladysnake.otomaton.companion.CompanionManager;
+import io.github.ladysnake.otomaton.network.AutomatoneDespawnRequestPacket;
 import io.github.ladysnake.otomaton.network.AutomatoneSpawnRequestPacket;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricEntityTypeBuilder;
@@ -29,6 +32,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.registry.Registry;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.quiltmc.qsl.networking.api.ServerPlayConnectionEvents;
 import org.quiltmc.qsl.networking.api.ServerPlayNetworking;
 
 public class Otomaton implements ModInitializer {
@@ -37,6 +41,7 @@ public class Otomaton implements ModInitializer {
 
     public static final Identifier SPAWN_PACKET_ID = new Identifier(MOD_ID, "spawn_automatone");
     public static final Identifier SPAWN_REQUEST_PACKET_ID = new Identifier(MOD_ID, "request_spawn_automatone");
+    public static final Identifier DESPAWN_REQUEST_PACKET_ID = new Identifier(MOD_ID, "request_despawn_automatone");
 
     public static Identifier id(String path) {
         return new Identifier(MOD_ID, path);
@@ -57,5 +62,14 @@ public class Otomaton implements ModInitializer {
         Registry.register(Registries.ENTITY_TYPE, id("automatone"), AUTOMATONE);
 
         ServerPlayNetworking.registerGlobalReceiver(SPAWN_REQUEST_PACKET_ID, AutomatoneSpawnRequestPacket::handle);
+        ServerPlayNetworking.registerGlobalReceiver(DESPAWN_REQUEST_PACKET_ID, AutomatoneDespawnRequestPacket::handle);
+
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server)->{
+            CompanionManager.KEY.get(handler.player).summonAllCompanionsAsync();
+        });
+
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server)->{
+            CompanionManager.KEY.get(handler.player).dismissAllCompanions();
+        });
     }
 }

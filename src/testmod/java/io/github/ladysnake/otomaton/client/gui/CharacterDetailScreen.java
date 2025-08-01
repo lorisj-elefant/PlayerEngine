@@ -19,6 +19,7 @@ package io.github.ladysnake.otomaton.client.gui;
 
 import adris.altoclef.player2api.Character;
 import io.github.ladysnake.otomaton.client.util.SkinManager;
+import io.github.ladysnake.otomaton.network.AutomatoneDespawnRequestPacket;
 import io.github.ladysnake.otomaton.network.AutomatoneSpawnRequestPacket;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screen.Screen;
@@ -52,6 +53,13 @@ public class CharacterDetailScreen extends Screen {
                 this.client.setScreen(null);
             }
         }).positionAndSize(this.width / 2 - 100, this.height - 100, 98, 20).build());
+        this.addDrawableChild(ButtonWidget.builder(Text.of("Despawn"), button -> {
+            System.out.println("Summoning: " + character.name);
+            client.getNetworkHandler().sendPacket(AutomatoneDespawnRequestPacket.create(character));
+            if (this.client != null) {
+                this.client.setScreen(null);
+            }
+        }).positionAndSize(this.width / 2 - 100, this.height - 130, 98, 20).build());
 
         this.addDrawableChild(ButtonWidget.builder(Text.of("Back"), button -> {
             if (this.client != null) {

@@ -20,7 +20,6 @@ package baritone.utils.player;
 import baritone.api.entity.IInteractionManagerProvider;
 import baritone.api.entity.LivingEntityInteractionManager;
 import baritone.api.utils.IInteractionController;
-import com.jamieswhiteshirt.reachentityattributes.ReachEntityAttributes;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
@@ -111,6 +110,6 @@ public class EntityInteractionController implements IInteractionController {
 
     @Override
     public double getBlockReachDistance() {
-        return ReachEntityAttributes.getReachDistance(this.player, this.getGameType().isCreative() ? 5.0 : 4.5);
+        return 4.5;
     }
 }

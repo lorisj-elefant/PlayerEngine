@@ -30,7 +30,10 @@ import dev.onyxstudios.cca.api.v3.entity.EntityComponentFactoryRegistry;
 import dev.onyxstudios.cca.api.v3.entity.EntityComponentInitializer;
 import dev.onyxstudios.cca.api.v3.world.WorldComponentFactoryRegistry;
 import dev.onyxstudios.cca.api.v3.world.WorldComponentInitializer;
+import io.github.ladysnake.otomaton.companion.AutomatoneEntity;
+import io.github.ladysnake.otomaton.companion.CompanionManager;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.server.network.ServerPlayerEntity;
 
 @KeepName
 public final class AutomatoneComponents implements EntityComponentInitializer, WorldComponentInitializer {
@@ -40,6 +43,8 @@ public final class AutomatoneComponents implements EntityComponentInitializer, W
         registry.registerFor(PlayerEntity.class, IInteractionController.KEY, EntityInteractionController::new);
         registry.registerFor(PlayerEntity.class, ISelectionManager.KEY, SelectionManager::new);
         registry.registerFor(PlayerEntity.class, IBaritone.KEY, BaritoneAPI.getProvider().componentFactory());
+
+        registry.registerFor(ServerPlayerEntity.class, CompanionManager.KEY, CompanionManager::new);
 
         registry.registerFor(AutomatoneEntity.class, IInteractionController.KEY, EntityInteractionController::new);
         registry.registerFor(AutomatoneEntity.class, ISelectionManager.KEY, SelectionManager::new);

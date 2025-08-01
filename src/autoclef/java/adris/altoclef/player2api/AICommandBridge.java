@@ -106,9 +106,9 @@ public class AICommandBridge {
     });
   }
   
-  private void updateInfo() {
+  private void updateInfo(Character character) {
     System.out.println("Updating info");
-    Character newCharacter = Player2APIService.getSelectedCharacter();
+    Character newCharacter = character;
     this.character = newCharacter;
     int padSize = 10;
     StringBuilder commandListBuilder = new StringBuilder();
@@ -205,10 +205,10 @@ public class AICommandBridge {
         });
   }
   
-  public void sendGreeting() {
+  public void sendGreeting(Character character) {
     System.out.println("Sending Greeting");
     llmThread.submit(() -> {
-          updateInfo();
+          updateInfo(character);
           if (this.conversationHistory.isLoadedFromFile()) {
             addMessageToQueue("You want to welcome user back. IMPORTANT: SINCE THIS IS THE FIRST MESSAGE, DO NOT SEND A COMMAND!!| Remember to roleplay as " + this.character.name);
           } else {

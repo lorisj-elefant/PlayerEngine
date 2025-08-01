@@ -35,27 +35,27 @@ import net.minecraft.world.World;
 import org.quiltmc.qsl.networking.api.PacketSender;
 import org.quiltmc.qsl.networking.api.client.ClientPlayNetworking;
 
-public class AutomatoneSpawnRequestPacket implements FabricPacket {
+public class AutomatoneDespawnRequestPacket implements FabricPacket {
 
     public static final PacketType<AutomatonSpawnPacket> TYPE = PacketType.create(
-            Otomaton.SPAWN_REQUEST_PACKET_ID,
+            Otomaton.DESPAWN_REQUEST_PACKET_ID,
             AutomatonSpawnPacket::new
     );
 
     private final Character character;
 
-    private AutomatoneSpawnRequestPacket(Character character) {
+    private AutomatoneDespawnRequestPacket(Character character) {
         this.character = character;
     }
 
-    public AutomatoneSpawnRequestPacket(PacketByteBuf buf) {
+    public AutomatoneDespawnRequestPacket(PacketByteBuf buf) {
         this.character = CharacterUtils.readFromBuf(buf);
     }
 
     public static Packet<ServerPlayPacketListener> create(Character character) {
         PacketByteBuf buf = new PacketByteBuf(Unpooled.buffer());
-        new AutomatoneSpawnRequestPacket(character).write(buf);
-        return ClientPlayNetworking.createC2SPacket(Otomaton.SPAWN_REQUEST_PACKET_ID, buf);
+        new AutomatoneDespawnRequestPacket(character).write(buf);
+        return ClientPlayNetworking.createC2SPacket(Otomaton.DESPAWN_REQUEST_PACKET_ID, buf);
     }
 
     @Override
@@ -69,7 +69,7 @@ public class AutomatoneSpawnRequestPacket implements FabricPacket {
     }
 
     public static void handle(MinecraftServer var1, ServerPlayerEntity var2, ServerPlayNetworkHandler var3, PacketByteBuf var4, PacketSender var5){
-        AutomatoneSpawnRequestPacket packet = new AutomatoneSpawnRequestPacket(var4);
-        var1.execute(()-> CompanionManager.KEY.get(var2).ensureCompanionExists(packet.character));
+        AutomatoneDespawnRequestPacket packet = new AutomatoneDespawnRequestPacket(var4);
+        var1.execute(()-> CompanionManager.KEY.get(var2).dismissCompanion(packet.character.name));
     }
 }

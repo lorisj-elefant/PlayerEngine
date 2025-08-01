@@ -59,9 +59,9 @@ public class ConfigHelper {
     } 
     ObjectMapper mapper = new ObjectMapper();
     SimpleModule module = new SimpleModule();
-    module.addDeserializer(Vec3d.class, (JsonDeserializer)new Vec3dDeserializer());
-    module.addDeserializer(ChunkPos.class, (JsonDeserializer)new ChunkPosDeserializer());
-    module.addDeserializer(BlockPos.class, (JsonDeserializer)new BlockPosDeserializer());
+    module.addDeserializer(Vec3d.class, new Vec3dDeserializer());
+    module.addDeserializer(ChunkPos.class, new ChunkPosDeserializer());
+    module.addDeserializer(BlockPos.class, new BlockPosDeserializer());
     mapper.registerModule((Module)module);
     try {
       result = (T)mapper.readValue(loadFrom, classToLoad);

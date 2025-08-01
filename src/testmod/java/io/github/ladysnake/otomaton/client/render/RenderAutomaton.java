@@ -17,7 +17,7 @@
 
 package io.github.ladysnake.otomaton.client.render;
 
-import io.github.ladysnake.otomaton.AutomatoneEntity;
+import io.github.ladysnake.otomaton.companion.AutomatoneEntity;
 import io.github.ladysnake.otomaton.client.util.ImageDownloadAlt;
 import io.github.ladysnake.otomaton.client.util.ResourceDownloader;
 import net.minecraft.client.MinecraftClient;

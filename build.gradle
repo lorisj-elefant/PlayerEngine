@@ -21,6 +21,7 @@ import net.fabricmc.loom.task.RemapJarTask
 plugins {
     id 'org.quiltmc.loom' version '1.4.+'
     id 'io.github.ladysnake.chenille' version "0.11.3"
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 
 group project.maven_group
@@ -32,7 +33,6 @@ chenille {
         withGithubRelease()
     }
     configureTestmod {
-        withBaseTestRuns()
         withDependencyConfiguration()
     }
 
@@ -104,34 +104,66 @@ dependencies {
     modImplementation("dev.onyxstudios.cardinal-components-api:cardinal-components-world:${cca_version}") {
         transitive = false
     }
-    modImplementation("com.jamieswhiteshirt:reach-entity-attributes:${reach_version}") {
-        transitive = false
-    }
-    modLocalImplementation("io.github.ladysnake:elmendorf:${elmendorf_version}") {
-        transitive = false
-    }
-    compileOnly "com.demonwav.mcdev:annotations:1.0"
-
-    testImplementation 'junit:junit:4.12'
 
     implementation 'com.fasterxml.jackson.core:jackson-core:2.16.0'
     implementation 'com.fasterxml.jackson.core:jackson-annotations:2.16.0'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.16.0'
+
+    shadow('com.fasterxml.jackson.core:jackson-core:2.16.0')
+    shadow('com.fasterxml.jackson.core:jackson-annotations:2.16.0')
+    shadow('com.fasterxml.jackson.core:jackson-databind:2.16.0')
 }
 
-task testmodJar(type: Jar, dependsOn: testmodClasses) {
-    archiveBaseName.set('Otomaton')
-    archiveClassifier.set('dev')
+shadowJar {
+    configurations = [project.configurations.shadow]
+
+    archiveBaseName.set('Player2NPC')
+    archiveClassifier.set('dev-all')
+
+    from sourceSets.testmod.output
+    from sourceSets.launch.output
+    from sourceSets.main.output
+    from sourceSets.autoclef.output
+    from sourceSets.schematica_api.output
+
     filesMatching('fabric.mod.json') {
         expand 'version': project.version
     }
+
+    manifest {
+        attributes(tasks.jar.manifest.attributes)
+
+        attributes(
+                'MixinConfigs': 'mixins.automatone.json'
+        )
+    }
 }
 
-task remapTestmodJar(type: RemapJarTask, dependsOn: project.testmodJar) {
-    archiveBaseName.set('Otomaton')
-    inputFile.set(testmodJar.archiveFile)
-    addNestedDependencies.set(false)
+remapJar {
+    dependsOn("shadowJar")
+    archiveBaseName.set('Player2NPC')
+    input.set(shadowJar.archiveFile)
 }
+
+//task testmodJar(type: Jar, dependsOn: testmodClasses) {
+//    from sourceSets.testmod.output
+//    from sourceSets.launch.output
+//    from sourceSets.main.output
+//    from sourceSets.autoclef.output
+//    from sourceSets.schematica_api.output
+//
+//    archiveBaseName.set('Player2NPC')
+//    archiveClassifier.set('dev')
+//    filesMatching('fabric.mod.json') {
+//        expand 'version': project.version
+//    }
+//}
+//
+//task remapTestmodJar(type: RemapJarTask, dependsOn: project.testmodJar) {
+//    archiveBaseName.set('Player2NPC')
+//    inputFile.set(testmodJar.archiveFile)
+//    addNestedDependencies.set(false)
+//}
 
 processLaunchResources {
     inputs.property "version", project.version

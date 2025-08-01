@@ -49,7 +49,7 @@
  * The GNU General Public License gives permission to release a modified version without this exception;
  * this exception also makes it possible to release a modified version which carries forward this exception.
  */
-package io.github.ladysnake.otomaton;
+package io.github.ladysnake.otomaton.companion;
 
 import adris.altoclef.AltoClefController;
 import adris.altoclef.player2api.Character;
@@ -62,6 +62,7 @@ import baritone.api.entity.IInventoryProvider;
 import baritone.api.entity.LivingEntityHungerManager;
 import baritone.api.entity.LivingEntityInteractionManager;
 import baritone.api.entity.LivingEntityInventory;
+import io.github.ladysnake.otomaton.Otomaton;
 import io.github.ladysnake.otomaton.network.AutomatonSpawnPacket;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.Entity;
@@ -107,14 +108,14 @@ public class AutomatoneEntity extends LivingEntity implements IAutomatone, IInve
         hungerManager = new LivingEntityHungerManager();
         if(!getWorld().isClient) {
             controller = new AltoClefController(IBaritone.KEY.get(this));
-            controller.getAiBridge().sendGreeting();
+            controller.getAiBridge().sendGreeting(character);
         }
     }
 
     public AutomatoneEntity(World world, Character character){
-        this(Otomaton.AUTOMATONE, world);
-        init();
+        super(Otomaton.AUTOMATONE, world);
         setCharacter(character);
+        init();
     }
 
     @Override
