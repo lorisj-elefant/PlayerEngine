@@ -20,13 +20,12 @@ package baritone;
 import baritone.client.CustomFishingBobberRenderer;
 import baritone.command.defaults.ClickCommand;
 import baritone.utils.GuiClick;
+import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
-import org.quiltmc.loader.api.ModContainer;
-import org.quiltmc.qsl.base.api.entrypoint.client.ClientModInitializer;
 
 import java.util.UUID;
 
@@ -42,7 +41,7 @@ public final class AutomatoneClient implements ClientModInitializer {
     }
 
     @Override
-    public void onInitializeClient(ModContainer mod) {
+    public void onInitializeClient() {
         EntityRendererRegistry.register(Automatone.FISHING_BOBBER, CustomFishingBobberRenderer::new);
         WorldRenderEvents.BEFORE_DEBUG_RENDER.register(AutomatoneClient::onRenderPass);
         ClientPlayNetworking.registerGlobalReceiver(ClickCommand.OPEN_CLICK_SCREEN, (client, handler, buf, responseSender) -> {

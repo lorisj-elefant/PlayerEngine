@@ -33,8 +33,10 @@ import baritone.command.manager.BaritoneCommandManager;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.Message;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.command.argument.EntityArgumentType;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
@@ -46,7 +48,6 @@ import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Pair;
-import org.quiltmc.qsl.command.api.CommandRegistrationCallback;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -182,7 +183,7 @@ public final class DefaultCommands {
     private static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
         dispatcher.register(CommandManager.literal("automatone")
                 .requires(s -> s.hasPermissionLevel(2))
-                .then(CommandManager.argument("command", BaritoneArgumentType.baritone()).executes(command ->
+                .then(CommandManager.argument("command", StringArgumentType.greedyString()).executes(command ->
                         runCommand(command.getSource(), command.getSource().getEntityOrThrow(), BaritoneArgumentType.getCommand(command, "command"))))
         );
     }

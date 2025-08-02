@@ -1,25 +1,5 @@
-/*
- * This file is part of Baritone.
- *
- * Baritone is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Baritone is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
- */
-
-
-import net.fabricmc.loom.task.RemapJarTask
-
 plugins {
-    id 'org.quiltmc.loom' version '1.4.+'
+    id 'fabric-loom' version '1.6-SNAPSHOT'
     id 'io.github.ladysnake.chenille' version "0.11.3"
     id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
@@ -27,20 +7,10 @@ plugins {
 group project.maven_group
 version project.mod_version
 
-chenille {
-    configurePublishing {
-        withArtifactory()
-        withGithubRelease()
-    }
-    configureTestmod {
-        withDependencyConfiguration()
-    }
-
-    javaVersion = 17
-}
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
 compileJava {
-    options.encoding = "UTF-8" // allow emoji in comments :^)
+    options.encoding = "UTF-8"
 }
 
 
@@ -49,13 +19,10 @@ sourceSets {
         compileClasspath += main.compileClasspath + main.runtimeClasspath + main.output
         runtimeClasspath += main.compileClasspath + main.runtimeClasspath + main.output
     }
+
     launch {
         compileClasspath += main.compileClasspath + main.runtimeClasspath + main.output + autoclef.compileClasspath + autoclef.runtimeClasspath + autoclef.output
         runtimeClasspath += main.compileClasspath + main.runtimeClasspath + main.output + autoclef.compileClasspath + autoclef.runtimeClasspath + autoclef.output
-    }
-    testmod {
-        compileClasspath += launch.compileClasspath + launch.runtimeClasspath + launch.output
-        runtimeClasspath += launch.compileClasspath + launch.runtimeClasspath + launch.output
     }
 
     schematica_api {
@@ -80,6 +47,10 @@ repositories {
         url = 'https://maven.quiltmc.org/repository/snapshot'
     }
 
+    maven {
+        url = "https://maven.quiltmc.org/repository/release/"
+    }
+
     mavenLocal()
 
     flatDir {
@@ -90,10 +61,8 @@ repositories {
 dependencies {
     minecraft "com.mojang:minecraft:${minecraft_version}"
     mappings "org.quiltmc:quilt-mappings:${minecraft_version}+build.${quilt_mappings}:intermediary-v2"
-    modImplementation "org.quiltmc:quilt-loader:${project.quilt_loader_version}"
-
-    modImplementation "org.quiltmc:qsl:${qsl_version}+${minecraft_version}"
-    modImplementation "org.quiltmc.quilted-fabric-api:quilted-fabric-api:${quilted_fabric_api_version}-${minecraft_version}"
+    modImplementation "net.fabricmc:fabric-loader:0.15.6"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:0.92.1+1.20.1"
     implementation 'com.google.code.findbugs:jsr305:3.0.2'
     modImplementation("dev.onyxstudios.cardinal-components-api:cardinal-components-base:${cca_version}") {
         transitive = false
@@ -117,10 +86,9 @@ dependencies {
 shadowJar {
     configurations = [project.configurations.shadow]
 
-    archiveBaseName.set('Player2NPC')
-    archiveClassifier.set('dev-all')
+    archiveBaseName.set('PlayerEngine')
+    archiveClassifier.set('dev')
 
-    from sourceSets.testmod.output
     from sourceSets.launch.output
     from sourceSets.main.output
     from sourceSets.autoclef.output
@@ -132,38 +100,16 @@ shadowJar {
 
     manifest {
         attributes(tasks.jar.manifest.attributes)
-
-        attributes(
-                'MixinConfigs': 'mixins.automatone.json'
-        )
+        attributes('MixinConfigs': 'mixins.automatone.json')
     }
 }
 
 remapJar {
     dependsOn("shadowJar")
-    archiveBaseName.set('Player2NPC')
+    archiveBaseName.set('PlayerEngine')
+    archiveClassifier.set('')
     input.set(shadowJar.archiveFile)
 }
-
-//task testmodJar(type: Jar, dependsOn: testmodClasses) {
-//    from sourceSets.testmod.output
-//    from sourceSets.launch.output
-//    from sourceSets.main.output
-//    from sourceSets.autoclef.output
-//    from sourceSets.schematica_api.output
-//
-//    archiveBaseName.set('Player2NPC')
-//    archiveClassifier.set('dev')
-//    filesMatching('fabric.mod.json') {
-//        expand 'version': project.version
-//    }
-//}
-//
-//task remapTestmodJar(type: RemapJarTask, dependsOn: project.testmodJar) {
-//    archiveBaseName.set('Player2NPC')
-//    inputFile.set(testmodJar.archiveFile)
-//    addNestedDependencies.set(false)
-//}
 
 processLaunchResources {
     inputs.property "version", project.version
@@ -177,15 +123,14 @@ java {
 }
 
 javadoc {
-    options.addStringOption('Xwerror', '-quiet') // makes the build fail on travis when there is a javadoc error
+    options.addStringOption('Xwerror', '-quiet')
     options.linkSource true
-    options.encoding "UTF-8" // allow emoji in comments :^)
+    options.encoding "UTF-8"
     source = sourceSets.main.allJava
     classpath += sourceSets.main.compileClasspath
 }
 
 jar {
-    // Добавляем sourceSets.main.output в список
     from sourceSets.launch.output, sourceSets.main.output, sourceSets.autoclef.output
 
     preserveFileTimestamps = false
@@ -195,29 +140,13 @@ jar {
         attributes(
                 'MixinConfigs': 'mixins.automatone.json',
 
-                'Implementation-Title': 'Automatone',
+                'Implementation-Title': 'PlayerEngine',
                 'Implementation-Version': project.version
         )
     }
 }
 
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            pom {
-                name = project.mod_name
-                licenses {
-                    license {
-                        name = 'GNU Lesser General Public License 3.0'
-                        url = 'https://www.gnu.org/licenses/lgpl-3.0.html'
-                    }
-                }
-            }
-        }
-    }
-}
-
 tasks.withType(JavaCompile).configureEach {
-    options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
+    options.encoding = 'UTF-8'
     options.compilerArgs += ["-Xmaxerrs", "500000"]
 }

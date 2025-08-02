@@ -20,5 +20,6 @@
     "PlayerCollidesWithEntityMixin",
     "PlayerDamageMixin",
     "WorldBlockModifiedMixin"
-  ]
+  ],
+  "refmap": "autoclef-playerengine-refmap.json"
 }

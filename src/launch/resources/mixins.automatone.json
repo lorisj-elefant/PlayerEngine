@@ -19,5 +19,6 @@
     "MixinServerCommandSource",
     "MixinUtil",
     "player.ThreadedAnvilChunkStorageMixin"
-  ]
+  ],
+  "refmap": "launch-playerengine-refmap.json"
 }

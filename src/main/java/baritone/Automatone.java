@@ -18,11 +18,9 @@
 package baritone;
 
 import baritone.command.defaults.DefaultCommands;
-import baritone.command.manager.BaritoneArgumentType;
 import baritone.entity.CustomFishingBobberEntity;
-import com.mojang.brigadier.arguments.StringArgumentType;
+import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricEntityTypeBuilder;
-import net.minecraft.command.argument.SingletonArgumentInfo;
 import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnGroup;
@@ -34,9 +32,6 @@ import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.Identifier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.quiltmc.loader.api.ModContainer;
-import org.quiltmc.qsl.base.api.entrypoint.ModInitializer;
-import org.quiltmc.qsl.command.api.ServerArgumentType;
 
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -77,9 +72,8 @@ public final class Automatone implements ModInitializer {
             .build();
 
     @Override
-    public void onInitialize(ModContainer mod) {
+    public void onInitialize() {
         DefaultCommands.registerAll();
         Registry.register(Registries.ENTITY_TYPE, id("fishing_bobber"), FISHING_BOBBER);
-        ServerArgumentType.register(id("command"), BaritoneArgumentType.class, SingletonArgumentInfo.contextFree(BaritoneArgumentType::baritone), t -> StringArgumentType.greedyString());
     }
 }
