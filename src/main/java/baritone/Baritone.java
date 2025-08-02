@@ -25,7 +25,6 @@ import baritone.api.process.IBaritoneProcess;
 import baritone.api.utils.IEntityContext;
 import baritone.autoclef.AltoClefSettings;
 import baritone.behavior.Behavior;
-import baritone.behavior.BotBehaviour;
 import baritone.behavior.InventoryBehavior;
 import baritone.behavior.LookBehavior;
 import baritone.behavior.MemoryBehavior;
@@ -63,7 +62,6 @@ public class Baritone implements IBaritone {
     private final LookBehavior lookBehavior;
     private final MemoryBehavior memoryBehavior;
     private final InventoryBehavior inventoryBehavior;
-    private final BotBehaviour botBehaviour;
     private final InputOverrideHandler inputOverrideHandler;
 
     private final FollowProcess followProcess;
@@ -99,7 +97,6 @@ public class Baritone implements IBaritone {
             lookBehavior = new LookBehavior(this);
             memoryBehavior = new MemoryBehavior(this);
             inventoryBehavior = new InventoryBehavior(this);
-            botBehaviour = new BotBehaviour(this);
             inputOverrideHandler = new InputOverrideHandler(this);
         }
 
@@ -240,10 +237,6 @@ public class Baritone implements IBaritone {
     @Override
     public void serverTick() {
         this.getGameEventHandler().onTickServer();
-    }
-
-    public BotBehaviour getBehaviour() {
-        return botBehaviour;
     }
 
     public FishingProcess getFishingProcess() {
