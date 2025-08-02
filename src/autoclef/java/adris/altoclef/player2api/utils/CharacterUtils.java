@@ -21,6 +21,10 @@ import adris.altoclef.player2api.Character;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.NbtList;
+import net.minecraft.nbt.NbtString;
 import net.minecraft.network.PacketByteBuf;
 
 import java.util.Map;
@@ -110,5 +114,32 @@ public class CharacterUtils {
         for(String id: character.voiceIds){
             buf.writeString(id);
         }
+    }
+
+    public static Character readFromNBT(NbtCompound compound){
+        String name = compound.getString("name");
+        String shortName = compound.getString("shortName");
+        String greetingInfo = compound.getString("greetingInfo");
+        String description = compound.getString("description");
+        String skinURL = compound.getString("skinURL");
+        NbtList voiceIdsList = compound.getList("voiceIds", NbtElement.STRING_TYPE);
+        String[] voiceIds = new String[voiceIdsList.size()];
+        for(int i=0;i<voiceIdsList.size();i++){
+            voiceIds[i] = voiceIdsList.getString(i);
+        }
+        return new Character(name, shortName, greetingInfo, description, skinURL, voiceIds);
+    }
+
+    public static void writeToNBT(NbtCompound compound, Character character){
+        compound.putString("name", character.name);
+        compound.putString("shortName", character.shortName);
+        compound.putString("greetingInfo", character.greetingInfo);
+        compound.putString("description", character.description);
+        compound.putString("skinURL", character.skinURL);
+        NbtList voiceIds = new NbtList();
+        for(String id: character.voiceIds){
+            voiceIds.add(NbtString.of(id));
+        }
+        compound.put("voiceIds", voiceIds);
     }
 }
