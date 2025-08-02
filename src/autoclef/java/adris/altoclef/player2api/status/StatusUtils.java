@@ -1,6 +1,7 @@
 package adris.altoclef.player2api.status;
 
 import adris.altoclef.AltoClefController;
+import adris.altoclef.chains.SingleTaskChain;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.helpers.ItemHelper;
 import baritone.api.entity.IAutomatone;
@@ -182,5 +183,11 @@ public class StatusUtils {
 
     public static String getGamemodeString(AltoClefController mod) {
         return mod.getInteractionManager().getGameType().isCreative() ? "creative" : "survival";
+    }
+
+    public static String getTaskTree(AltoClefController mod) {
+        Task task = mod.getUserTaskChain().getCurrentTask();
+        if(task==null) return "Task tree is empty";
+        return task.getTaskTree();
     }
 }

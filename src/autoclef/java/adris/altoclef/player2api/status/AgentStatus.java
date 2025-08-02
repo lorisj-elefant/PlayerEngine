@@ -14,6 +14,7 @@ public class AgentStatus extends ObjectStatus {
                 .add("taskStatus", StatusUtils.getTaskStatusString(mod))
                 .add("oxygenLevel", StatusUtils.getOxygenString(mod))
                 .add("armor", StatusUtils.getEquippedArmorStatusString(mod))
-                .add("gamemode", StatusUtils.getGamemodeString(mod));
+                .add("gamemode", StatusUtils.getGamemodeString(mod))
+                .add("taskTree", StatusUtils.getTaskTree(mod));
     }
 }

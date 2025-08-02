@@ -193,4 +193,17 @@ public abstract class Task {
             return true;
         }));
     }
+
+    public String getTaskTree(){
+        StringBuilder builder = new StringBuilder("Main task:\n");
+        Task cur = this;
+        while(cur!=null){
+            builder.append(cur.toDebugString());
+            cur = cur.sub;
+            if(cur!=null){
+                builder.append("\nFor that doing:\n");
+            }
+        }
+        return builder.toString();
+    }
 }
