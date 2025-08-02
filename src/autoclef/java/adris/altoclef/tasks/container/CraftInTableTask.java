@@ -11,11 +11,13 @@ import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.ItemTarget;
 import adris.altoclef.util.RecipeTarget;
 import adris.altoclef.util.helpers.StorageHelper;
+import adris.altoclef.util.time.TimerGame;
 import baritone.api.entity.IInventoryProvider;
 import baritone.api.entity.LivingEntityInventory;
 import net.minecraft.block.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3i;
 
@@ -26,6 +28,8 @@ public class CraftInTableTask extends ResourceTask {
 
     private final RecipeTarget[] targets;
     private BlockPos craftingTablePos = null;
+    private final TimerGame craftTimer = new TimerGame(2);
+    private boolean isCrafting = false;
 
     public CraftInTableTask(RecipeTarget[] targets) {
         super(extractItemTargets(targets));
@@ -105,6 +109,14 @@ public class CraftInTableTask extends ResourceTask {
 
         // 6. Perform the craft
         setDebugState("Crafting...");
+        if(!isCrafting){
+            craftTimer.reset();
+            isCrafting=true;
+        }
+
+        if (!craftTimer.elapsed()) {
+            return null;
+        }
         for (RecipeTarget target : targets) {
             int currentAmount = controller.getItemStorage().getItemCount(target.getOutputItem());
             if (currentAmount < target.getTargetCount()) {
@@ -132,7 +144,7 @@ public class CraftInTableTask extends ResourceTask {
                 }
             }
         }
-
+        controller.getEntity().swingHand(Hand.MAIN_HAND);
         // This task is now effectively synchronous and should complete in one tick once conditions are met.
         return null;
     }

@@ -7,16 +7,20 @@ import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.ItemTarget;
 import adris.altoclef.util.RecipeTarget;
 import adris.altoclef.util.helpers.StorageHelper;
+import adris.altoclef.util.time.TimerGame;
 import baritone.api.entity.IInventoryProvider;
 import baritone.api.entity.LivingEntityInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.Hand;
 
 public class CraftInInventoryTask extends ResourceTask {
 
     private final RecipeTarget target;
     private final boolean collect;
     private final boolean ignoreUncataloguedSlots;
+    private final TimerGame craftTimer = new TimerGame(2);
+    private boolean isCrafting = false;
 
     public CraftInInventoryTask(RecipeTarget target, boolean collect, boolean ignoreUncataloguedSlots) {
         super(new ItemTarget(target.getOutputItem(), target.getTargetCount()));
@@ -58,6 +62,15 @@ public class CraftInInventoryTask extends ResourceTask {
 
         setDebugState("Crafting " + outputItem.getName().getString());
 
+        if(!isCrafting){
+            craftTimer.reset();
+            isCrafting=true;
+        }
+
+        if (!craftTimer.elapsed()) {
+            return null;
+        }
+
         int craftsNeeded = (int) Math.ceil((double) (targetCount - controller.getItemStorage().getItemCount(outputItem)) / target.getRecipe().outputCount());
         if (craftsNeeded <= 0) {
             return null;
@@ -80,6 +93,7 @@ public class CraftInInventoryTask extends ResourceTask {
             inventory.insertStack(result);
             controller.getItemStorage().registerSlotAction();
         }
+        controller.getEntity().swingHand(Hand.MAIN_HAND);
 
         return null;
     }
