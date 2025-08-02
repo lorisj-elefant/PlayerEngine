@@ -3,6 +3,7 @@ package adris.altoclef.player2api.status;
 import adris.altoclef.AltoClefController;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.helpers.ItemHelper;
+import baritone.api.entity.IAutomatone;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
@@ -127,7 +128,25 @@ public class StatusUtils {
                 PlayerEntity player = (PlayerEntity) entity;
                 if (entity.distanceTo(mod.getPlayer()) < 32.0F) {
                     String username = player.getName().getString();
-                    if (!Objects.equals(username, mod.getPlayer().getName().getString())) {
+                    String position = entity.getPos().floorAlongAxes(EnumSet.allOf(Direction.Axis.class)).toString();
+                    descriptions.add(username + " at " + position);
+                }
+            }
+        }
+        if (descriptions.isEmpty())
+            return String.format("no nearby users within %d", 32);
+        return "[" + String.join(",", descriptions.stream()
+                .map(s -> "\"" + s + "\"")
+                .toArray(String[]::new)) + "]";
+    }
+
+    public static String getNearbyNPCs(AltoClefController mod) {
+        List<String> descriptions = new ArrayList<>();
+        for (Entity entity : mod.getEntityTracker().getCloseEntities()) {
+            if (entity instanceof IAutomatone) {
+                if (entity.distanceTo(mod.getPlayer()) < 32.0F) {
+                    String username = entity.getDisplayName().getString();
+                    if (!Objects.equals(username, mod.getPlayer().getDisplayName().getString())) {
                         String position = entity.getPos().floorAlongAxes(EnumSet.allOf(Direction.Axis.class)).toString();
                         descriptions.add(username + " at " + position);
                     }
@@ -135,7 +154,7 @@ public class StatusUtils {
             }
         }
         if (descriptions.isEmpty())
-            return String.format("no nearby users within %d", 32);
+            return String.format("no nearby npcs within %d", 32);
         return "[" + String.join(",", descriptions.stream()
                 .map(s -> "\"" + s + "\"")
                 .toArray(String[]::new)) + "]";

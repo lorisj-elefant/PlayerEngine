@@ -101,7 +101,7 @@ public class AICommandBridge {
             System.out.printf("[AIBridge/CharMessageEvent]/MESSAGE (%s) SENDER (%s), DISTANCE(%.2f%n)", new Object[]{message, sender, Float.valueOf(distance)});
             if (sender != null && !Objects.equals(sender, receiver)) {
                 String wholeMessage = "Other players: [" + sender + "] " + message;
-                addMessageToQueue(wholeMessage + "| Remember to roleplay as " + wholeMessage);
+                addMessageToQueue(wholeMessage + "| Remember to roleplay as " + this.character.name);
             }
         });
     }
