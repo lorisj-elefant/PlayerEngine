@@ -21,7 +21,7 @@ public class ContainerCache {
   
   private final HashMap<Item, Integer> itemCounts = new HashMap<>();
   
-  private int _emptySlots;
+  private int emptySlots;
   
   public ContainerCache(Dimension dimension, BlockPos blockPos, ContainerType containerType) {
     this.dimension = dimension;
@@ -31,7 +31,7 @@ public class ContainerCache {
   
   public void update(Inventory screenHandler, Consumer<ItemStack> onStack) {
     this.itemCounts.clear();
-    this._emptySlots = 0;
+    this .emptySlots = 0;
     int start = 0;
     int end = screenHandler.size();
     boolean isFurnace = screenHandler instanceof net.minecraft.screen.FurnaceScreenHandler;
@@ -39,7 +39,7 @@ public class ContainerCache {
       ItemStack stack = screenHandler.getStack(i).copy();
       if (stack.isEmpty()) {
         if (!isFurnace || i != 2)
-          this._emptySlots++; 
+          this .emptySlots++; 
       } else {
         Item item = stack.getItem();
         int count = stack.getCount();
@@ -65,11 +65,11 @@ public class ContainerCache {
   }
   
   public int getEmptySlotCount() {
-    return this._emptySlots;
+    return this .emptySlots;
   }
   
   public boolean isFull() {
-    return (this._emptySlots == 0);
+    return (this .emptySlots == 0);
   }
   
   public BlockPos getBlockPos() {

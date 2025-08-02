@@ -28,12 +28,12 @@ import java.util.Optional;
 
 public class CraftInTableTask extends ResourceTask {
 
-  private final RecipeTarget[] _targets;
-  private BlockPos _craftingTablePos = null;
+  private final RecipeTarget[] targets;
+  private BlockPos craftingTablePos = null;
 
   public CraftInTableTask(RecipeTarget[] targets) {
     super(extractItemTargets(targets));
-    this._targets = targets;
+    this .targets = targets;
   }
 
   public CraftInTableTask(RecipeTarget target) {
@@ -54,7 +54,7 @@ public class CraftInTableTask extends ResourceTask {
   @Override
   protected void onResourceStart(AltoClefController controller) {
     // Protect items to avoid accidentally throwing them away
-    for (RecipeTarget target : _targets) {
+    for (RecipeTarget target : targets) {
       for (ItemTarget ingredient : target.getRecipe().getSlots()) {
         if (ingredient != null && !ingredient.isEmpty()) {
           controller.getBehaviour().addProtectedItems(ingredient.getMatches());
@@ -66,7 +66,7 @@ public class CraftInTableTask extends ResourceTask {
   @Override
   protected Task onResourceTick(AltoClefController controller) {
     // 1. Check if all crafts are already done
-    boolean allDone = Arrays.stream(_targets).allMatch(target ->
+    boolean allDone = Arrays.stream(targets).allMatch(target ->
             controller.getItemStorage().getItemCount(target.getOutputItem()) >= target.getTargetCount()
     );
     if (allDone) {
@@ -74,25 +74,25 @@ public class CraftInTableTask extends ResourceTask {
     }
 
     // 2. Collect resources for crafting
-    if (!StorageHelper.hasRecipeMaterialsOrTarget(controller, _targets)) {
+    if (!StorageHelper.hasRecipeMaterialsOrTarget(controller, targets)) {
       setDebugState("Collecting ingredients");
-      return new CollectRecipeCataloguedResourcesTask(false, _targets);
+      return new CollectRecipeCataloguedResourcesTask(false, targets);
     }
 
     // 3. Find or place a crafting table
-    if (_craftingTablePos == null || !controller.getWorld().getBlockState(_craftingTablePos).isOf(Blocks.CRAFTING_TABLE)) {
+    if (craftingTablePos == null || !controller.getWorld().getBlockState(craftingTablePos).isOf(Blocks.CRAFTING_TABLE)) {
       Optional<BlockPos> nearestTable = controller.getBlockScanner().getNearestBlock(Blocks.CRAFTING_TABLE);
       if (nearestTable.isPresent()) {
-        _craftingTablePos = nearestTable.get();
-        setDebugState("Found crafting table: " + _craftingTablePos.toShortString());
+        craftingTablePos = nearestTable.get();
+        setDebugState("Found crafting table: " + craftingTablePos.toShortString());
       } else {
-        _craftingTablePos = null;
+        craftingTablePos = null;
         setDebugState("Crafting table not found.");
       }
     }
 
     // 4. If table is needed but missing or far, get/build one
-    if (_craftingTablePos == null) {
+    if (craftingTablePos == null) {
       if (controller.getItemStorage().hasItem(Items.CRAFTING_TABLE)) {
         setDebugState("Placing crafting table.");
         return new PlaceBlockNearbyTask(Blocks.CRAFTING_TABLE);
@@ -102,14 +102,14 @@ public class CraftInTableTask extends ResourceTask {
     }
 
     // 5. Go to the crafting table
-    if (!_craftingTablePos.isWithinDistance(new Vec3i((int) controller.getEntity().getPos().x, (int) controller.getEntity().getPos().y, (int) controller.getEntity().getPos().z), 3.5)) {
-      setDebugState("Going to crafting table at: " + _craftingTablePos.toShortString());
-      return new GetToBlockTask(_craftingTablePos);
+    if (!craftingTablePos.isWithinDistance(new Vec3i((int) controller.getEntity().getPos().x, (int) controller.getEntity().getPos().y, (int) controller.getEntity().getPos().z), 3.5)) {
+      setDebugState("Going to crafting table at: " + craftingTablePos.toShortString());
+      return new GetToBlockTask(craftingTablePos);
     }
 
     // 6. Perform the craft
     setDebugState("Crafting...");
-    for (RecipeTarget target : _targets) {
+    for (RecipeTarget target : targets) {
       int currentAmount = controller.getItemStorage().getItemCount(target.getOutputItem());
       if (currentAmount < target.getTargetCount()) {
         // How many we need to craft
@@ -118,7 +118,7 @@ public class CraftInTableTask extends ResourceTask {
         for (int i = 0; i < craftsNeeded; i++) {
           if (!StorageHelper.hasRecipeMaterialsOrTarget(controller, new RecipeTarget(target.getOutputItem(), target.getRecipe().outputCount(), target.getRecipe()))) {
             Debug.logWarning("Not enough ingredients to craft, even though the check passed. Aborting.");
-            return new CollectRecipeCataloguedResourcesTask(false, _targets);
+            return new CollectRecipeCataloguedResourcesTask(false, targets);
           }
 
           // Consume ingredients
@@ -149,7 +149,7 @@ public class CraftInTableTask extends ResourceTask {
   @Override
   protected boolean isEqualResource(ResourceTask other) {
     if (other instanceof CraftInTableTask task) {
-      return Arrays.equals(task._targets, this._targets);
+      return Arrays.equals(task .targets, this .targets);
     }
     return false;
   }
@@ -157,11 +157,11 @@ public class CraftInTableTask extends ResourceTask {
   @Override
   protected String toDebugStringName() {
     return "Craft on table: " + Arrays.toString(
-            Arrays.stream(_targets).map(t -> t.getOutputItem().getName().getString()).toArray()
+            Arrays.stream(targets).map(t -> t.getOutputItem().getName().getString()).toArray()
     );
   }
 
   public RecipeTarget[] getRecipeTargets(){
-    return _targets;
+    return targets;
   }
 }

@@ -13,11 +13,11 @@ import net.minecraft.block.Blocks;
 import net.minecraft.item.Items;
 
 public class CollectQuartzTask extends ResourceTask {
-  private final int _count;
+  private final int count;
   
   public CollectQuartzTask(int count) {
     super(Items.QUARTZ, count);
-    this._count = count;
+    this .count = count;
   }
   
   protected boolean shouldAvoidPickingUp(AltoClefController mod) {
@@ -32,7 +32,7 @@ public class CollectQuartzTask extends ResourceTask {
       return (Task)new DefaultGoToDimensionTask(Dimension.NETHER);
     } 
     setDebugState("Mining");
-    return (Task)new MineAndCollectTask(new ItemTarget(Items.QUARTZ, this._count), new Block[] { Blocks.NETHER_QUARTZ_ORE }, MiningRequirement.WOOD);
+    return (Task)new MineAndCollectTask(new ItemTarget(Items.QUARTZ, this .count), new Block[] { Blocks.NETHER_QUARTZ_ORE }, MiningRequirement.WOOD);
   }
   
   protected void onResourceStop(AltoClefController mod, Task interruptTask) {}
@@ -42,6 +42,6 @@ public class CollectQuartzTask extends ResourceTask {
   }
   
   protected String toDebugStringName() {
-    return "Collecting " + this._count + " quartz";
+    return "Collecting " + this .count + " quartz";
   }
 }

@@ -8,35 +8,35 @@ import java.util.Arrays;
 import net.minecraft.util.math.BlockPos;
 
 public class RunAwayFromPositionTask extends CustomBaritoneGoalTask {
-  private final BlockPos[] _dangerBlocks;
+  private final BlockPos[] dangerBlocks;
   
-  private final double _distance;
+  private final double distance;
   
-  private final Integer _maintainY;
+  private final Integer maintainY;
   
   public RunAwayFromPositionTask(double distance, BlockPos... toRunAwayFrom) {
     this(distance, null, toRunAwayFrom);
   }
   
   public RunAwayFromPositionTask(double distance, Integer maintainY, BlockPos... toRunAwayFrom) {
-    this._distance = distance;
-    this._dangerBlocks = toRunAwayFrom;
-    this._maintainY = maintainY;
+    this .distance = distance;
+    this .dangerBlocks = toRunAwayFrom;
+    this .maintainY = maintainY;
   }
   
   protected Goal newGoal(AltoClefController mod) {
-    return (Goal)new GoalRunAway(this._distance, this._maintainY, this._dangerBlocks);
+    return (Goal)new GoalRunAway(this .distance, this .maintainY, this .dangerBlocks);
   }
   
   protected boolean isEqual(Task other) {
     if (other instanceof adris.altoclef.tasks.movement.RunAwayFromPositionTask) {
       adris.altoclef.tasks.movement.RunAwayFromPositionTask task = (adris.altoclef.tasks.movement.RunAwayFromPositionTask)other;
-      return Arrays.equals(task._dangerBlocks, this._dangerBlocks);
+      return Arrays.equals(task .dangerBlocks, this .dangerBlocks);
     } 
     return false;
   }
   
   protected String toDebugString() {
-    return "Running away from " + Arrays.toString(this._dangerBlocks);
+    return "Running away from " + Arrays.toString(this .dangerBlocks);
   }
 }

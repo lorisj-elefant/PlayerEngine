@@ -32,11 +32,11 @@ public class ConstructNetherPortalObsidianTask extends Task {
   
   private static final Vec3i PORTALABLE_REGION_SIZE = new Vec3i(3, 6, 6);
   
-  private final TimerGame _areaSearchTimer = new TimerGame(5.0D);
+  private final TimerGame areaSearchTimer = new TimerGame(5.0D);
   
   private BlockPos origin;
   
-  private BlockPos _destroyTarget;
+  private BlockPos destroyTarget;
   
   private BlockPos getBuildableAreaNearby(AltoClefController mod) {
     BlockPos checkOrigin = mod.getPlayer().getBlockPos();
@@ -90,8 +90,8 @@ public class ConstructNetherPortalObsidianTask extends Task {
       return (Task)TaskCatalogue.getItemTask(Items.OBSIDIAN, neededObsidian);
     } 
     if (this.origin == null) {
-      if (this._areaSearchTimer.elapsed()) {
-        this._areaSearchTimer.reset();
+      if (this .areaSearchTimer.elapsed()) {
+        this .areaSearchTimer.reset();
         Debug.logMessage("(Searching for area to build portal nearby...)");
         this.origin = getBuildableAreaNearby(mod);
       } 
@@ -127,13 +127,13 @@ public class ConstructNetherPortalObsidianTask extends Task {
       setDebugState("Placing frame...");
       return (Task)new PlaceBlockTask(placeTarget, new Block[] { Blocks.OBSIDIAN });
     } 
-    if (this._destroyTarget != null && !WorldHelper.isAir(controller.getWorld().getBlockState(this._destroyTarget).getBlock()))
-      return (Task)new DestroyBlockTask(this._destroyTarget); 
+    if (this .destroyTarget != null && !WorldHelper.isAir(controller.getWorld().getBlockState(this .destroyTarget).getBlock()))
+      return (Task)new DestroyBlockTask(this .destroyTarget); 
     for (Vec3i middleOffs : PORTAL_INTERIOR) {
       BlockPos middlePos = this.origin.add(middleOffs);
       if (!WorldHelper.isAir(controller.getWorld().getBlockState(middlePos).getBlock())) {
-        this._destroyTarget = middlePos;
-        return (Task)new DestroyBlockTask(this._destroyTarget);
+        this .destroyTarget = middlePos;
+        return (Task)new DestroyBlockTask(this .destroyTarget);
       } 
     } 
     return (Task)new InteractWithBlockTask(new ItemTarget(Items.FLINT_AND_STEEL, 1), Direction.UP, this.origin.down(), true);

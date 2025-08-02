@@ -6,16 +6,16 @@ import java.util.Collections;
 import java.util.List;
 
 public abstract class TypeSquasher<T extends ResourceTask> {
-  private final List<T> _tasks = new ArrayList<>();
+  private final List<T> tasks = new ArrayList<>();
   
   void add(T task) {
-    this._tasks.add(task);
+    this .tasks.add(task);
   }
   
   public List<ResourceTask> getSquashed() {
-    if (this._tasks.isEmpty())
+    if (this .tasks.isEmpty())
       return Collections.emptyList(); 
-    return getSquashed(this._tasks);
+    return getSquashed(this .tasks);
   }
   
   protected abstract List<ResourceTask> getSquashed(List<T> paramList);

@@ -28,27 +28,27 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 
 public class CollectCropTask extends ResourceTask {
-  private final ItemTarget _cropToCollect;
+  private final ItemTarget cropToCollect;
   
-  private final Item[] _cropSeed;
+  private final Item[] cropSeed;
   
-  private final Predicate<BlockPos> _canBreak;
+  private final Predicate<BlockPos> canBreak;
   
-  private final Block[] _cropBlock;
+  private final Block[] cropBlock;
   
-  private final Set<BlockPos> _emptyCropland = new HashSet<>();
+  private final Set<BlockPos> emptyCropland = new HashSet<>();
   
-  private final Task _collectSeedTask;
+  private final Task collectSeedTask;
   
-  private final HashSet<BlockPos> _wasFullyGrown = new HashSet<>();
+  private final HashSet<BlockPos> wasFullyGrown = new HashSet<>();
   
   public CollectCropTask(ItemTarget cropToCollect, Block[] cropBlock, Item[] cropSeed, Predicate<BlockPos> canBreak) {
     super(cropToCollect);
-    this._cropToCollect = cropToCollect;
-    this._cropSeed = cropSeed;
-    this._canBreak = canBreak;
-    this._cropBlock = cropBlock;
-    this._collectSeedTask = (Task)new PickupDroppedItemTask(new ItemTarget(cropSeed, 1), true);
+    this .cropToCollect = cropToCollect;
+    this .cropSeed = cropSeed;
+    this .canBreak = canBreak;
+    this .cropBlock = cropBlock;
+    this .collectSeedTask = (Task)new PickupDroppedItemTask(new ItemTarget(cropSeed, 1), true);
   }
   
   public CollectCropTask(ItemTarget cropToCollect, Block[] cropBlock, Item... cropSeed) {
@@ -70,41 +70,41 @@ public class CollectCropTask extends ResourceTask {
   protected void onResourceStart(AltoClefController mod) {}
   
   protected Task onResourceTick(AltoClefController mod) {
-    if (hasEmptyCrops(mod) && mod.getModSettings().shouldReplantCrops() && !mod.getItemStorage().hasItem(this._cropSeed)) {
-      if (this._collectSeedTask.isActive() && !this._collectSeedTask.isFinished()) {
+    if (hasEmptyCrops(mod) && mod.getModSettings().shouldReplantCrops() && !mod.getItemStorage().hasItem(this .cropSeed)) {
+      if (this .collectSeedTask.isActive() && !this .collectSeedTask.isFinished()) {
         setDebugState("Picking up dropped seeds");
-        return this._collectSeedTask;
+        return this .collectSeedTask;
       } 
-      if (mod.getEntityTracker().itemDropped(this._cropSeed)) {
-        Optional<ItemEntity> closest = mod.getEntityTracker().getClosestItemDrop(mod.getPlayer().getPos(), this._cropSeed);
+      if (mod.getEntityTracker().itemDropped(this .cropSeed)) {
+        Optional<ItemEntity> closest = mod.getEntityTracker().getClosestItemDrop(mod.getPlayer().getPos(), this .cropSeed);
         if (closest.isPresent() && ((ItemEntity)closest.get()).isInRange((Entity)mod.getPlayer(), 7.0D))
-          return this._collectSeedTask; 
+          return this .collectSeedTask; 
       } 
     } 
     if (shouldReplantNow(mod)) {
       setDebugState("Replanting...");
-      this._emptyCropland.removeIf(blockPos -> !isEmptyCrop(mod, blockPos));
-      assert !this._emptyCropland.isEmpty();
-      Objects.requireNonNull(this._emptyCropland);
+      this .emptyCropland.removeIf(blockPos -> !isEmptyCrop(mod, blockPos));
+      assert !this .emptyCropland.isEmpty();
+      Objects.requireNonNull(this .emptyCropland);
       return new DoToClosestBlockTask(
-              blockPos -> new InteractWithBlockTask(new ItemTarget(_cropSeed, 1), Direction.UP, blockPos.down(), true),
-              pos -> _emptyCropland.stream().min(StlHelper.compareValues(block -> BlockPosVer.getSquaredDistance(block,pos))),
-              _emptyCropland::contains,
+              blockPos -> new InteractWithBlockTask(new ItemTarget(cropSeed, 1), Direction.UP, blockPos.down(), true),
+              pos -> emptyCropland.stream().min(StlHelper.compareValues(block -> BlockPosVer.getSquaredDistance(block,pos))),
+              emptyCropland::contains,
               Blocks.FARMLAND); // Blocks.FARMLAND is useless to be put here
       }
-    Predicate<BlockPos> validCrop = blockPos -> !this._canBreak.test(blockPos) ? false : (
+    Predicate<BlockPos> validCrop = blockPos -> !this .canBreak.test(blockPos) ? false : (
       
       (mod.getModSettings().shouldReplantCrops() && !isMature(mod, blockPos)) ? false : ((mod.getWorld().getBlockState(blockPos).getBlock() == Blocks.WHEAT) ? isMature(mod, blockPos) : true));
-    if (isInWrongDimension(mod) && !mod.getBlockScanner().anyFound(validCrop, this._cropBlock))
+    if (isInWrongDimension(mod) && !mod.getBlockScanner().anyFound(validCrop, this .cropBlock))
       return getToCorrectDimensionTask(mod); 
     setDebugState("Breaking crops.");
     return new DoToClosestBlockTask(
             blockPos -> {
-              _emptyCropland.add(blockPos);
+              emptyCropland.add(blockPos);
               return new DestroyBlockTask(blockPos);
             },
             validCrop,
-            _cropBlock
+            cropBlock
     );
   }
   
@@ -117,11 +117,11 @@ public class CollectCropTask extends ResourceTask {
   }
   
   private boolean shouldReplantNow(AltoClefController mod) {
-    return (mod.getModSettings().shouldReplantCrops() && hasEmptyCrops(mod) && mod.getItemStorage().hasItem(this._cropSeed));
+    return (mod.getModSettings().shouldReplantCrops() && hasEmptyCrops(mod) && mod.getItemStorage().hasItem(this .cropSeed));
   }
   
   private boolean hasEmptyCrops(AltoClefController mod) {
-    for (BlockPos pos : this._emptyCropland) {
+    for (BlockPos pos : this .emptyCropland) {
       if (isEmptyCrop(mod, pos))
         return true; 
     } 
@@ -135,28 +135,28 @@ public class CollectCropTask extends ResourceTask {
   protected boolean isEqualResource(ResourceTask other) {
     if (other instanceof adris.altoclef.tasks.resources.CollectCropTask) {
       adris.altoclef.tasks.resources.CollectCropTask task = (adris.altoclef.tasks.resources.CollectCropTask)other;
-      return (Arrays.equals(task._cropSeed, this._cropSeed) && Arrays.equals(task._cropBlock, this._cropBlock) && task._cropToCollect.equals(this._cropToCollect));
+      return (Arrays.equals(task .cropSeed, this .cropSeed) && Arrays.equals(task .cropBlock, this .cropBlock) && task .cropToCollect.equals(this .cropToCollect));
     } 
     return false;
   }
   
   protected String toDebugStringName() {
-    return "Collecting crops: " + String.valueOf(this._cropToCollect);
+    return "Collecting crops: " + String.valueOf(this .cropToCollect);
   }
   
   private boolean isMature(AltoClefController mod, BlockPos blockPos) {
     if (!mod.getChunkTracker().isChunkLoaded(blockPos) || !WorldHelper.canReach(controller, blockPos))
-      return this._wasFullyGrown.contains(blockPos); 
+      return this .wasFullyGrown.contains(blockPos); 
     BlockState s = mod.getWorld().getBlockState(blockPos);
     Block block = s.getBlock();
     if (block instanceof CropBlock) {
       CropBlock crop = (CropBlock)block;
       boolean mature = crop.isMature(s);
-      if (this._wasFullyGrown.contains(blockPos)) {
+      if (this .wasFullyGrown.contains(blockPos)) {
         if (!mature)
-          this._wasFullyGrown.remove(blockPos); 
+          this .wasFullyGrown.remove(blockPos); 
       } else if (mature) {
-        this._wasFullyGrown.add(blockPos);
+        this .wasFullyGrown.add(blockPos);
       } 
       return mature;
     } 

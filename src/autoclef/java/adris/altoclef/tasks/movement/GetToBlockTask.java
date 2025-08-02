@@ -12,11 +12,11 @@ import baritone.api.pathing.goals.GoalBlock;
 import net.minecraft.util.math.BlockPos;
 
 public class GetToBlockTask extends CustomBaritoneGoalTask implements ITaskRequiresGrounded {
-  private final BlockPos _position;
+  private final BlockPos position;
   
-  private final boolean _preferStairs;
+  private final boolean preferStairs;
   
-  private final Dimension _dimension;
+  private final Dimension dimension;
   
   private int finishedTicks = 0;
   
@@ -31,9 +31,9 @@ public class GetToBlockTask extends CustomBaritoneGoalTask implements ITaskRequi
   }
   
   public GetToBlockTask(BlockPos position, boolean preferStairs, Dimension dimension) {
-    this._dimension = dimension;
-    this._position = position;
-    this._preferStairs = preferStairs;
+    this .dimension = dimension;
+    this .position = position;
+    this .preferStairs = preferStairs;
   }
   
   public GetToBlockTask(BlockPos position) {
@@ -41,8 +41,8 @@ public class GetToBlockTask extends CustomBaritoneGoalTask implements ITaskRequi
   }
   
   protected Task onTick() {
-    if (this._dimension != null && WorldHelper.getCurrentDimension(controller) != this._dimension)
-      return (Task)new DefaultGoToDimensionTask(this._dimension); 
+    if (this .dimension != null && WorldHelper.getCurrentDimension(controller) != this .dimension)
+      return (Task)new DefaultGoToDimensionTask(this .dimension); 
     if (isFinished()) {
       this.finishedTicks++;
     } else {
@@ -61,7 +61,7 @@ public class GetToBlockTask extends CustomBaritoneGoalTask implements ITaskRequi
   
   protected void onStart() {
     super.onStart();
-    if (this._preferStairs) {
+    if (this .preferStairs) {
       controller.getBehaviour().push();
       controller.getBehaviour().setPreferredStairs(true);
     } 
@@ -69,32 +69,32 @@ public class GetToBlockTask extends CustomBaritoneGoalTask implements ITaskRequi
   
   protected void onStop(Task interruptTask) {
     super.onStop(interruptTask);
-    if (this._preferStairs)
+    if (this .preferStairs)
       controller.getBehaviour().pop();
   }
   
   protected boolean isEqual(Task other) {
     if (other instanceof adris.altoclef.tasks.movement.GetToBlockTask) {
       adris.altoclef.tasks.movement.GetToBlockTask task = (adris.altoclef.tasks.movement.GetToBlockTask)other;
-      return (task._position.equals(this._position) && task._preferStairs == this._preferStairs && task._dimension == this._dimension);
+      return (task .position.equals(this .position) && task .preferStairs == this .preferStairs && task .dimension == this .dimension);
     } 
     return false;
   }
   
   public boolean isFinished() {
-    return (super.isFinished() && (this._dimension == null || this._dimension == WorldHelper.getCurrentDimension(controller)));
+    return (super.isFinished() && (this .dimension == null || this .dimension == WorldHelper.getCurrentDimension(controller)));
   }
   
   protected String toDebugString() {
-    return "Getting to block " + String.valueOf(this._position) + ((this._dimension != null) ? (" in dimension " + String.valueOf(this._dimension)) : "");
+    return "Getting to block " + String.valueOf(this .position) + ((this .dimension != null) ? (" in dimension " + String.valueOf(this .dimension)) : "");
   }
   
   protected Goal newGoal(AltoClefController mod) {
-    return (Goal)new GoalBlock(this._position);
+    return (Goal)new GoalBlock(this .position);
   }
   
   protected void onWander(AltoClefController mod) {
     super.onWander(mod);
-    mod.getBlockScanner().requestBlockUnreachable(this._position);
+    mod.getBlockScanner().requestBlockUnreachable(this .position);
   }
 }

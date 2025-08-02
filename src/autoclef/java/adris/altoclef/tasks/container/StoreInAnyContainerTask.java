@@ -20,12 +20,12 @@ import java.util.stream.Stream;
 
 public class StoreInAnyContainerTask extends Task {
 
-  private final ItemTarget[] _toStore;
-  private final boolean _getIfNotPresent;
+  private final ItemTarget[] toStore;
+  private final boolean getIfNotPresent;
 
   public StoreInAnyContainerTask(boolean getIfNotPresent, ItemTarget... toStore) {
-    this._getIfNotPresent = getIfNotPresent;
-    this._toStore = toStore;
+    this .getIfNotPresent = getIfNotPresent;
+    this .toStore = toStore;
   }
 
   @Override
@@ -41,8 +41,8 @@ public class StoreInAnyContainerTask extends Task {
     }
 
     // Do we need to collect items first?
-    if (_getIfNotPresent) {
-      for (ItemTarget target : _toStore) {
+    if (getIfNotPresent) {
+      for (ItemTarget target : toStore) {
         // Check against what we have in our inventory right now.
         if (controller.getItemStorage().getItemCount(target) < target.getTargetCount()) {
           setDebugState("Collecting " + target + " before storing.");
@@ -97,7 +97,7 @@ public class StoreInAnyContainerTask extends Task {
 
   private ItemTarget[] getItemsToStore(AltoClefController controller) {
     // Return a list of items that the player has and wants to store.
-    return Arrays.stream(_toStore)
+    return Arrays.stream(toStore)
             .filter(target -> controller.getItemStorage().hasItem(target.getMatches()))
             .toArray(ItemTarget[]::new);
   }
@@ -123,13 +123,13 @@ public class StoreInAnyContainerTask extends Task {
   @Override
   protected boolean isEqual(Task other) {
     if (other instanceof StoreInAnyContainerTask task) {
-      return task._getIfNotPresent == this._getIfNotPresent && Arrays.equals(task._toStore, this._toStore);
+      return task .getIfNotPresent == this .getIfNotPresent && Arrays.equals(task .toStore, this .toStore);
     }
     return false;
   }
 
   @Override
   protected String toDebugString() {
-    return "Storing in any container: " + Arrays.toString(_toStore);
+    return "Storing in any container: " + Arrays.toString(toStore);
   }
 }

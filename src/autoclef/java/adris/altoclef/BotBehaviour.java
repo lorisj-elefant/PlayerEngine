@@ -141,7 +141,7 @@ public class BotBehaviour {
   }
 
   public void setAllowWalkThroughFlowingWater(boolean value) {
-    current()._allowWalkThroughFlowingWater = value;
+    current() .allowWalkThroughFlowingWater = value;
     current().applyState();
   }
 
@@ -282,7 +282,7 @@ public class BotBehaviour {
     public List<Predicate<BlockPos>> avoidWalkingThrough = new ArrayList<>();
     public List<BiPredicate<BlockState, ItemStack>> forceUseTools = new ArrayList<>();
     public List<BiFunction<Double, BlockPos, Double>> globalHeuristics = new ArrayList<>();
-    public boolean _allowWalkThroughFlowingWater = false;
+    public boolean allowWalkThroughFlowingWater = false;
 
     // Minecraft config
     public boolean pauseOnLostFocus = true;
@@ -353,7 +353,7 @@ public class BotBehaviour {
       synchronized (settings.getGlobalHeuristicMutex()) {
         globalHeuristics = new ArrayList<>(settings.getGlobalHeuristics());
       }
-      _allowWalkThroughFlowingWater = settings.isFlowingWaterPassAllowed();
+      allowWalkThroughFlowingWater = settings.isFlowingWaterPassAllowed();
 
       rayFluidHandling = RayTraceUtils.fluidHandling;
     }
@@ -402,7 +402,7 @@ public class BotBehaviour {
       }
 
 
-      sa.setFlowingWaterPass(_allowWalkThroughFlowingWater);
+      sa.setFlowingWaterPass(allowWalkThroughFlowingWater);
       sa.allowSwimThroughLava(swimThroughLava);
 
       // Extra / hard coded

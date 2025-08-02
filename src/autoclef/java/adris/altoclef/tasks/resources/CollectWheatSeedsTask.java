@@ -10,11 +10,11 @@ import net.minecraft.item.Item;
 import net.minecraft.item.Items;
 
 public class CollectWheatSeedsTask extends ResourceTask {
-  private final int _count;
+  private final int count;
   
   public CollectWheatSeedsTask(int count) {
     super(Items.WHEAT_SEEDS, count);
-    this._count = count;
+    this .count = count;
   }
   
   protected boolean shouldAvoidPickingUp(AltoClefController mod) {
@@ -26,7 +26,7 @@ public class CollectWheatSeedsTask extends ResourceTask {
   protected Task onResourceTick(AltoClefController mod) {
     if (mod.getBlockScanner().anyFound(new Block[] { Blocks.WHEAT }))
       return (Task)new CollectCropTask(Items.AIR, 999, Blocks.WHEAT, new Item[] { Items.WHEAT_SEEDS }); 
-    return (Task)new MineAndCollectTask(Items.WHEAT_SEEDS, this._count, new Block[] { Blocks.GRASS, Blocks.TALL_GRASS }, MiningRequirement.HAND);
+    return (Task)new MineAndCollectTask(Items.WHEAT_SEEDS, this .count, new Block[] { Blocks.GRASS, Blocks.TALL_GRASS }, MiningRequirement.HAND);
   }
   
   protected void onResourceStop(AltoClefController mod, Task interruptTask) {}
@@ -36,6 +36,6 @@ public class CollectWheatSeedsTask extends ResourceTask {
   }
   
   protected String toDebugStringName() {
-    return "Collecting " + this._count + " wheat seeds.";
+    return "Collecting " + this .count + " wheat seeds.";
   }
 }

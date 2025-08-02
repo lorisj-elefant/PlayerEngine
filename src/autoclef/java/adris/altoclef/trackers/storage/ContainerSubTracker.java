@@ -19,13 +19,13 @@ import java.util.function.Predicate;
 
 public class ContainerSubTracker extends Tracker {
 
-  private final HashMap<Dimension, HashMap<BlockPos, ContainerCache>> _containerCaches = new HashMap<>();
-  private BlockPos _lastInteractedContainer;
+  private final HashMap<Dimension, HashMap<BlockPos, ContainerCache>> containerCaches = new HashMap<>();
+  private BlockPos lastInteractedContainer;
 
   public ContainerSubTracker(TrackerManager manager) {
     super(manager);
     for (Dimension dimension : Dimension.values()) {
-      _containerCaches.put(dimension, new HashMap<>());
+      containerCaches.put(dimension, new HashMap<>());
     }
   }
 
@@ -36,7 +36,7 @@ public class ContainerSubTracker extends Tracker {
   public Optional<ContainerCache> WritableCache(AltoClefController controller, BlockPos pos) {
     BlockEntity be = controller.getWorld().getBlockEntity(pos);
     if (be instanceof Inventory containerInventory) {
-      _lastInteractedContainer = pos;
+      lastInteractedContainer = pos;
       Block block = controller.getWorld().getBlockState(pos).getBlock();
       ContainerType type = ContainerType.getFromBlock(block);
       if (type == ContainerType.EMPTY) {
@@ -44,24 +44,24 @@ public class ContainerSubTracker extends Tracker {
         return Optional.empty();
       }
 
-      ContainerCache cache = _containerCaches.get(WorldHelper.getCurrentDimension(controller))
+      ContainerCache cache = containerCaches.get(WorldHelper.getCurrentDimension(controller))
               .computeIfAbsent(pos, p -> new ContainerCache(WorldHelper.getCurrentDimension(controller), p, type));
 
       // Update cache from the real inventory
       cache.update(containerInventory, (s)->{});
       return Optional.of(cache);
     }
-    _containerCaches.get(WorldHelper.getCurrentDimension(controller)).remove(pos);
+    containerCaches.get(WorldHelper.getCurrentDimension(controller)).remove(pos);
     return Optional.empty();
   }
 
   public Optional<ContainerCache> getContainerAtPosition(BlockPos pos) {
-    return Optional.ofNullable(_containerCaches.get(WorldHelper.getCurrentDimension(mod)).get(pos));
+    return Optional.ofNullable(containerCaches.get(WorldHelper.getCurrentDimension(mod)).get(pos));
   }
 
   public List<ContainerCache> getCachedContainers(Predicate<ContainerCache> accept) {
     List<ContainerCache> result = new ArrayList<>();
-    _containerCaches.get(WorldHelper.getCurrentDimension(mod)).values().forEach(cache -> {
+    containerCaches.get(WorldHelper.getCurrentDimension(mod)).values().forEach(cache -> {
       if (accept.test(cache)) {
         result.add(cache);
       }
@@ -74,7 +74,7 @@ public class ContainerSubTracker extends Tracker {
   }
 
   public Optional<BlockPos> getLastInteractedContainer() {
-    return Optional.ofNullable(_lastInteractedContainer);
+    return Optional.ofNullable(lastInteractedContainer);
   }
 
   @Override
@@ -84,7 +84,7 @@ public class ContainerSubTracker extends Tracker {
 
   @Override
   protected void reset() {
-    _containerCaches.values().forEach(HashMap::clear);
-    _lastInteractedContainer = null;
+    containerCaches.values().forEach(HashMap::clear);
+    lastInteractedContainer = null;
   }
 }

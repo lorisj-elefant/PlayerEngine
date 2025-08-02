@@ -15,14 +15,14 @@ import net.minecraft.util.math.BlockPos;
 
 public class StoreInStashTask extends Task {
 
-  private final ItemTarget[] _toStore;
-  private final boolean _getIfNotPresent;
-  private final BlockRange _stashRange;
+  private final ItemTarget[] toStore;
+  private final boolean getIfNotPresent;
+  private final BlockRange stashRange;
 
   public StoreInStashTask(boolean getIfNotPresent, BlockRange stashRange, ItemTarget... toStore) {
-    this._getIfNotPresent = getIfNotPresent;
-    this._stashRange = stashRange;
-    this._toStore = toStore;
+    this .getIfNotPresent = getIfNotPresent;
+    this .stashRange = stashRange;
+    this .toStore = toStore;
   }
 
   @Override
@@ -38,8 +38,8 @@ public class StoreInStashTask extends Task {
     }
 
     // Do we need to collect items first?
-    if (_getIfNotPresent) {
-      for (ItemTarget target : _toStore) {
+    if (getIfNotPresent) {
+      for (ItemTarget target : toStore) {
         if (controller.getItemStorage().getItemCount(target) < target.getTargetCount()) {
           setDebugState("Collecting " + target + " before stashing.");
           return TaskCatalogue.getItemTask(target);
@@ -50,7 +50,7 @@ public class StoreInStashTask extends Task {
     // Find a valid container within the stash range.
     Optional<BlockPos> closestContainer = controller.getBlockScanner().getNearestBlock(
             pos -> {
-              if (!_stashRange.contains(controller, pos)) return false;
+              if (!stashRange.contains(controller, pos)) return false;
               Optional<ContainerCache> cache = controller.getItemStorage().getContainerAtPosition(pos);
               // Valid if it's not full.
               return cache.map(containerCache -> !containerCache.isFull()).orElse(true);
@@ -65,9 +65,9 @@ public class StoreInStashTask extends Task {
     }
 
     // If we are not in the stash area, go there.
-    if (!_stashRange.contains(controller, controller.getEntity().getBlockPos())) {
+    if (!stashRange.contains(controller, controller.getEntity().getBlockPos())) {
       setDebugState("Traveling to stash area.");
-      BlockPos centerStash = _stashRange.getCenter();
+      BlockPos centerStash = stashRange.getCenter();
       return new GetToXZTask(centerStash.getX(), centerStash.getZ());
     }
 
@@ -83,7 +83,7 @@ public class StoreInStashTask extends Task {
   }
 
   private ItemTarget[] getItemsToStore(AltoClefController controller) {
-    return Arrays.stream(_toStore)
+    return Arrays.stream(toStore)
             .filter(target -> controller.getItemStorage().hasItem(target.getMatches()))
             .toArray(ItemTarget[]::new);
   }
@@ -96,15 +96,15 @@ public class StoreInStashTask extends Task {
   @Override
   protected boolean isEqual(Task other) {
     if (other instanceof StoreInStashTask task) {
-      return task._stashRange.equals(this._stashRange) &&
-              task._getIfNotPresent == this._getIfNotPresent &&
-              Arrays.equals(task._toStore, this._toStore);
+      return task .stashRange.equals(this .stashRange) &&
+              task .getIfNotPresent == this .getIfNotPresent &&
+              Arrays.equals(task .toStore, this .toStore);
     }
     return false;
   }
 
   @Override
   protected String toDebugString() {
-    return "Storing in stash " + _stashRange + ": " + Arrays.toString(_toStore);
+    return "Storing in stash " + stashRange + ": " + Arrays.toString(toStore);
   }
 }

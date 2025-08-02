@@ -39,19 +39,19 @@ public class PlaceBlockNearbyTask extends Task {
   
   private final TimeoutWanderTask wander = new TimeoutWanderTask(5.0F);
   
-  private final TimerGame _randomlookTimer = new TimerGame(0.25D);
+  private final TimerGame randomlookTimer = new TimerGame(0.25D);
   
-  private final Predicate<BlockPos> _canPlaceHere;
+  private final Predicate<BlockPos> canPlaceHere;
   
   private BlockPos justPlaced;
   
   private BlockPos tryPlace;
   
-  private Subscription<BlockPlaceEvent> _onBlockPlaced;
+  private Subscription<BlockPlaceEvent> onBlockPlaced;
   
   public PlaceBlockNearbyTask(Predicate<BlockPos> canPlaceHere, Block... toPlace) {
     this.toPlace = toPlace;
-    this._canPlaceHere = canPlaceHere;
+    this .canPlaceHere = canPlaceHere;
   }
   
   public PlaceBlockNearbyTask(Block... toPlace) {
@@ -61,7 +61,7 @@ public class PlaceBlockNearbyTask extends Task {
   protected void onStart() {
     this.progressChecker.reset();
     controller.getBaritone().getInputOverrideHandler().setInputForceState(Input.CLICK_RIGHT, false);
-    this._onBlockPlaced = EventBus.subscribe(BlockPlaceEvent.class, evt -> {
+    this .onBlockPlaced = EventBus.subscribe(BlockPlaceEvent.class, evt -> {
           if (ArrayUtils.contains(this.toPlace, evt.blockState.getBlock()))
             stopPlacing(); 
         });
@@ -75,7 +75,7 @@ public class PlaceBlockNearbyTask extends Task {
 //    if (cursorStack.isEmpty())
 //      StorageHelper.closeScreen();
     BlockPos current = getCurrentlyLookingBlockPlace(mod);
-    if (current != null && this._canPlaceHere.test(current)) {
+    if (current != null && this .canPlaceHere.test(current)) {
       setDebugState("Placing since we can...");
       if (mod.getSlotHandler().forceEquipItem(ItemHelper.blocksToItems(this.toPlace)) && 
         place(mod, current))
@@ -102,8 +102,8 @@ public class PlaceBlockNearbyTask extends Task {
       this.justPlaced = this.tryPlace;
       return (Task)new PlaceBlockTask(this.tryPlace, this.toPlace);
     } 
-    if (this._randomlookTimer.elapsed()) {
-      this._randomlookTimer.reset();
+    if (this .randomlookTimer.elapsed()) {
+      this .randomlookTimer.reset();
       LookHelper.randomOrientation(controller);
     } 
     setDebugState("Wandering until we randomly place or find a good place spot.");
@@ -112,7 +112,7 @@ public class PlaceBlockNearbyTask extends Task {
   
   protected void onStop(Task interruptTask) {
     stopPlacing();
-    EventBus.unsubscribe(this._onBlockPlaced);
+    EventBus.unsubscribe(this .onBlockPlaced);
   }
   
   protected boolean isEqual(Task other) {
@@ -191,7 +191,7 @@ public class PlaceBlockNearbyTask extends Task {
       boolean inside = WorldHelper.isInsidePlayer(controller, blockPos);
       if (solid && !WorldHelper.canBreak(controller, blockPos))
         continue; 
-      if (!this._canPlaceHere.test(blockPos))
+      if (!this .canPlaceHere.test(blockPos))
         continue; 
       if (!WorldHelper.canReach(controller, blockPos) || !WorldHelper.canPlace(controller, blockPos))
         continue; 

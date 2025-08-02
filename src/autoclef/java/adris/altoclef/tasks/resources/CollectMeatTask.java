@@ -35,12 +35,12 @@ public class CollectMeatTask extends Task {
   private static final double NEARBY_PICKUP_RADIUS = 15.0;
 
 
-  private final double _unitsNeeded;
-  private final TimerGame _checkNewOptionsTimer = new TimerGame(10);
-  private Task _currentResourceTask = null;
+  private final double unitsNeeded;
+  private final TimerGame checkNewOptionsTimer = new TimerGame(10);
+  private Task currentResourceTask = null;
 
   public CollectMeatTask(double unitsNeeded) {
-    this._unitsNeeded = unitsNeeded;
+    this .unitsNeeded = unitsNeeded;
   }
 
   @Override
@@ -59,7 +59,7 @@ public class CollectMeatTask extends Task {
     double potentialFood = calculateFoodPotential(controller);
 
     // If we have enough potential food from raw meat, cook it.
-    if (potentialFood >= _unitsNeeded) {
+    if (potentialFood >= unitsNeeded) {
       SmeltTarget toSmelt = getBestSmeltTarget(controller);
       if (toSmelt != null) {
         setDebugState("Cooking meat");
@@ -68,14 +68,14 @@ public class CollectMeatTask extends Task {
     }
 
     // Re-evaluate our strategy periodically.
-    if (_checkNewOptionsTimer.elapsed()) {
-      _checkNewOptionsTimer.reset();
-      _currentResourceTask = null;
+    if (checkNewOptionsTimer.elapsed()) {
+      checkNewOptionsTimer.reset();
+      currentResourceTask = null;
     }
 
     // If we have a cached task, run it.
-    if (_currentResourceTask != null && _currentResourceTask.isActive() && !_currentResourceTask.isFinished() && !_currentResourceTask.thisOrChildAreTimedOut()) {
-      return _currentResourceTask;
+    if (currentResourceTask != null && currentResourceTask.isActive() && !currentResourceTask.isFinished() && !currentResourceTask.thisOrChildAreTimedOut()) {
+      return currentResourceTask;
     }
 
     // Strategy: Find the best meat source.
@@ -83,8 +83,8 @@ public class CollectMeatTask extends Task {
 //    for (CollectFoodTask.CookableFoodTarget cookable : COOKABLE_MEATS) {
 //      if (controller.getEntityTracker().itemDropped(cookable.getRaw(), cookable.getCooked())) {
 //        setDebugState("Picking up dropped meat");
-//        _currentResourceTask = new PickupDroppedItemTask(new ItemTarget(cookable.getRaw(), cookable.getCooked()), true);
-//        return _currentResourceTask;
+//        currentResourceTask = new PickupDroppedItemTask(new ItemTarget(cookable.getRaw(), cookable.getCooked()), true);
+//        return currentResourceTask;
 //      }
 //    }
     Item[] allMeats = Arrays.stream(COOKABLE_MEATS).flatMap(meat -> Stream.of(meat.getRaw(), meat.getCooked())).toArray(Item[]::new);
@@ -92,8 +92,8 @@ public class CollectMeatTask extends Task {
 
     if (closestDrop.isPresent() && closestDrop.get().distanceTo(controller.getPlayer()) < NEARBY_PICKUP_RADIUS) {
       setDebugState("Picking up nearby dropped meat");
-      _currentResourceTask = new PickupDroppedItemTask(new ItemTarget(allMeats, 9999), true);
-      return _currentResourceTask;
+      currentResourceTask = new PickupDroppedItemTask(new ItemTarget(allMeats, 9999), true);
+      return currentResourceTask;
     }
 
     // 2. Kill animals for meat (pick the best one).
@@ -105,8 +105,8 @@ public class CollectMeatTask extends Task {
               .findFirst()
               .get()
               .getRaw();
-      _currentResourceTask = new KillAndLootTask(bestEntityToKill.getClass(), new ItemTarget(rawFood, 1));
-      return _currentResourceTask;
+      currentResourceTask = new KillAndLootTask(bestEntityToKill.getClass(), new ItemTarget(rawFood, 1));
+      return currentResourceTask;
     }
 
     // 3. If nothing is found, wander.
@@ -127,20 +127,20 @@ public class CollectMeatTask extends Task {
     for (CollectFoodTask.CookableFoodTarget meat : COOKABLE_MEATS) {
       currentFoodScore += controller.getItemStorage().getItemCount(meat.getCooked()) * meat.getCookedUnits();
     }
-    return currentFoodScore >= _unitsNeeded;
+    return currentFoodScore >= unitsNeeded;
   }
 
   @Override
   protected boolean isEqual(Task other) {
     if (other instanceof CollectMeatTask task) {
-      return task._unitsNeeded == this._unitsNeeded;
+      return task .unitsNeeded == this .unitsNeeded;
     }
     return false;
   }
 
   @Override
   protected String toDebugString() {
-    return "Collecting " + _unitsNeeded + " units of meat.";
+    return "Collecting " + unitsNeeded + " units of meat.";
   }
 
   private SmeltTarget getBestSmeltTarget(AltoClefController controller) {

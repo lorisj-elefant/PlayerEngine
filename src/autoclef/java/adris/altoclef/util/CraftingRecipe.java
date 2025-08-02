@@ -130,7 +130,7 @@ public class CraftingRecipe {
     if (this.shortName != null) {
       name = name + "craft " + name;
     } else {
-      name = name + "_slots=" + name + ", _width=" + Arrays.toString(this.slots) + ", _height=" + this.width + ", _shapeless=" + this.height;
+      name = name + "_slots=" + name + ", width=" + Arrays.toString(this.slots) + ", height=" + this.width + ", shapeless=" + this.height;
     } 
     name = name + "}";
     return name;

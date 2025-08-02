@@ -15,23 +15,23 @@ import net.minecraft.block.Block;
 import net.minecraft.item.Item;
 
 public class CarveThenCollectTask extends ResourceTask {
-  private final ItemTarget _target;
+  private final ItemTarget target;
   
-  private final Block[] _targetBlocks;
+  private final Block[] targetBlocks;
   
-  private final ItemTarget _toCarve;
+  private final ItemTarget toCarve;
   
-  private final Block[] _toCarveBlocks;
+  private final Block[] toCarveBlocks;
   
-  private final ItemTarget _carveWith;
+  private final ItemTarget carveWith;
   
   public CarveThenCollectTask(ItemTarget target, Block[] targetBlocks, ItemTarget toCarve, Block[] toCarveBlocks, ItemTarget carveWith) {
     super(target);
-    this._target = target;
-    this._targetBlocks = targetBlocks;
-    this._toCarve = toCarve;
-    this._toCarveBlocks = toCarveBlocks;
-    this._carveWith = carveWith;
+    this .target = target;
+    this .targetBlocks = targetBlocks;
+    this .toCarve = toCarve;
+    this .toCarveBlocks = toCarveBlocks;
+    this .carveWith = carveWith;
   }
   
   public CarveThenCollectTask(Item target, int targetCount, Block targetBlock, Item toCarve, Block toCarveBlock, Item carveWith) {
@@ -45,26 +45,26 @@ public class CarveThenCollectTask extends ResourceTask {
   protected void onResourceStart(AltoClefController mod) {}
   
   protected Task onResourceTick(AltoClefController mod) {
-    if (mod.getBlockScanner().anyFound(this._targetBlocks)) {
+    if (mod.getBlockScanner().anyFound(this .targetBlocks)) {
       setDebugState("Breaking carved/target block");
-      return (Task)new DoToClosestBlockTask(adris.altoclef.tasks.construction.DestroyBlockTask::new, this._targetBlocks);
+      return (Task)new DoToClosestBlockTask(adris.altoclef.tasks.construction.DestroyBlockTask::new, this .targetBlocks);
     } 
-    if (!StorageHelper.itemTargetsMetInventory(mod, new ItemTarget[] { this._carveWith })) {
+    if (!StorageHelper.itemTargetsMetInventory(mod, new ItemTarget[] { this .carveWith })) {
       setDebugState("Collect our carve tool");
-      return (Task)TaskCatalogue.getItemTask(this._carveWith);
+      return (Task)TaskCatalogue.getItemTask(this .carveWith);
     } 
-    if (mod.getBlockScanner().anyFound(this._toCarveBlocks)) {
+    if (mod.getBlockScanner().anyFound(this .toCarveBlocks)) {
       setDebugState("Carving block");
-      return (Task)new DoToClosestBlockTask(blockPos -> new InteractWithBlockTask(this._carveWith, blockPos, false), this._toCarveBlocks);
+      return (Task)new DoToClosestBlockTask(blockPos -> new InteractWithBlockTask(this .carveWith, blockPos, false), this .toCarveBlocks);
     } 
-    int neededCarveItems = this._target.getTargetCount() - mod.getItemStorage().getItemCount(new ItemTarget[] { this._target });
-    int currentCarveItems = mod.getItemStorage().getItemCount(new ItemTarget[] { this._toCarve });
+    int neededCarveItems = this .target.getTargetCount() - mod.getItemStorage().getItemCount(new ItemTarget[] { this .target });
+    int currentCarveItems = mod.getItemStorage().getItemCount(new ItemTarget[] { this .toCarve });
     if (neededCarveItems > currentCarveItems) {
       setDebugState("Collecting more blocks to carve");
-      return (Task)TaskCatalogue.getItemTask(this._toCarve);
+      return (Task)TaskCatalogue.getItemTask(this .toCarve);
     } 
     setDebugState("Placing blocks to carve down");
-    return (Task)new PlaceBlockNearbyTask(this._toCarveBlocks);
+    return (Task)new PlaceBlockNearbyTask(this .toCarveBlocks);
   }
   
   protected void onResourceStop(AltoClefController mod, Task interruptTask) {}
@@ -72,12 +72,12 @@ public class CarveThenCollectTask extends ResourceTask {
   protected boolean isEqualResource(ResourceTask other) {
     if (other instanceof adris.altoclef.tasks.resources.CarveThenCollectTask) {
       adris.altoclef.tasks.resources.CarveThenCollectTask task = (adris.altoclef.tasks.resources.CarveThenCollectTask)other;
-      return (task._target.equals(this._target) && task._toCarve.equals(this._toCarve) && Arrays.equals(task._targetBlocks, this._targetBlocks) && Arrays.equals(task._toCarveBlocks, this._toCarveBlocks));
+      return (task .target.equals(this .target) && task .toCarve.equals(this .toCarve) && Arrays.equals(task .targetBlocks, this .targetBlocks) && Arrays.equals(task .toCarveBlocks, this .toCarveBlocks));
     } 
     return false;
   }
   
   protected String toDebugStringName() {
-    return "Getting after carving: " + String.valueOf(this._target);
+    return "Getting after carving: " + String.valueOf(this .target);
   }
 }

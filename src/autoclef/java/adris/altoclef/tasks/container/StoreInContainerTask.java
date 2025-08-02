@@ -28,20 +28,20 @@ public class StoreInContainerTask extends Task {
           Arrays.stream(ItemHelper.itemsToBlocks(ItemHelper.SHULKER_BOXES))
   ).toArray(Block[]::new);
 
-  private final BlockPos _containerPos;
-  private final boolean _getIfNotPresent;
-  private final ItemTarget[] _toStore;
+  private final BlockPos containerPos;
+  private final boolean getIfNotPresent;
+  private final ItemTarget[] toStore;
 
   public StoreInContainerTask(BlockPos targetContainer, boolean getIfNotPresent, ItemTarget... toStore) {
-    this._containerPos = targetContainer;
-    this._getIfNotPresent = getIfNotPresent;
-    this._toStore = toStore;
+    this .containerPos = targetContainer;
+    this .getIfNotPresent = getIfNotPresent;
+    this .toStore = toStore;
   }
 
   @Override
   protected void onStart() {
     // Protect items we want to store
-    for (ItemTarget target : _toStore) {
+    for (ItemTarget target : toStore) {
       controller.getBehaviour().addProtectedItems(target.getMatches());
     }
   }
@@ -54,8 +54,8 @@ public class StoreInContainerTask extends Task {
     }
 
     // Do we need to collect items first?
-    if (_getIfNotPresent) {
-      for (ItemTarget target : _toStore) {
+    if (getIfNotPresent) {
+      for (ItemTarget target : toStore) {
         int needed = target.getTargetCount(); // Simplified: just ensure the total amount is available.
         if (controller.getItemStorage().getItemCount(target) < needed) {
           setDebugState("Collecting " + target + " first.");
@@ -65,26 +65,26 @@ public class StoreInContainerTask extends Task {
     }
 
     // Go to container
-    if (!_containerPos.isWithinDistance(new Vec3i((int) controller.getEntity().getPos().x, (int) controller.getEntity().getPos().y, (int) controller.getEntity().getPos().z), 4.5)) {
+    if (!containerPos.isWithinDistance(new Vec3i((int) controller.getEntity().getPos().x, (int) controller.getEntity().getPos().y, (int) controller.getEntity().getPos().z), 4.5)) {
       setDebugState("Going to container");
-      return new GetToBlockTask(_containerPos);
+      return new GetToBlockTask(containerPos);
     }
 
     // Get inventories
-    BlockEntity be = controller.getWorld().getBlockEntity(_containerPos);
+    BlockEntity be = controller.getWorld().getBlockEntity(containerPos);
     if (!(be instanceof LootableContainerBlockEntity container)) {
-      Debug.logWarning("Block at " + _containerPos + " is not a lootable container. Stopping.");
+      Debug.logWarning("Block at " + containerPos + " is not a lootable container. Stopping.");
       return null;
     }
     Inventory containerInventory = container;
     LivingEntityInventory playerInventory = ((IInventoryProvider) controller.getEntity()).getLivingInventory();
 
     // Update our cache of this container
-    controller.getItemStorage().containers.WritableCache(controller, _containerPos);
+    controller.getItemStorage().containers.WritableCache(controller, containerPos);
 
     // Store items
     setDebugState("Storing items");
-    for (ItemTarget target : _toStore) {
+    for (ItemTarget target : toStore) {
       int currentInContainer = countItem(containerInventory, target);
       if (currentInContainer >= target.getTargetCount()) {
         continue; // This target is satisfied
@@ -124,14 +124,14 @@ public class StoreInContainerTask extends Task {
   @Override
   public boolean isFinished() {
     // Check if all targets are met inside the container
-    BlockEntity be = controller.getWorld().getBlockEntity(_containerPos);
+    BlockEntity be = controller.getWorld().getBlockEntity(containerPos);
     if (be instanceof Inventory containerInv) {
-      return Arrays.stream(_toStore).allMatch(target ->
+      return Arrays.stream(toStore).allMatch(target ->
               countItem(containerInv, target) >= target.getTargetCount()
       );
     }
     // If we can't access the container, assume we're not done unless we have no items to store.
-    return Arrays.stream(_toStore).allMatch(target ->
+    return Arrays.stream(toStore).allMatch(target ->
             controller.getItemStorage().getItemCount(target) == 0
     );
   }
@@ -144,16 +144,16 @@ public class StoreInContainerTask extends Task {
   @Override
   protected boolean isEqual(Task other) {
     if (other instanceof StoreInContainerTask task) {
-      return Objects.equals(task._containerPos, _containerPos) &&
-              task._getIfNotPresent == _getIfNotPresent &&
-              Arrays.equals(task._toStore, _toStore);
+      return Objects.equals(task .containerPos, containerPos) &&
+              task .getIfNotPresent == getIfNotPresent &&
+              Arrays.equals(task .toStore, toStore);
     }
     return false;
   }
 
   @Override
   protected String toDebugString() {
-    return "Storing in container[" + _containerPos.toShortString() + "] " + Arrays.toString(_toStore);
+    return "Storing in container[" + containerPos.toShortString() + "] " + Arrays.toString(toStore);
   }
 
   // Helper to count items in an inventory

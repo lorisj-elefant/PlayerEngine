@@ -159,11 +159,11 @@ public class PlaceBlockTask extends Task implements ITaskRequiresGrounded {
 
   private class PlaceStructureSchematic extends AbstractSchematic {
 
-    private final AltoClefController _mod;
+    private final AltoClefController mod;
 
     public PlaceStructureSchematic(AltoClefController mod) {
       super(1, 1, 1);
-      _mod = mod;
+      this.mod = mod;
     }
 
     @Override
@@ -173,7 +173,7 @@ public class PlaceBlockTask extends Task implements ITaskRequiresGrounded {
         if (!available.isEmpty()) {
           for (BlockState possible : available) {
             if (possible == null) continue;
-            if (useThrowaways && _mod.getBaritone().settings().acceptableThrowawayItems.get().contains(possible.getBlock().asItem())) {
+            if (useThrowaways && mod.getBaritone().settings().acceptableThrowawayItems.get().contains(possible.getBlock().asItem())) {
               return possible;
             }
             if (Arrays.asList(toPlace).contains(possible.getBlock())) {
@@ -183,7 +183,7 @@ public class PlaceBlockTask extends Task implements ITaskRequiresGrounded {
         }
         Debug.logInternal("Failed to find throwaway block");
         // No throwaways available!!
-        return new BlockOptionalMeta(_mod.getWorld(), Blocks.COBBLESTONE).getAnyBlockState();
+        return new BlockOptionalMeta(mod.getWorld(), Blocks.COBBLESTONE).getAnyBlockState();
       }
       // Don't care.
       return blockState;

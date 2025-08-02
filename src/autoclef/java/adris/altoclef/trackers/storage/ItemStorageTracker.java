@@ -22,12 +22,12 @@ import java.util.function.Predicate;
 
 public class ItemStorageTracker extends Tracker {
 
-  private final InventorySubTracker _inventory;
+  private final InventorySubTracker inventory;
   public final ContainerSubTracker containers;
 
   public ItemStorageTracker(AltoClefController mod, TrackerManager manager, Consumer<ContainerSubTracker> containerTrackerConsumer) {
     super(manager);
-    this._inventory = new InventorySubTracker(manager);
+    this .inventory = new InventorySubTracker(manager);
     this.containers = new ContainerSubTracker(manager);
     containerTrackerConsumer.accept(this.containers);
   }
@@ -38,7 +38,7 @@ public class ItemStorageTracker extends Tracker {
    * Returns the total count of items the bot has access to in its own inventory, including the cursor.
    */
   public int getItemCount(Item... items) {
-    return _inventory.getItemCount(items);
+    return inventory.getItemCount(items);
   }
 
   public int getItemCount(ItemTarget... targets) {
@@ -62,13 +62,13 @@ public class ItemStorageTracker extends Tracker {
   }
 
   public boolean hasItemInventoryOnly(Item... items) {
-    return _inventory.hasItem(items);
+    return inventory.hasItem(items);
   }
 
   // --- Item Checking ---
 
   public boolean hasItem(Item... items) {
-    return _inventory.hasItem(items);
+    return inventory.hasItem(items);
   }
 
   public boolean hasItemAll(Item... items) {
@@ -91,7 +91,7 @@ public class ItemStorageTracker extends Tracker {
    * @param includeArmor Whether to include armor slots in the search.
    */
   public List<Slot> getSlotsWithItemPlayerInventory(boolean includeArmor, Item... items) {
-    return _inventory.getSlotsWithItemsPlayerInventory(includeArmor, items);
+    return inventory.getSlotsWithItemsPlayerInventory(includeArmor, items);
   }
 
   /**
@@ -99,7 +99,7 @@ public class ItemStorageTracker extends Tracker {
    * @param includeCursorSlot Whether to include the simulated cursor stack.
    */
   public List<ItemStack> getItemStacksPlayerInventory(boolean includeCursorSlot) {
-    List<ItemStack> stacks = _inventory.getInventoryStacks();
+    List<ItemStack> stacks = inventory.getInventoryStacks();
     if (includeCursorSlot) {
       stacks.add(0, mod.getSlotHandler().getCursorStack());
     }
@@ -112,7 +112,7 @@ public class ItemStorageTracker extends Tracker {
    * @param acceptPartial Whether to accept slots that can only partially fit the stack.
    */
   public List<Slot> getSlotsThatCanFitInPlayerInventory(ItemStack stack, boolean acceptPartial) {
-    return _inventory.getSlotsThatCanFit(stack, acceptPartial);
+    return inventory.getSlotsThatCanFit(stack, acceptPartial);
   }
 
   public Optional<Slot> getSlotThatCanFitInPlayerInventory(ItemStack stack, boolean acceptPartial) {
@@ -120,7 +120,7 @@ public class ItemStorageTracker extends Tracker {
   }
 
   public boolean hasEmptyInventorySlot() {
-    return _inventory.hasEmptySlot();
+    return inventory.hasEmptySlot();
   }
 
   // --- Container Tracking ---
@@ -149,18 +149,18 @@ public class ItemStorageTracker extends Tracker {
   // --- State Management ---
 
   public void registerSlotAction() {
-    _inventory.setDirty();
+    inventory.setDirty();
   }
 
   @Override
   protected void updateState() {
-    _inventory.ensureUpdated();
+    inventory.ensureUpdated();
     containers.ensureUpdated();
   }
 
   @Override
   protected void reset() {
-    _inventory.reset();
+    inventory.reset();
     containers.reset();
   }
 }

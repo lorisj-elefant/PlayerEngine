@@ -16,14 +16,14 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 
 public class ThrowEnderPearlSimpleProjectileTask extends Task {
-  private final TimerGame _thrownTimer = new TimerGame(5.0D);
+  private final TimerGame thrownTimer = new TimerGame(5.0D);
   
-  private final BlockPos _target;
+  private final BlockPos target;
   
-  private boolean _thrown = false;
+  private boolean thrown = false;
   
   public ThrowEnderPearlSimpleProjectileTask(BlockPos target) {
-    this._target = target;
+    this .target = target;
   }
   
   private static boolean cleanThrow(AltoClefController mod, float yaw, float pitch) {
@@ -47,22 +47,22 @@ public class ThrowEnderPearlSimpleProjectileTask extends Task {
   }
   
   protected void onStart() {
-    this._thrownTimer.forceElapse();
-    this._thrown = false;
+    this .thrownTimer.forceElapse();
+    this .thrown = false;
   }
   
   protected Task onTick() {
     AltoClefController mod = controller;
     if (mod.getEntityTracker().entityFound(new Class[] { EnderPearlEntity.class }))
-      this._thrownTimer.reset(); 
-    if (this._thrownTimer.elapsed() && 
+      this .thrownTimer.reset(); 
+    if (this .thrownTimer.elapsed() && 
       mod.getSlotHandler().forceEquipItem(Items.ENDER_PEARL)) {
-      Rotation lookTarget = calculateThrowLook(mod, this._target);
+      Rotation lookTarget = calculateThrowLook(mod, this .target);
       LookHelper.lookAt(controller, lookTarget);
       if (LookHelper.isLookingAt(mod, lookTarget)) {
         mod.getInputControls().tryPress(Input.CLICK_RIGHT);
-        this._thrown = true;
-        this._thrownTimer.reset();
+        this .thrown = true;
+        this .thrownTimer.reset();
       } 
     } 
     return null;
@@ -71,18 +71,18 @@ public class ThrowEnderPearlSimpleProjectileTask extends Task {
   protected void onStop(Task interruptTask) {}
   
   public boolean isFinished() {
-    return ((this._thrown && this._thrownTimer.elapsed()) || (!this._thrown && !controller.getItemStorage().hasItem(new Item[] { Items.ENDER_PEARL })));
+    return ((this .thrown && this .thrownTimer.elapsed()) || (!this .thrown && !controller.getItemStorage().hasItem(new Item[] { Items.ENDER_PEARL })));
   }
   
   protected boolean isEqual(Task other) {
     if (other instanceof adris.altoclef.tasks.movement.ThrowEnderPearlSimpleProjectileTask) {
       adris.altoclef.tasks.movement.ThrowEnderPearlSimpleProjectileTask task = (adris.altoclef.tasks.movement.ThrowEnderPearlSimpleProjectileTask)other;
-      return task._target.equals(this._target);
+      return task .target.equals(this .target);
     } 
     return false;
   }
   
   protected String toDebugString() {
-    return "Simple Ender Pearling to " + String.valueOf(this._target);
+    return "Simple Ender Pearling to " + String.valueOf(this .target);
   }
 }

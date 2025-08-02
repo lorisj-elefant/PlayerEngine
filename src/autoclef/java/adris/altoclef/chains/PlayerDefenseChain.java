@@ -18,13 +18,13 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.Vec3d;
 
 public class PlayerDefenseChain extends SingleTaskChain {
-  private Map<String, DamageTarget> _damageTargets = new HashMap<>();
+  private Map<String, DamageTarget> damageTargets = new HashMap<>();
   
-  private Map<Integer, TimerGame> _recentlySwung = new HashMap<>();
+  private Map<Integer, TimerGame> recentlySwung = new HashMap<>();
   
-  private TimerGame _recentlyDamagedUnknown = new TimerGame(0.3D);
+  private TimerGame recentlyDamagedUnknown = new TimerGame(0.3D);
   
-  private String _currentlyAttackingPlayer = null;
+  private String currentlyAttackingPlayer = null;
   
   private static int HITS_BEFORE_RETALIATION = 2;
   
@@ -47,15 +47,15 @@ public class PlayerDefenseChain extends SingleTaskChain {
   }
   
   private void processMaybeDamaged() {
-    if (this._recentlyDamagedUnknown == null || this._recentlyDamagedUnknown.elapsed()) {
-      this._recentlyDamagedUnknown = null;
+    if (this .recentlyDamagedUnknown == null || this .recentlyDamagedUnknown.elapsed()) {
+      this .recentlyDamagedUnknown = null;
       return;
     } 
-    this._recentlyDamagedUnknown = null;
+    this .recentlyDamagedUnknown = null;
     LivingEntity player = mod.getPlayer();
     for (Entity entity : mod.getWorld().iterateEntities()) {
-      if (entity == null || (this._recentlySwung.containsKey(Integer.valueOf(entity.getId())) && ((TimerGame)this._recentlySwung.get(Integer.valueOf(entity.getId()))).elapsed())) {
-        this._recentlySwung.remove(Integer.valueOf(entity.getId()));
+      if (entity == null || (this .recentlySwung.containsKey(Integer.valueOf(entity.getId())) && ((TimerGame)this .recentlySwung.get(Integer.valueOf(entity.getId()))).elapsed())) {
+        this .recentlySwung.remove(Integer.valueOf(entity.getId()));
         continue;
       } 
       if (entity == null)
@@ -64,7 +64,7 @@ public class PlayerDefenseChain extends SingleTaskChain {
         continue; 
       Vec3d playerCenter = player.getPos().add(new Vec3d(0.0D, player.getStandingEyeHeight(), 0.0D));
       if (entity.isAlive() && LookHelper.isLookingAt(entity, playerCenter, 60.0D)) {
-        this._recentlySwung.remove(Integer.valueOf(entity.getId()));
+        this .recentlySwung.remove(Integer.valueOf(entity.getId()));
         onPlayerDamage(entity);
         return;
       } 
@@ -75,27 +75,27 @@ public class PlayerDefenseChain extends SingleTaskChain {
     int id = entity.getId();
     TimerGame timeout = new TimerGame(SWING_TIMEOUT);
     timeout.reset();
-    this._recentlySwung.put(Integer.valueOf(id), timeout);
+    this .recentlySwung.put(Integer.valueOf(id), timeout);
     processMaybeDamaged();
   }
   
   private void onPlayerDamage(Entity damagedBy) {
     if (damagedBy == null) {
-      if (this._recentlyDamagedUnknown == null || this._recentlyDamagedUnknown.elapsed()) {
-        this._recentlyDamagedUnknown = new TimerGame(0.3D);
-        this._recentlyDamagedUnknown.reset();
+      if (this .recentlyDamagedUnknown == null || this .recentlyDamagedUnknown.elapsed()) {
+        this .recentlyDamagedUnknown = new TimerGame(0.3D);
+        this .recentlyDamagedUnknown.reset();
       } 
       processMaybeDamaged();
       return;
     } 
     LivingEntity clientPlayer = mod.getPlayer();
-    this._recentlyDamagedUnknown = null;
+    this .recentlyDamagedUnknown = null;
     if (damagedBy instanceof PlayerEntity) {
       PlayerEntity player = (PlayerEntity)damagedBy;
       String offendingName = player.getName().getString();
-      if (!this._damageTargets.containsKey(offendingName))
-        this._damageTargets.put(offendingName, new DamageTarget()); 
-      DamageTarget target = this._damageTargets.get(offendingName);
+      if (!this .damageTargets.containsKey(offendingName))
+        this .damageTargets.put(offendingName, new DamageTarget()); 
+      DamageTarget target = this .damageTargets.get(offendingName);
       if (target.forgetInstigationTimer.elapsed())
         target.timesHit = 0; 
       if (target.forgetAttackTimer.elapsed())
@@ -110,7 +110,7 @@ public class PlayerDefenseChain extends SingleTaskChain {
           target.attacking = true;
           target.forgetAttackTimer.reset();
           target.timesHit = 0;
-          this._currentlyAttackingPlayer = offendingName;
+          this .currentlyAttackingPlayer = offendingName;
         } 
       } else {
         target.forgetAttackTimer.reset();
@@ -119,27 +119,27 @@ public class PlayerDefenseChain extends SingleTaskChain {
   }
   
   public float getPriority() {
-    if (this._currentlyAttackingPlayer != null) {
-      Optional<PlayerEntity> currentPlayerEntity = controller.getEntityTracker().getPlayerEntity(this._currentlyAttackingPlayer);
+    if (this .currentlyAttackingPlayer != null) {
+      Optional<PlayerEntity> currentPlayerEntity = controller.getEntityTracker().getPlayerEntity(this .currentlyAttackingPlayer);
       if (!currentPlayerEntity.isPresent() || !currentPlayerEntity.get().isAlive())
-        this._currentlyAttackingPlayer = null; 
+        this .currentlyAttackingPlayer = null; 
     } 
-    String[] playerNames = this._damageTargets.keySet().toArray(x$0 -> new String[x$0]);
+    String[] playerNames = this .damageTargets.keySet().toArray(x$0 -> new String[x$0]);
     for (String potentialAttacker : playerNames) {
       if (potentialAttacker == null) {
-        this._damageTargets.remove(potentialAttacker);
+        this .damageTargets.remove(potentialAttacker);
       } else {
         LivingEntity potentialPlayer = controller.getEntityTracker().getPlayerEntity(potentialAttacker).orElse(null);
-        if (potentialPlayer == null || !potentialPlayer.isAlive() || ((DamageTarget)this._damageTargets.get(potentialAttacker)).forgetAttackTimer.elapsed()) {
+        if (potentialPlayer == null || !potentialPlayer.isAlive() || ((DamageTarget)this .damageTargets.get(potentialAttacker)).forgetAttackTimer.elapsed()) {
           System.out.println("Either forgot or killed player: " + potentialAttacker + " (no longer attacking)");
-          this._damageTargets.remove(potentialAttacker);
-          if (potentialAttacker.equals(this._currentlyAttackingPlayer))
-            this._currentlyAttackingPlayer = null; 
+          this .damageTargets.remove(potentialAttacker);
+          if (potentialAttacker.equals(this .currentlyAttackingPlayer))
+            this .currentlyAttackingPlayer = null; 
         } 
       } 
     } 
-    if (this._currentlyAttackingPlayer != null) {
-      setTask((Task)new KillPlayerTask(this._currentlyAttackingPlayer));
+    if (this .currentlyAttackingPlayer != null) {
+      setTask((Task)new KillPlayerTask(this .currentlyAttackingPlayer));
       return 55.0F;
     } 
     return 0.0F;

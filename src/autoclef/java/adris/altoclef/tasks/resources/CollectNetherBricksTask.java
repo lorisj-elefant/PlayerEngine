@@ -13,11 +13,11 @@ import net.minecraft.block.Blocks;
 import net.minecraft.item.Items;
 
 public class CollectNetherBricksTask extends ResourceTask {
-  private final int _count;
+  private final int count;
   
   public CollectNetherBricksTask(int count) {
     super(Items.NETHER_BRICKS, count);
-    this._count = count;
+    this .count = count;
   }
   
   protected boolean shouldAvoidPickingUp(AltoClefController mod) {
@@ -28,9 +28,9 @@ public class CollectNetherBricksTask extends ResourceTask {
   
   protected Task onResourceTick(AltoClefController mod) {
     if (mod.getBlockScanner().anyFound(new Block[] { Blocks.NETHER_BRICKS }))
-      return (Task)new MineAndCollectTask(Items.NETHER_BRICKS, this._count, new Block[] { Blocks.NETHER_BRICKS }, MiningRequirement.WOOD); 
+      return (Task)new MineAndCollectTask(Items.NETHER_BRICKS, this .count, new Block[] { Blocks.NETHER_BRICKS }, MiningRequirement.WOOD); 
     ItemTarget b = new ItemTarget(Items.NETHER_BRICK, 1);
-    return (Task)new CraftInInventoryTask(new RecipeTarget(Items.NETHER_BRICK, this._count, CraftingRecipe.newShapedRecipe("nether_brick", new ItemTarget[] { b, b, b, b }, 1)));
+    return (Task)new CraftInInventoryTask(new RecipeTarget(Items.NETHER_BRICK, this .count, CraftingRecipe.newShapedRecipe("nether_brick", new ItemTarget[] { b, b, b, b }, 1)));
   }
   
   protected void onResourceStop(AltoClefController mod, Task interruptTask) {}
@@ -40,6 +40,6 @@ public class CollectNetherBricksTask extends ResourceTask {
   }
   
   protected String toDebugStringName() {
-    return "Collecting " + this._count + " nether bricks.";
+    return "Collecting " + this .count + " nether bricks.";
   }
 }

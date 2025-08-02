@@ -31,19 +31,19 @@ import java.util.Optional;
 import java.util.function.Predicate;
 
 public class SlotHandler {
-    private final AltoClefController _controller;
-    private ItemStack _cursorStack = ItemStack.EMPTY;
+    private final AltoClefController controller;
+    private ItemStack cursorStack = ItemStack.EMPTY;
 
     public SlotHandler(AltoClefController controller) {
-        this._controller = controller;
+        this .controller = controller;
     }
 
     public ItemStack getCursorStack() {
-        return _cursorStack;
+        return cursorStack;
     }
 
     public void setCursorStack(ItemStack stack) {
-        _cursorStack = (stack == null || stack.isEmpty()) ? ItemStack.EMPTY : stack;
+        cursorStack = (stack == null || stack.isEmpty()) ? ItemStack.EMPTY : stack;
     }
 
     public boolean canDoSlotAction() {
@@ -51,13 +51,13 @@ public class SlotHandler {
     }
 
     public void registerSlotAction() {
-        _controller.getItemStorage().registerSlotAction();
+        controller.getItemStorage().registerSlotAction();
     }
 
     public void clickSlot(Slot slot, int mouseButton, SlotActionType type) {
         if (slot == null || slot.equals(Slot.UNDEFINED)) {
-            if (!_cursorStack.isEmpty()) {
-                _controller.getEntity().dropStack(_cursorStack.copy());
+            if (!cursorStack.isEmpty()) {
+                controller.getEntity().dropStack(cursorStack.copy());
                 setCursorStack(ItemStack.EMPTY);
                 registerSlotAction();
             }
@@ -76,7 +76,7 @@ public class SlotHandler {
 
         switch (type) {
             case PICKUP:
-                ItemStack temp = _cursorStack;
+                ItemStack temp = cursorStack;
                 setCursorStack(slotStack);
                 inventory.set(index, temp);
                 break;
@@ -93,7 +93,7 @@ public class SlotHandler {
     }
 
     public void forceEquipItemToOffhand(Item toEquip) {
-        LivingEntityInventory inventory = ((IInventoryProvider) _controller.getEntity()).getLivingInventory();
+        LivingEntityInventory inventory = ((IInventoryProvider) controller.getEntity()).getLivingInventory();
         ItemStack offhandStack = inventory.getStack(PlayerSlot.OFFHAND_SLOT_INDEX);
 
         if (offhandStack.isOf(toEquip)) {
@@ -112,7 +112,7 @@ public class SlotHandler {
     }
 
     public boolean forceEquipItem(Item[] toEquip) {
-        LivingEntityInventory inventory = ((IInventoryProvider) _controller.getEntity()).getLivingInventory();
+        LivingEntityInventory inventory = ((IInventoryProvider) controller.getEntity()).getLivingInventory();
         if (Arrays.stream(toEquip).allMatch((i) -> i == inventory.getMainHandStack().getItem())) {
             return true;
         }
@@ -140,7 +140,7 @@ public class SlotHandler {
     }
 
     public boolean forceEquipItem(Item toEquip) {
-        LivingEntityInventory inventory = ((IInventoryProvider) _controller.getEntity()).getLivingInventory();
+        LivingEntityInventory inventory = ((IInventoryProvider) controller.getEntity()).getLivingInventory();
         if (inventory.getMainHandStack().isOf(toEquip)) {
             return true;
         }
@@ -166,7 +166,7 @@ public class SlotHandler {
     }
 
     public boolean forceDeequip(Predicate<ItemStack> isBad) {
-        LivingEntityInventory inventory = ((IInventoryProvider) _controller.getEntity()).getLivingInventory();
+        LivingEntityInventory inventory = ((IInventoryProvider) controller.getEntity()).getLivingInventory();
         ItemStack equip = inventory.getMainHandStack();
 
         if (isBad.test(equip)) {
@@ -194,7 +194,7 @@ public class SlotHandler {
         if (toEquip == null || toEquip.isEmpty()) {
             return forceDeequip(stack -> !stack.isEmpty());
         }
-        if (_controller.getFoodChain().needsToEat() && !unInterruptable) {
+        if (controller.getFoodChain().needsToEat() && !unInterruptable) {
             return false;
         }
         for (Item item : toEquip.getMatches()) {
@@ -250,20 +250,20 @@ public class SlotHandler {
     }
 
     public void forceEquipArmor(AltoClefController controller, ItemTarget target) {
-        LivingEntityInventory inventory = ((IInventoryProvider) _controller.getEntity()).getLivingInventory();
+        LivingEntityInventory inventory = ((IInventoryProvider) controller.getEntity()).getLivingInventory();
         for (Item item : target.getMatches()) {
             if (item instanceof ArmorItem armorItem) {
                 EquipmentSlot slotType = armorItem.getArmorSlot().getEquipmentSlot();
 
-                if (_controller.getEntity().getEquippedStack(slotType).isOf(item)) {
+                if (controller.getEntity().getEquippedStack(slotType).isOf(item)) {
                     continue;
                 }
 
                 for (int i = 0; i < inventory.size(); i++) {
                     ItemStack stackInSlot = inventory.getStack(i);
                     if (stackInSlot.isOf(item)) {
-                        ItemStack currentlyEquipped = _controller.getEntity().getEquippedStack(slotType).copy();
-                        _controller.getEntity().equipStack(slotType, stackInSlot.copy());
+                        ItemStack currentlyEquipped = controller.getEntity().getEquippedStack(slotType).copy();
+                        controller.getEntity().equipStack(slotType, stackInSlot.copy());
                         inventory.setStack(i, currentlyEquipped);
                         registerSlotAction();
                         break;

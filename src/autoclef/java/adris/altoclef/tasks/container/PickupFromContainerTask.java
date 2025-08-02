@@ -21,12 +21,12 @@ import java.util.Optional;
 
 public class PickupFromContainerTask extends Task {
 
-  private final BlockPos _containerPos;
-  private final ItemTarget[] _targets;
+  private final BlockPos containerPos;
+  private final ItemTarget[] targets;
 
   public PickupFromContainerTask(BlockPos targetContainer, ItemTarget... targets) {
-    this._containerPos = targetContainer;
-    this._targets = targets;
+    this .containerPos = targetContainer;
+    this .targets = targets;
   }
 
   @Override
@@ -41,21 +41,21 @@ public class PickupFromContainerTask extends Task {
     }
 
     // Go to container
-    if (!_containerPos.isWithinDistance(new Vec3i((int) controller.getEntity().getPos().x, (int) controller.getEntity().getPos().y, (int) controller.getEntity().getPos().z), 4.5)) {
-      return new GetToBlockTask(_containerPos);
+    if (!containerPos.isWithinDistance(new Vec3i((int) controller.getEntity().getPos().x, (int) controller.getEntity().getPos().y, (int) controller.getEntity().getPos().z), 4.5)) {
+      return new GetToBlockTask(containerPos);
     }
 
     // Get container inventory
-    BlockEntity be = controller.getWorld().getBlockEntity(_containerPos);
+    BlockEntity be = controller.getWorld().getBlockEntity(containerPos);
     if (!(be instanceof LootableContainerBlockEntity container)) {
-      Debug.logWarning("Block at " + _containerPos + " is not a lootable container. Stopping.");
+      Debug.logWarning("Block at " + containerPos + " is not a lootable container. Stopping.");
       return null;
     }
     Inventory containerInventory = container;
     LivingEntityInventory playerInventory = ((IInventoryProvider) controller.getEntity()).getLivingInventory();
 
     // For each target, try to move items.
-    for (ItemTarget target : _targets) {
+    for (ItemTarget target : targets) {
       int needed = target.getTargetCount() - controller.getItemStorage().getItemCount(target);
       if (needed <= 0) continue;
 
@@ -98,7 +98,7 @@ public class PickupFromContainerTask extends Task {
 
   @Override
   public boolean isFinished() {
-    return Arrays.stream(_targets).allMatch(target ->
+    return Arrays.stream(targets).allMatch(target ->
             controller.getItemStorage().getItemCount(target) >= target.getTargetCount()
     );
   }
@@ -106,13 +106,13 @@ public class PickupFromContainerTask extends Task {
   @Override
   protected boolean isEqual(Task other) {
     if (other instanceof PickupFromContainerTask task) {
-      return Objects.equals(task._containerPos, _containerPos) && Arrays.equals(task._targets, _targets);
+      return Objects.equals(task .containerPos, containerPos) && Arrays.equals(task .targets, targets);
     }
     return false;
   }
 
   @Override
   protected String toDebugString() {
-    return "Picking up from container at (" + _containerPos.toShortString() + "): " + Arrays.toString(_targets);
+    return "Picking up from container at (" + containerPos.toShortString() + "): " + Arrays.toString(targets);
   }
 }

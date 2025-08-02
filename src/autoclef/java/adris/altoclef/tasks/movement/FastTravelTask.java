@@ -28,9 +28,9 @@ public class FastTravelTask extends Task {
   private final BlockPos target;
   private final Integer threshold;
   // If we fail to move to the precise center after we're "close enough" to our threshold, just call it quits and place the portal.
-  private final TimerGame _attemptToMoveToIdealNetherCoordinateTimeout = new TimerGame(15);
-  private boolean _forceOverworldWalking;
-  private Task _goToOverworldTask;
+  private final TimerGame attemptToMoveToIdealNetherCoordinateTimeout = new TimerGame(15);
+  private boolean forceOverworldWalking;
+  private Task goToOverworldTask;
 
   /**
    * Creates fast travel task instance.
@@ -60,7 +60,7 @@ public class FastTravelTask extends Task {
   protected void onStart() {
     BlockPos netherTarget = new BlockPos(target.getX() / 8, target.getY(), target.getZ() / 8);
 
-    _goToOverworldTask = new EnterNetherPortalTask(new ConstructNetherPortalObsidianTask(), Dimension.OVERWORLD,
+    goToOverworldTask = new EnterNetherPortalTask(new ConstructNetherPortalObsidianTask(), Dimension.OVERWORLD,
             checkPos -> WorldHelper.inRangeXZ(checkPos,netherTarget,7));
   }
 
@@ -76,10 +76,10 @@ public class FastTravelTask extends Task {
 
     switch (WorldHelper.getCurrentDimension(controller)) {
       case OVERWORLD -> {
-        _attemptToMoveToIdealNetherCoordinateTimeout.reset();
+        attemptToMoveToIdealNetherCoordinateTimeout.reset();
         // WALK
-        if (_forceOverworldWalking || WorldHelper.inRangeXZ(mod.getPlayer(), target, getOverworldThreshold(mod))) {
-          _forceOverworldWalking = true;
+        if (forceOverworldWalking || WorldHelper.inRangeXZ(mod.getPlayer(), target, getOverworldThreshold(mod))) {
+          forceOverworldWalking = true;
           setDebugState("Walking: We're close enough to our target");
 
           if (mod.getBlockScanner().anyFound(Blocks.END_PORTAL_FRAME)) {
@@ -106,19 +106,19 @@ public class FastTravelTask extends Task {
       }
       case NETHER -> {
 
-        if (!_forceOverworldWalking) {
+        if (!forceOverworldWalking) {
           // After walking a bit, the moment we go back into the overworld, walk again.
           Optional<BlockPos> portalEntrance = mod.getMiscBlockTracker().getLastUsedNetherPortal(Dimension.NETHER);
           if (portalEntrance.isPresent() && !portalEntrance.get().isWithinDistance(new Vec3i((int) mod.getPlayer().getPos().x, (int) mod.getPlayer().getPos().y, (int) mod.getPlayer().getPos().z), 3)) {
-            _forceOverworldWalking = true;
+            forceOverworldWalking = true;
           }
         }
 
         // If we're going to the overworld, keep going.
-        if (_goToOverworldTask.isActive() && !_goToOverworldTask.isFinished()) {
+        if (goToOverworldTask.isActive() && !goToOverworldTask.isFinished()) {
           setDebugState("Going back to overworld");
 
-          return _goToOverworldTask;
+          return goToOverworldTask;
         }
 
         // PICKUP DROPPED STUFF if we need it
@@ -134,12 +134,12 @@ public class FastTravelTask extends Task {
         if (WorldHelper.inRangeXZ(mod.getPlayer(), netherTarget, IN_NETHER_CLOSE_ENOUGH_THRESHOLD) &&
                 mod.getBaritone().getPathingBehavior().isSafeToCancel()) {
           // If we're precisely at our target XZ or if we've tried long enough
-          if ((mod.getPlayer().getBlockX() == netherTarget.getX() && mod.getPlayer().getBlockZ() == netherTarget.getZ()) || _attemptToMoveToIdealNetherCoordinateTimeout.elapsed()) {
-            return _goToOverworldTask;
+          if ((mod.getPlayer().getBlockX() == netherTarget.getX() && mod.getPlayer().getBlockZ() == netherTarget.getZ()) || attemptToMoveToIdealNetherCoordinateTimeout.elapsed()) {
+            return goToOverworldTask;
           }
         }
 
-        _attemptToMoveToIdealNetherCoordinateTimeout.reset();
+        attemptToMoveToIdealNetherCoordinateTimeout.reset();
         setDebugState("Traveling to ideal coordinates");
         return new GetToXZTask(netherTarget.getX(), netherTarget.getZ());
       }

@@ -25,19 +25,19 @@ import java.util.Optional;
 
 public class UpgradeInSmithingTableTask extends ResourceTask {
 
-  private final ItemTarget _tool;
-  private final ItemTarget _template;
-  private final ItemTarget _material;
-  private final ItemTarget _output;
+  private final ItemTarget tool;
+  private final ItemTarget template;
+  private final ItemTarget material;
+  private final ItemTarget output;
 
-  private BlockPos _tablePos = null;
+  private BlockPos tablePos = null;
 
   public UpgradeInSmithingTableTask(ItemTarget tool, ItemTarget material, ItemTarget output) {
     super(output);
-    this._tool = new ItemTarget(tool, output.getTargetCount());
-    this._material = new ItemTarget(material, output.getTargetCount());
-    this._template = new ItemTarget(Items.NETHERITE_UPGRADE_SMITHING_TEMPLATE, output.getTargetCount());
-    this._output = output;
+    this .tool = new ItemTarget(tool, output.getTargetCount());
+    this .material = new ItemTarget(material, output.getTargetCount());
+    this .template = new ItemTarget(Items.NETHERITE_UPGRADE_SMITHING_TEMPLATE, output.getTargetCount());
+    this .output = output;
   }
 
   @Override
@@ -47,16 +47,16 @@ public class UpgradeInSmithingTableTask extends ResourceTask {
 
   @Override
   protected void onResourceStart(AltoClefController controller) {
-    controller.getBehaviour().addProtectedItems(_tool.getMatches());
-    controller.getBehaviour().addProtectedItems(_material.getMatches());
-    controller.getBehaviour().addProtectedItems(_template.getMatches());
+    controller.getBehaviour().addProtectedItems(tool.getMatches());
+    controller.getBehaviour().addProtectedItems(material.getMatches());
+    controller.getBehaviour().addProtectedItems(template.getMatches());
     controller.getBehaviour().addProtectedItems(Items.SMITHING_TABLE);
   }
 
   @Override
   protected Task onResourceTick(AltoClefController controller) {
-    int desiredOutputCount = _output.getTargetCount();
-    int currentOutputCount = controller.getItemStorage().getItemCount(_output);
+    int desiredOutputCount = output.getTargetCount();
+    int currentOutputCount = controller.getItemStorage().getItemCount(output);
     if (currentOutputCount >= desiredOutputCount) {
       return null; // We are done
     }
@@ -64,28 +64,28 @@ public class UpgradeInSmithingTableTask extends ResourceTask {
     int needed = desiredOutputCount - currentOutputCount;
 
     // Ensure we have enough materials.
-    if (controller.getItemStorage().getItemCount(_tool) < needed ||
-            controller.getItemStorage().getItemCount(_material) < needed ||
-            controller.getItemStorage().getItemCount(_template) < needed) {
+    if (controller.getItemStorage().getItemCount(tool) < needed ||
+            controller.getItemStorage().getItemCount(material) < needed ||
+            controller.getItemStorage().getItemCount(template) < needed) {
       setDebugState("Getting materials for upgrade");
       return new CataloguedResourceTask(
-              new ItemTarget(_tool, needed),
-              new ItemTarget(_material, needed),
-              new ItemTarget(_template, needed)
+              new ItemTarget(tool, needed),
+              new ItemTarget(material, needed),
+              new ItemTarget(template, needed)
       );
     }
 
     // If armor is equipped, unequip it.
-    if (StorageHelper.isArmorEquipped(controller, _tool.getMatches())) {
+    if (StorageHelper.isArmorEquipped(controller, tool.getMatches())) {
       setDebugState("Unequipping armor before upgrading.");
       return new EquipArmorTask(new ItemTarget[0]); // Passing no args unequips all armor. This is a simplification.
     }
 
     // Find or place a smithing table.
-    if (_tablePos == null || !controller.getWorld().getBlockState(_tablePos).isOf(Blocks.SMITHING_TABLE)) {
+    if (tablePos == null || !controller.getWorld().getBlockState(tablePos).isOf(Blocks.SMITHING_TABLE)) {
       Optional<BlockPos> nearestTable = controller.getBlockScanner().getNearestBlock(Blocks.SMITHING_TABLE);
       if (nearestTable.isPresent()) {
-        _tablePos = nearestTable.get();
+        tablePos = nearestTable.get();
       } else {
         if (controller.getItemStorage().hasItem(Items.SMITHING_TABLE)) {
           setDebugState("Placing smithing table.");
@@ -97,9 +97,9 @@ public class UpgradeInSmithingTableTask extends ResourceTask {
     }
 
     // Go to the smithing table
-    if (!_tablePos.isWithinDistance(new Vec3i((int) controller.getEntity().getPos().x, (int) controller.getEntity().getPos().y, (int) controller.getEntity().getPos().z), 4.5)) {
+    if (!tablePos.isWithinDistance(new Vec3i((int) controller.getEntity().getPos().x, (int) controller.getEntity().getPos().y, (int) controller.getEntity().getPos().z), 4.5)) {
       setDebugState("Going to smithing table.");
-      return new GetToBlockTask(_tablePos);
+      return new GetToBlockTask(tablePos);
     }
 
     // Perform the upgrade (server-side simulation)
@@ -108,12 +108,12 @@ public class UpgradeInSmithingTableTask extends ResourceTask {
     LivingEntityInventory inventory = ((IInventoryProvider) controller.getEntity()).getLivingInventory();
 
     // Consume one of each ingredient
-    inventory.remove(stack -> _template.matches(stack.getItem()), 1, inventory);
-    inventory.remove(stack -> _tool.matches(stack.getItem()), 1, inventory);
-    inventory.remove(stack -> _material.matches(stack.getItem()), 1, inventory);
+    inventory.remove(stack -> template.matches(stack.getItem()), 1, inventory);
+    inventory.remove(stack -> tool.matches(stack.getItem()), 1, inventory);
+    inventory.remove(stack -> material.matches(stack.getItem()), 1, inventory);
 
     // Add the output
-    inventory.insertStack(new ItemStack(_output.getMatches()[0], 1));
+    inventory.insertStack(new ItemStack(output.getMatches()[0], 1));
 
     controller.getItemStorage().registerSlotAction();
 
@@ -130,9 +130,9 @@ public class UpgradeInSmithingTableTask extends ResourceTask {
   @Override
   protected boolean isEqualResource(ResourceTask other) {
     if (other instanceof UpgradeInSmithingTableTask task) {
-      return task._tool.equals(this._tool) &&
-              task._output.equals(this._output) &&
-              task._material.equals(this._material);
+      return task .tool.equals(this .tool) &&
+              task .output.equals(this .output) &&
+              task .material.equals(this .material);
     }
     return false;
   }
@@ -143,14 +143,14 @@ public class UpgradeInSmithingTableTask extends ResourceTask {
   }
 
   public ItemTarget getMaterials(){
-    return _material;
+    return material;
   }
 
   public ItemTarget getTools(){
-    return _tool;
+    return tool;
   }
 
   public ItemTarget getTemplate(){
-    return _template;
+    return template;
   }
 }

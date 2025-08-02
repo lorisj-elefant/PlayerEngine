@@ -23,13 +23,13 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Position;
 
 public class KillEndermanTask extends ResourceTask {
-  private final int _count;
+  private final int count;
   
-  private final TimerGame _lookDelay = new TimerGame(0.2D);
+  private final TimerGame lookDelay = new TimerGame(0.2D);
   
   public KillEndermanTask(int count) {
     super(new ItemTarget(Items.ENDER_PEARL, count));
-    this._count = count;
+    this .count = count;
     forceDimension(Dimension.NETHER);
   }
   
@@ -71,12 +71,12 @@ public class KillEndermanTask extends ResourceTask {
   protected boolean isEqualResource(ResourceTask other) {
     if (other instanceof adris.altoclef.tasks.resources.KillEndermanTask) {
       adris.altoclef.tasks.resources.KillEndermanTask task = (adris.altoclef.tasks.resources.KillEndermanTask)other;
-      return (task._count == this._count);
+      return (task .count == this .count);
     } 
     return false;
   }
   
   protected String toDebugStringName() {
-    return "Hunting endermen for pearls - " + controller.getItemStorage().getItemCount(new Item[] { Items.ENDER_PEARL }) + "/" + this._count;
+    return "Hunting endermen for pearls - " + controller.getItemStorage().getItemCount(new Item[] { Items.ENDER_PEARL }) + "/" + this .count;
   }
 }

@@ -28,7 +28,7 @@ public class UserBlockRangeTracker extends Tracker {
           Arrays.stream(ItemHelper.itemsToBlocks(ItemHelper.LOG))
   ).toArray(Block[]::new);
 
-  private final Set<BlockPos> _dontBreakBlocks = new HashSet<>();
+  private final Set<BlockPos> dontBreakBlocks = new HashSet<>();
   
   public UserBlockRangeTracker(TrackerManager manager) {
     super(manager);
@@ -37,12 +37,12 @@ public class UserBlockRangeTracker extends Tracker {
   public boolean isNearUserTrackedBlock(BlockPos pos) {
     ensureUpdated();
     synchronized (BaritoneHelper.MINECRAFT_LOCK) {
-      return this._dontBreakBlocks.contains(pos);
+      return this .dontBreakBlocks.contains(pos);
     } 
   }
   
   protected void updateState() {
-    this._dontBreakBlocks.clear();
+    this .dontBreakBlocks.clear();
     List<BlockPos> userBlocks = mod.getBlockScanner().getKnownLocationsIncludeUnreachable(this.USER_INDICATOR_BLOCKS);
     Set<Block> userIndicatorBlocks = new HashSet<>(Arrays.asList(this.USER_INDICATOR_BLOCKS));
     Set<Block> userBlocksToAvoidMining = new HashSet<>(Arrays.asList(this.USER_BLOCKS_TO_AVOID_BREAKING));
@@ -56,12 +56,12 @@ public class UserBlockRangeTracker extends Tracker {
       for (BlockPos possible : WorldHelper.scanRegion(min, max)) {
         Block b = mod.getWorld().getBlockState(possible).getBlock();
         if (userBlocksToAvoidMining.contains(b))
-          this._dontBreakBlocks.add(possible); 
+          this .dontBreakBlocks.add(possible); 
       } 
     } 
   }
   
   protected void reset() {
-    this._dontBreakBlocks.clear();
+    this .dontBreakBlocks.clear();
   }
 }

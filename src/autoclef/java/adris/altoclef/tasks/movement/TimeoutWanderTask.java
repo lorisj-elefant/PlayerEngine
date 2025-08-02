@@ -41,18 +41,18 @@ public class TimeoutWanderTask extends Task implements ITaskRequiresGrounded {
   
   private Vec3d origin;
   
-  private boolean _forceExplore;
+  private boolean forceExplore;
   
-  private Task _unstuckTask = null;
+  private Task unstuckTask = null;
   
   private int failCounter;
   
-  private double _wanderDistanceExtension;
+  private double wanderDistanceExtension;
   
   public TimeoutWanderTask(float distanceToWander, boolean increaseRange) {
     this.distanceToWander = distanceToWander;
     this.increaseRange = increaseRange;
-    this._forceExplore = false;
+    this .forceExplore = false;
   }
   
   public TimeoutWanderTask(float distanceToWander) {
@@ -65,7 +65,7 @@ public class TimeoutWanderTask extends Task implements ITaskRequiresGrounded {
   
   public TimeoutWanderTask(boolean forceExplore) {
     this();
-    this._forceExplore = forceExplore;
+    this .forceExplore = forceExplore;
   }
   
   private static BlockPos[] generateSides(BlockPos pos) {
@@ -96,7 +96,7 @@ public class TimeoutWanderTask extends Task implements ITaskRequiresGrounded {
   }
   
   public void resetWander() {
-    this._wanderDistanceExtension = 0.0D;
+    this .wanderDistanceExtension = 0.0D;
   }
   
   private BlockPos stuckInBlock(AltoClefController mod) {
@@ -161,12 +161,12 @@ public class TimeoutWanderTask extends Task implements ITaskRequiresGrounded {
       mod.getInputControls().release(Input.MOVE_BACK);
       mod.getInputControls().release(Input.MOVE_FORWARD);
     } 
-    if (this._unstuckTask != null && this._unstuckTask.isActive() && !this._unstuckTask.isFinished() && stuckInBlock(mod) != null) {
+    if (this .unstuckTask != null && this .unstuckTask.isActive() && !this .unstuckTask.isFinished() && stuckInBlock(mod) != null) {
       setDebugState("Getting unstuck from block.");
       this.stuckCheck.reset();
       mod.getBaritone().getCustomGoalProcess().onLostControl();
       mod.getBaritone().getExploreProcess().onLostControl();
-      return this._unstuckTask;
+      return this .unstuckTask;
     } 
     if (!this.progressChecker.check(mod) || !this.stuckCheck.check(mod)) {
       List<Entity> closeEntities = mod.getEntityTracker().getCloseEntities();
@@ -180,8 +180,8 @@ public class TimeoutWanderTask extends Task implements ITaskRequiresGrounded {
       BlockPos blockStuck = stuckInBlock(mod);
       if (blockStuck != null) {
         this.failCounter++;
-        this._unstuckTask = getFenceUnstuckTask();
-        return this._unstuckTask;
+        this .unstuckTask = getFenceUnstuckTask();
+        return this .unstuckTask;
       } 
       this.stuckCheck.reset();
     } 
@@ -204,7 +204,7 @@ public class TimeoutWanderTask extends Task implements ITaskRequiresGrounded {
       mod.getBaritone().getExploreProcess().explore((int)this.origin.getX(), (int)this.origin.getZ()); 
     if (!this.progressChecker.check(mod)) {
       this.progressChecker.reset();
-      if (!this._forceExplore) {
+      if (!this .forceExplore) {
         this.failCounter++;
         Debug.logMessage("Failed exploring.");
         if(progressChecker.lastBreakingBlock!=null){
@@ -219,7 +219,7 @@ public class TimeoutWanderTask extends Task implements ITaskRequiresGrounded {
     controller.getBaritone().getPathingBehavior().forceCancel();
     if (isFinished() && 
       this.increaseRange) {
-      this._wanderDistanceExtension += this.distanceToWander;
+      this .wanderDistanceExtension += this.distanceToWander;
       Debug.logMessage("Increased wander range");
     } 
   }
@@ -233,7 +233,7 @@ public class TimeoutWanderTask extends Task implements ITaskRequiresGrounded {
     if (player != null && player.getPos() != null && (player.isOnGround() || player
       .isTouchingWater())) {
       double sqDist = player.getPos().squaredDistanceTo(this.origin);
-      double toWander = this.distanceToWander + this._wanderDistanceExtension;
+      double toWander = this.distanceToWander + this .wanderDistanceExtension;
       return (sqDist > toWander * toWander);
     } 
     return false;
@@ -250,6 +250,6 @@ public class TimeoutWanderTask extends Task implements ITaskRequiresGrounded {
   }
   
   protected String toDebugString() {
-    return "Wander for " + this.distanceToWander + this._wanderDistanceExtension + " blocks";
+    return "Wander for " + this.distanceToWander + this .wanderDistanceExtension + " blocks";
   }
 }

@@ -35,15 +35,15 @@ import java.util.Optional;
 
 public class SmeltInSmokerTask extends ResourceTask {
 
-  private final SmeltTarget[] _targets;
-  private final TimerGame _smeltTimer = new TimerGame(5);
-  private BlockPos _smokerPos = null;
-  private boolean _isSmelting = false;
+  private final SmeltTarget[] targets;
+  private final TimerGame smeltTimer = new TimerGame(5);
+  private BlockPos smokerPos = null;
+  private boolean isSmelting = false;
   private SmokerCache cache;
 
   public SmeltInSmokerTask(SmeltTarget... targets) {
     super(extractItemTargets(targets));
-    _targets = targets;
+    this.targets = targets;
   }
 
   public SmeltInSmokerTask(SmeltTarget target) {
@@ -66,14 +66,14 @@ public class SmeltInSmokerTask extends ResourceTask {
   @Override
   protected void onResourceStart(AltoClefController controller) {
     controller.getBehaviour().addProtectedItems(Items.SMOKER);
-    for (SmeltTarget target : _targets) {
+    for (SmeltTarget target : targets) {
       controller.getBehaviour().addProtectedItems(target.getMaterial().getMatches());
     }
   }
 
   @Override
   protected Task onResourceTick(AltoClefController controller) {
-    boolean allDone = Arrays.stream(_targets).allMatch(target ->
+    boolean allDone = Arrays.stream(targets).allMatch(target ->
             controller.getItemStorage().getItemCount(target.getItem()) >= target.getItem().getTargetCount()
     );
     if (allDone) {
@@ -81,7 +81,7 @@ public class SmeltInSmokerTask extends ResourceTask {
       return null;
     }
 
-    SmeltTarget currentTarget = Arrays.stream(_targets).filter(t -> controller.getItemStorage().getItemCount(t.getItem()) < t.getItem().getTargetCount()).findFirst().orElse(null);
+    SmeltTarget currentTarget = Arrays.stream(targets).filter(t -> controller.getItemStorage().getItemCount(t.getItem()) < t.getItem().getTargetCount()).findFirst().orElse(null);
     if (currentTarget == null) return null;
 
     if (!controller.getItemStorage().hasItem(currentTarget.getMaterial())) {
@@ -94,10 +94,10 @@ public class SmeltInSmokerTask extends ResourceTask {
       return new CollectFuelTask(1.0);
     }
 
-    if (_smokerPos == null || !controller.getWorld().getBlockState(_smokerPos).isOf(Blocks.SMOKER)) {
+    if (smokerPos == null || !controller.getWorld().getBlockState(smokerPos).isOf(Blocks.SMOKER)) {
       Optional<BlockPos> nearestSmoker = controller.getBlockScanner().getNearestBlock(Blocks.SMOKER);
       if (nearestSmoker.isPresent()) {
-        _smokerPos = nearestSmoker.get();
+        smokerPos = nearestSmoker.get();
       } else {
         if (controller.getItemStorage().hasItem(Items.SMOKER)) {
           setDebugState("Placing smoker.");
@@ -108,15 +108,15 @@ public class SmeltInSmokerTask extends ResourceTask {
       }
     }
 
-    if (!_smokerPos.isWithinDistance(new Vec3i((int) controller.getEntity().getPos().x, (int) controller.getEntity().getPos().y, (int) controller.getEntity().getPos().z), 4.5)) {
+    if (!smokerPos.isWithinDistance(new Vec3i((int) controller.getEntity().getPos().x, (int) controller.getEntity().getPos().y, (int) controller.getEntity().getPos().z), 4.5)) {
       setDebugState("Going to smoker.");
-      return new GetToBlockTask(_smokerPos);
+      return new GetToBlockTask(smokerPos);
     }
 
-    BlockEntity be = controller.getWorld().getBlockEntity(_smokerPos);
+    BlockEntity be = controller.getWorld().getBlockEntity(smokerPos);
     if (!(be instanceof AbstractFurnaceBlockEntity smoker)) {
       Debug.logWarning("Block at smoker position is not a smoker BE. Resetting.");
-      _smokerPos = null;
+      smokerPos = null;
       return new TimeoutWanderTask(1);
     }
 
@@ -135,10 +135,10 @@ public class SmeltInSmokerTask extends ResourceTask {
       }
     }
 
-    if (_isSmelting) {
+    if (isSmelting) {
       setDebugState("Waiting for items to smoke...");
-      if (_smeltTimer.elapsed()) {
-        _isSmelting = false;
+      if (smeltTimer.elapsed()) {
+        isSmelting = false;
       }
       return null;
     }
@@ -162,15 +162,15 @@ public class SmeltInSmokerTask extends ResourceTask {
       int materialSlotIndex = playerInv.getSlotWithStack(new ItemStack(materialItem));
       if (materialSlotIndex != -1) {
         smokerInventory.setStack(SmokerSlot.INPUT_SLOT_MATERIALS, playerInv.removeStack(materialSlotIndex, 1));
-        _isSmelting = true;
-        _smeltTimer.reset();
+        isSmelting = true;
+        smeltTimer.reset();
         smoker.markDirty();
         return null;
       }
     }
 
-    _isSmelting = true;
-    _smeltTimer.reset();
+    isSmelting = true;
+    smeltTimer.reset();
     setDebugState("Waiting for smoker...");
     return null;
   }
@@ -183,7 +183,7 @@ public class SmeltInSmokerTask extends ResourceTask {
   @Override
   protected boolean isEqualResource(ResourceTask other) {
     if (other instanceof SmeltInSmokerTask task) {
-      return Arrays.equals(task._targets, this._targets);
+      return Arrays.equals(task .targets, this .targets);
     }
     return false;
   }

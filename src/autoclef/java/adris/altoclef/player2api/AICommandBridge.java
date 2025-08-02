@@ -68,11 +68,11 @@ public class AICommandBridge {
   
   private AltoClefController mod = null;
   
-  private boolean _enabled = true;
+  private boolean enabled = true;
   
-  private boolean _playermode = false;
+  private boolean playermode = false;
   
-  private String _lastQueuedMessage = null;
+  private String lastQueuedMessage = null;
   
   private boolean llmProcessing = false;
   
@@ -139,10 +139,10 @@ public class AICommandBridge {
   public void addMessageToQueue(String message) {
     if (message == null)
       return; 
-    if (message.equals(this._lastQueuedMessage))
+    if (message.equals(this .lastQueuedMessage))
       return; 
     this.messageQueue.offer(message);
-    this._lastQueuedMessage = message;
+    this .lastQueuedMessage = message;
     if (this.messageQueue.size() > 10)
       this.messageQueue.poll(); 
   }
@@ -237,11 +237,11 @@ public class AICommandBridge {
   }
   
   public void setEnabled(boolean enabled) {
-    this._enabled = enabled;
+    this .enabled = enabled;
   }
   
   public boolean getEnabled() {
-    return this._enabled;
+    return this .enabled;
   }
   
   public Character getCharacter() {
@@ -253,11 +253,11 @@ public class AICommandBridge {
   }
   
   public void setPlayerMode(boolean playermode) {
-    this._playermode = playermode;
+    this .playermode = playermode;
   }
   
   public boolean getPlayerMode() {
-    return this._playermode;
+    return this .playermode;
   }
   
 //  public void startSTT() {
@@ -267,7 +267,7 @@ public class AICommandBridge {
 //  public void stopSTT() {
 //    sttThread.execute(() -> {
 //          String result = Player2APIService.stopSTT();
-//          if (!this._enabled) {
+//          if (!this .enabled) {
 //            this.mod.getMessageSender().enqueueChat(result, null);
 //            return;
 //          }

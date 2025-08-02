@@ -13,16 +13,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class RunAwayFromCreepersTask extends CustomBaritoneGoalTask {
-  private final double _distanceToRun;
+  private final double distanceToRun;
   
   public RunAwayFromCreepersTask(double distance) {
-    this._distanceToRun = distance;
+    this .distanceToRun = distance;
   }
   
   protected boolean isEqual(Task other) {
     if (other instanceof adris.altoclef.tasks.movement.RunAwayFromCreepersTask) {
       adris.altoclef.tasks.movement.RunAwayFromCreepersTask task = (adris.altoclef.tasks.movement.RunAwayFromCreepersTask)other;
-      if (Math.abs(task._distanceToRun - this._distanceToRun) > 1.0D)
+      if (Math.abs(task .distanceToRun - this .distanceToRun) > 1.0D)
         return false; 
       return true;
     } 
@@ -30,12 +30,12 @@ public class RunAwayFromCreepersTask extends CustomBaritoneGoalTask {
   }
   
   protected String toDebugString() {
-    return "Run " + this._distanceToRun + " blocks away from creepers";
+    return "Run " + this .distanceToRun + " blocks away from creepers";
   }
   
   protected Goal newGoal(AltoClefController mod) {
     mod.getBaritone().getPathingBehavior().forceCancel();
-    return (Goal)new GoalRunAwayFromCreepers(mod, this._distanceToRun);
+    return (Goal)new GoalRunAwayFromCreepers(mod, this .distanceToRun);
   }
 
   private static class GoalRunAwayFromCreepers extends GoalRunAwayFromEntities {

@@ -15,11 +15,11 @@ import net.minecraft.item.Item;
 import net.minecraft.item.Items;
 
 public class CollectRedSandstoneTask extends ResourceTask {
-  private final int _count;
+  private final int count;
   
   public CollectRedSandstoneTask(int targetCount) {
     super(Items.RED_SANDSTONE, targetCount);
-    this._count = targetCount;
+    this .count = targetCount;
   }
   
   protected boolean shouldAvoidPickingUp(AltoClefController mod) {
@@ -44,6 +44,6 @@ public class CollectRedSandstoneTask extends ResourceTask {
   }
   
   protected String toDebugStringName() {
-    return "Collecting " + this._count + " red sandstone.";
+    return "Collecting " + this .count + " red sandstone.";
   }
 }

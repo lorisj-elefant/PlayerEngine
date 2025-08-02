@@ -40,25 +40,25 @@ public class PickupDroppedItemTask extends AbstractDoToClosestObjectTask<ItemEnt
     private final MovementProgressChecker stuckCheck;
     private final MovementProgressChecker progressChecker;
     private final ItemTarget[] itemTargets;
-    private final Set<ItemEntity> _blacklist;
-    private final boolean _freeInventoryIfFull;
+    private final Set<ItemEntity> blacklist;
+    private final boolean freeInventoryIfFull;
     Block[] annoyingBlocks;
     private Task unstuckTask;
-    private AltoClefController _mod;
-    private boolean _collectingPickaxeForThisResource;
-    private ItemEntity _currentDrop;
+    private AltoClefController mod;
+    private boolean collectingPickaxeForThisResource;
+    private ItemEntity currentDrop;
 
     public PickupDroppedItemTask(ItemTarget[] itemTargets, boolean freeInventoryIfFull) {
         this.wanderTask = new TimeoutWanderTask(5.0F, true);
         this.stuckCheck = new MovementProgressChecker();
         this.progressChecker = new MovementProgressChecker();
-        this._blacklist = new HashSet();
+        this .blacklist = new HashSet();
         this.annoyingBlocks = new Block[]{Blocks.VINE, Blocks.NETHER_SPROUTS, Blocks.CAVE_VINES, Blocks.CAVE_VINES_PLANT, Blocks.TWISTING_VINES, Blocks.TWISTING_VINES_PLANT, Blocks.WEEPING_VINES_PLANT, Blocks.LADDER, Blocks.BIG_DRIPLEAF, Blocks.BIG_DRIPLEAF_STEM, Blocks.SMALL_DRIPLEAF, Blocks.TALL_GRASS, Blocks.GRASS};
         this.unstuckTask = null;
-        this._collectingPickaxeForThisResource = false;
-        this._currentDrop = null;
+        this .collectingPickaxeForThisResource = false;
+        this .currentDrop = null;
         this.itemTargets = itemTargets;
-        this._freeInventoryIfFull = freeInventoryIfFull;
+        this .freeInventoryIfFull = freeInventoryIfFull;
     }
 
     public PickupDroppedItemTask(ItemTarget target, boolean freeInventoryIfFull) {
@@ -127,7 +127,7 @@ public class PickupDroppedItemTask extends AbstractDoToClosestObjectTask<ItemEnt
     }
 
     public boolean isCollectingPickaxeForThis() {
-        return this._collectingPickaxeForThisResource;
+        return this .collectingPickaxeForThisResource;
     }
 
     protected void onStart() {
@@ -166,8 +166,8 @@ public class PickupDroppedItemTask extends AbstractDoToClosestObjectTask<ItemEnt
                     this.stuckCheck.reset();
                 }
 
-                this._mod = mod;
-                if (isIsGettingPickaxeFirst(mod) && this._collectingPickaxeForThisResource && !StorageHelper.miningRequirementMetInventory(controller, MiningRequirement.STONE)) {
+                this .mod = mod;
+                if (isIsGettingPickaxeFirst(mod) && this .collectingPickaxeForThisResource && !StorageHelper.miningRequirementMetInventory(controller, MiningRequirement.STONE)) {
                     this.progressChecker.reset();
                     this.setDebugState("Collecting pickaxe first");
                     return getPickaxeFirstTask;
@@ -176,21 +176,21 @@ public class PickupDroppedItemTask extends AbstractDoToClosestObjectTask<ItemEnt
                         isGettingPickaxeFirstFlag = false;
                     }
 
-                    this._collectingPickaxeForThisResource = false;
+                    this .collectingPickaxeForThisResource = false;
                     if (!this.progressChecker.check(mod)) {
                         mod.getBaritone().getPathingBehavior().forceCancel();
-                        if (this._currentDrop != null && !this._currentDrop.getStack().isEmpty()) {
+                        if (this .currentDrop != null && !this .currentDrop.getStack().isEmpty()) {
                             if (!isGettingPickaxeFirstFlag && mod.getModSettings().shouldCollectPickaxeFirst() && !StorageHelper.miningRequirementMetInventory(controller, MiningRequirement.STONE)) {
                                 Debug.logMessage("Failed to pick up drop, will try to collect a stone pickaxe first and try again!");
-                                this._collectingPickaxeForThisResource = true;
+                                this .collectingPickaxeForThisResource = true;
                                 isGettingPickaxeFirstFlag = true;
                                 return getPickaxeFirstTask;
                             }
 
-                            Debug.logMessage(StlHelper.toString(this._blacklist, (element) -> element == null ? "(null)" : element.getStack().getItem().getTranslationKey()));
+                            Debug.logMessage(StlHelper.toString(this .blacklist, (element) -> element == null ? "(null)" : element.getStack().getItem().getTranslationKey()));
                             Debug.logMessage("Failed to pick up drop, suggesting it's unreachable.");
-                            this._blacklist.add(this._currentDrop);
-                            mod.getEntityTracker().requestEntityUnreachable(this._currentDrop);
+                            this .blacklist.add(this .currentDrop);
+                            mod.getEntityTracker().requestEntityUnreachable(this .currentDrop);
                             return this.wanderTask;
                         }
                     }
@@ -205,7 +205,7 @@ public class PickupDroppedItemTask extends AbstractDoToClosestObjectTask<ItemEnt
         if (!(other instanceof PickupDroppedItemTask task)) {
             return false;
         } else {
-            return Arrays.equals(task.itemTargets, this.itemTargets) && task._freeInventoryIfFull == this._freeInventoryIfFull;
+            return Arrays.equals(task.itemTargets, this.itemTargets) && task .freeInventoryIfFull == this .freeInventoryIfFull;
         }
     }
 
@@ -244,22 +244,22 @@ public class PickupDroppedItemTask extends AbstractDoToClosestObjectTask<ItemEnt
     }
 
     protected Task getGoalTask(ItemEntity itemEntity) {
-        if (!itemEntity.equals(this._currentDrop)) {
-            this._currentDrop = itemEntity;
+        if (!itemEntity.equals(this .currentDrop)) {
+            this .currentDrop = itemEntity;
             this.progressChecker.reset();
-            if (isGettingPickaxeFirstFlag && this._collectingPickaxeForThisResource) {
+            if (isGettingPickaxeFirstFlag && this .collectingPickaxeForThisResource) {
                 Debug.logMessage("New goal, no longer collecting a pickaxe.");
-                this._collectingPickaxeForThisResource = false;
+                this .collectingPickaxeForThisResource = false;
                 isGettingPickaxeFirstFlag = false;
             }
         }
 
-        boolean touching = this._mod.getEntityTracker().isCollidingWithPlayer(itemEntity);
-        return (Task)(touching && this._freeInventoryIfFull && this._mod.getItemStorage().getSlotsThatCanFitInPlayerInventory(itemEntity.getStack(), false).isEmpty() ? new EnsureFreeInventorySlotTask() : new GetToEntityTask(itemEntity));
+        boolean touching = this .mod.getEntityTracker().isCollidingWithPlayer(itemEntity);
+        return (Task)(touching && this .freeInventoryIfFull && this .mod.getItemStorage().getSlotsThatCanFitInPlayerInventory(itemEntity.getStack(), false).isEmpty() ? new EnsureFreeInventorySlotTask() : new GetToEntityTask(itemEntity));
     }
 
     protected boolean isValid(AltoClefController mod, ItemEntity obj) {
-        return obj.isAlive() && !this._blacklist.contains(obj);
+        return obj.isAlive() && !this .blacklist.contains(obj);
     }
 
     static {

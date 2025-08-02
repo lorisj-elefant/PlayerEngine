@@ -10,10 +10,10 @@ import baritone.api.IBaritone;
 import baritone.api.utils.input.Input;
 
 public class SafeRandomShimmyTask extends Task {
-  private final TimerGame _lookTimer;
+  private final TimerGame lookTimer;
   
   public SafeRandomShimmyTask(float randomLookInterval) {
-    this._lookTimer = new TimerGame(randomLookInterval);
+    this .lookTimer = new TimerGame(randomLookInterval);
   }
   
   public SafeRandomShimmyTask() {
@@ -21,13 +21,13 @@ public class SafeRandomShimmyTask extends Task {
   }
   
   protected void onStart() {
-    this._lookTimer.reset();
+    this .lookTimer.reset();
   }
   
   protected Task onTick() {
-    if (this._lookTimer.elapsed()) {
+    if (this .lookTimer.elapsed()) {
       Debug.logMessage("Random Orientation");
-      this._lookTimer.reset();
+      this .lookTimer.reset();
       LookHelper.randomOrientation(controller);
     } 
     IBaritone baritone = controller.getBaritone();

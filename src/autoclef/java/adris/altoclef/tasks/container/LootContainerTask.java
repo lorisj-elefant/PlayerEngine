@@ -21,15 +21,15 @@ import java.util.function.Predicate;
 
 public class LootContainerTask extends Task {
 
-  private final BlockPos _containerPos;
-  private final List<Item> _targets;
-  private final Predicate<ItemStack> _check;
-  private boolean _finished = false;
+  private final BlockPos containerPos;
+  private final List<Item> targets;
+  private final Predicate<ItemStack> check;
+  private boolean finished = false;
 
   public LootContainerTask(BlockPos chestPos, List<Item> items, Predicate<ItemStack> pred) {
-    this._containerPos = chestPos;
-    this._targets = items;
-    this._check = pred;
+    this .containerPos = chestPos;
+    this .targets = items;
+    this .check = pred;
   }
 
   public LootContainerTask(BlockPos chestPos, List<Item> items) {
@@ -40,40 +40,40 @@ public class LootContainerTask extends Task {
   protected void onStart() {
     // Protect items we want to loot so we don't drop them
     controller.getBehaviour().push();
-    controller.getBehaviour().addProtectedItems(_targets.toArray(new Item[0]));
+    controller.getBehaviour().addProtectedItems(targets.toArray(new Item[0]));
   }
 
   @Override
   protected Task onTick() {
-    if (_finished) {
+    if (finished) {
       return null;
     }
 
     // Go to container
-    if (!_containerPos.isWithinDistance(new Vec3i((int) controller.getEntity().getPos().x, (int) controller.getEntity().getPos().y, (int) controller.getEntity().getPos().z), 4.5)) {
+    if (!containerPos.isWithinDistance(new Vec3i((int) controller.getEntity().getPos().x, (int) controller.getEntity().getPos().y, (int) controller.getEntity().getPos().z), 4.5)) {
       setDebugState("Going to container");
-      return new GetToBlockTask(_containerPos);
+      return new GetToBlockTask(containerPos);
     }
 
     // Get inventories
-    BlockEntity be = controller.getWorld().getBlockEntity(_containerPos);
+    BlockEntity be = controller.getWorld().getBlockEntity(containerPos);
     if (!(be instanceof LootableContainerBlockEntity container)) {
-      Debug.logWarning("Block at " + _containerPos + " is not a lootable container. Stopping.");
-      _finished = true;
+      Debug.logWarning("Block at " + containerPos + " is not a lootable container. Stopping.");
+      finished = true;
       return null;
     }
     Inventory containerInventory = container;
     LivingEntityInventory playerInventory = ((IInventoryProvider) controller.getEntity()).getLivingInventory();
 
     // Update our cache of this container
-    controller.getItemStorage().containers.WritableCache(controller, _containerPos);
+    controller.getItemStorage().containers.WritableCache(controller, containerPos);
 
     boolean somethingToLoot = false;
     // Loot items
-    setDebugState("Looting items: " + _targets);
+    setDebugState("Looting items: " + targets);
     for (int i = 0; i < containerInventory.size(); i++) {
       ItemStack stack = containerInventory.getStack(i);
-      if (stack.isEmpty() || !_targets.contains(stack.getItem()) || !_check.test(stack)) {
+      if (stack.isEmpty() || !targets.contains(stack.getItem()) || !check.test(stack)) {
         continue;
       }
 
@@ -100,7 +100,7 @@ public class LootContainerTask extends Task {
     // If we iterated through the whole container and found nothing, we're done.
     if (!somethingToLoot) {
       setDebugState("Container empty or has no desired items.");
-      _finished = true;
+      finished = true;
     }
 
     return null;
@@ -109,8 +109,8 @@ public class LootContainerTask extends Task {
   @Override
   public boolean isFinished() {
     // Additionally check if the container is gone
-    if (_finished || !controller.getChunkTracker().isChunkLoaded(_containerPos) ||
-            !(controller.getWorld().getBlockEntity(_containerPos) instanceof LootableContainerBlockEntity)) {
+    if (finished || !controller.getChunkTracker().isChunkLoaded(containerPos) ||
+            !(controller.getWorld().getBlockEntity(containerPos) instanceof LootableContainerBlockEntity)) {
       return true;
     }
     return false;
@@ -124,14 +124,14 @@ public class LootContainerTask extends Task {
   @Override
   protected boolean isEqual(Task other) {
     if (other instanceof LootContainerTask task) {
-      return Objects.equals(task._containerPos, _containerPos) &&
-              new ArrayList<>(task._targets).equals(new ArrayList<>(_targets));
+      return Objects.equals(task .containerPos, containerPos) &&
+              new ArrayList<>(task .targets).equals(new ArrayList<>(targets));
     }
     return false;
   }
 
   @Override
   protected String toDebugString() {
-    return "Looting container at " + _containerPos.toShortString();
+    return "Looting container at " + containerPos.toShortString();
   }
 }

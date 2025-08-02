@@ -19,11 +19,11 @@ import net.minecraft.util.math.Position;
 public class CollectFlintTask extends ResourceTask {
   private static final float CLOSE_ENOUGH_FLINT = 10.0F;
   
-  private final int _count;
+  private final int count;
   
   public CollectFlintTask(int targetCount) {
     super(Items.FLINT, targetCount);
-    this._count = targetCount;
+    this .count = targetCount;
   }
   
   protected boolean shouldAvoidPickingUp(AltoClefController mod) {
@@ -46,12 +46,12 @@ public class CollectFlintTask extends ResourceTask {
   protected boolean isEqualResource(ResourceTask other) {
     if (other instanceof adris.altoclef.tasks.resources.CollectFlintTask) {
       adris.altoclef.tasks.resources.CollectFlintTask task = (adris.altoclef.tasks.resources.CollectFlintTask)other;
-      return (task._count == this._count);
+      return (task .count == this .count);
     } 
     return false;
   }
   
   protected String toDebugStringName() {
-    return "Collect " + this._count + " flint";
+    return "Collect " + this .count + " flint";
   }
 }

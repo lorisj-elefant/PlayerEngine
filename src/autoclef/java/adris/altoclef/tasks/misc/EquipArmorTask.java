@@ -11,10 +11,10 @@ import java.util.Arrays;
 
 public class EquipArmorTask extends Task {
 
-  private final ItemTarget[] _toEquip;
+  private final ItemTarget[] toEquip;
 
   public EquipArmorTask(ItemTarget... toEquip) {
-    this._toEquip = toEquip;
+    this .toEquip = toEquip;
   }
 
   public EquipArmorTask(Item... toEquip) {
@@ -27,7 +27,7 @@ public class EquipArmorTask extends Task {
 
   @Override
   protected Task onTick() {
-    ItemTarget[] armorNotPresent = Arrays.stream(_toEquip)
+    ItemTarget[] armorNotPresent = Arrays.stream(toEquip)
             .filter(target -> !controller.getItemStorage().hasItem(target.getMatches()) && !StorageHelper.isArmorEquipped(controller, target.getMatches()))
             .toArray(ItemTarget[]::new);
 
@@ -37,7 +37,7 @@ public class EquipArmorTask extends Task {
     }
 
     setDebugState("Equipping armor.");
-    for (ItemTarget target : _toEquip) {
+    for (ItemTarget target : toEquip) {
       if (!StorageHelper.isArmorEquipped(controller, target.getMatches())) {
         // The actual equipping logic is now inside SlotHandler
         controller.getSlotHandler().forceEquipArmor(controller, target);
@@ -55,19 +55,19 @@ public class EquipArmorTask extends Task {
 
   @Override
   public boolean isFinished() {
-    return Arrays.stream(_toEquip).allMatch(target -> StorageHelper.isArmorEquipped(controller, target.getMatches()));
+    return Arrays.stream(toEquip).allMatch(target -> StorageHelper.isArmorEquipped(controller, target.getMatches()));
   }
 
   @Override
   protected boolean isEqual(Task other) {
     if (other instanceof EquipArmorTask task) {
-      return Arrays.equals(task._toEquip, this._toEquip);
+      return Arrays.equals(task .toEquip, this .toEquip);
     }
     return false;
   }
 
   @Override
   protected String toDebugString() {
-    return "Equipping armor: " + Arrays.toString(_toEquip);
+    return "Equipping armor: " + Arrays.toString(toEquip);
   }
 }

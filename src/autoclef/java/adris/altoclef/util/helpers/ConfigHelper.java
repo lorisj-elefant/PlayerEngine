@@ -38,7 +38,7 @@ import net.minecraft.util.math.Vec3d;
 public class ConfigHelper {
   private static final String ALTO_FOLDER = "altoclef";
   
-  private static final HashMap<String, Runnable> _loadedConfigs = new HashMap<>();
+  private static final HashMap<String, Runnable> loadedConfigs = new HashMap<>();
   
   private static File getConfigFile(String path) {
     String fullPath = "altoclef" + File.separator + path;
@@ -46,7 +46,7 @@ public class ConfigHelper {
   }
   
   public static void reloadAllConfigs() {
-    for (Runnable config : _loadedConfigs.values())
+    for (Runnable config : loadedConfigs.values())
       config.run(); 
   }
   
@@ -88,7 +88,7 @@ public class ConfigHelper {
   
   public static <T> void loadConfig(String path, Supplier<T> getDefault, Class<T> classToLoad, Consumer<T> onReload) {
     T config = getConfig(path, getDefault, classToLoad);
-    _loadedConfigs.put(path, () -> onReload.accept(config));
+    loadedConfigs.put(path, () -> onReload.accept(config));
     onReload.accept(config);
   }
   
@@ -191,7 +191,7 @@ public class ConfigHelper {
   
   public static <T extends IListConfigFile> void loadListConfig(String path, Supplier<T> getDefault, Consumer<T> onReload) {
     T result = getListConfig(path, getDefault);
-    _loadedConfigs.put(path, () -> onReload.accept(result));
+    loadedConfigs.put(path, () -> onReload.accept(result));
     onReload.accept(result);
   }
   

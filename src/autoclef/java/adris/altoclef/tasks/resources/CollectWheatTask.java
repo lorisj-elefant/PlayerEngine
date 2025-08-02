@@ -14,11 +14,11 @@ import net.minecraft.item.Item;
 import net.minecraft.item.Items;
 
 public class CollectWheatTask extends ResourceTask {
-  private final int _count;
+  private final int count;
   
   public CollectWheatTask(int targetCount) {
     super(Items.WHEAT, targetCount);
-    this._count = targetCount;
+    this .count = targetCount;
   }
   
   protected boolean shouldAvoidPickingUp(AltoClefController mod) {
@@ -29,13 +29,13 @@ public class CollectWheatTask extends ResourceTask {
   
   protected Task onResourceTick(AltoClefController mod) {
     int potentialCount = mod.getItemStorage().getItemCount(new Item[] { Items.WHEAT }) + 9 * mod.getItemStorage().getItemCount(new Item[] { Items.HAY_BLOCK });
-    if (potentialCount >= this._count) {
+    if (potentialCount >= this .count) {
       setDebugState("Crafting wheat");
-      return (Task)new CraftInInventoryTask(new RecipeTarget(Items.WHEAT, this._count, CraftingRecipe.newShapedRecipe("wheat", new ItemTarget[] { new ItemTarget(Items.HAY_BLOCK, 1), null, null, null },9)));
+      return (Task)new CraftInInventoryTask(new RecipeTarget(Items.WHEAT, this .count, CraftingRecipe.newShapedRecipe("wheat", new ItemTarget[] { new ItemTarget(Items.HAY_BLOCK, 1), null, null, null },9)));
     } 
     if (mod.getBlockScanner().anyFound(new Block[] { Blocks.HAY_BLOCK }) || mod.getEntityTracker().itemDropped(new Item[] { Items.HAY_BLOCK }))
       return (Task)new MineAndCollectTask(Items.HAY_BLOCK, 99999999, new Block[] { Blocks.HAY_BLOCK }, MiningRequirement.HAND); 
-    return (Task)new CollectCropTask(new ItemTarget(Items.WHEAT, this._count), new Block[] { Blocks.WHEAT }, new Item[] { Items.WHEAT_SEEDS });
+    return (Task)new CollectCropTask(new ItemTarget(Items.WHEAT, this .count), new Block[] { Blocks.WHEAT }, new Item[] { Items.WHEAT_SEEDS });
   }
   
   protected void onResourceStop(AltoClefController mod, Task interruptTask) {}
@@ -45,6 +45,6 @@ public class CollectWheatTask extends ResourceTask {
   }
   
   protected String toDebugStringName() {
-    return "Collecting " + this._count + " wheat.";
+    return "Collecting " + this .count + " wheat.";
   }
 }

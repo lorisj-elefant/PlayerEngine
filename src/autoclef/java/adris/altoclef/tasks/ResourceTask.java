@@ -31,21 +31,21 @@ import java.util.Optional;
 
 public abstract class ResourceTask extends Task implements ITaskCanForce {
 
-  protected final ItemTarget[] _itemTargets;
+  protected final ItemTarget[] itemTargets;
 
-  private final PickupDroppedItemTask _pickupTask;
+  private final PickupDroppedItemTask pickupTask;
 
   private Block[] mineIfPresent = null;
   private BlockPos mineLastClosest = null;
   // Not all resource tasks need these, but they are common.
-  private boolean _forceDimension = false;
-  private Dimension _targetDimension;
+  private boolean forceDimension = false;
+  private Dimension targetDimension;
   private ContainerCache currentContainer;
   protected boolean allowContainers = false;
 
   public ResourceTask(ItemTarget... itemTargets) {
-    this._itemTargets = itemTargets;
-    this._pickupTask = new PickupDroppedItemTask(this._itemTargets, true);
+    this .itemTargets = itemTargets;
+    this .pickupTask = new PickupDroppedItemTask(this .itemTargets, true);
   }
 
   public ResourceTask(Item item, int targetCount) {
@@ -54,15 +54,15 @@ public abstract class ResourceTask extends Task implements ITaskCanForce {
 
   @Override
   public boolean isFinished() {
-    return StorageHelper.itemTargetsMet(controller, _itemTargets);
+    return StorageHelper.itemTargetsMet(controller, itemTargets);
   }
 
   @Override
   public boolean shouldForce(Task interruptingCandidate) {
     // If we have items on cursor and they are our target, don't get interrupted.
-    if (StorageHelper.itemTargetsMet(controller, _itemTargets) && !isFinished()) {
+    if (StorageHelper.itemTargetsMet(controller, itemTargets) && !isFinished()) {
       ItemStack cursorStack = controller.getSlotHandler().getCursorStack();
-      return Arrays.stream(_itemTargets).anyMatch(target -> target.matches(cursorStack.getItem()));
+      return Arrays.stream(itemTargets).anyMatch(target -> target.matches(cursorStack.getItem()));
     }
     return false;
   }
@@ -71,7 +71,7 @@ public abstract class ResourceTask extends Task implements ITaskCanForce {
   protected void onStart() {
     BotBehaviour botBehaviour = controller.getBehaviour();
     botBehaviour.push();
-    botBehaviour.addProtectedItems(ItemTarget.getMatches(_itemTargets));
+    botBehaviour.addProtectedItems(ItemTarget.getMatches(itemTargets));
     onResourceStart(controller);
   }
 
@@ -85,34 +85,34 @@ public abstract class ResourceTask extends Task implements ITaskCanForce {
     // If items are on the ground, pick them up.
     if (!shouldAvoidPickingUp(mod)) {
       // Check if items are on the floor. If so, pick em up.
-      if (mod.getEntityTracker().itemDropped(_itemTargets)) {
+      if (mod.getEntityTracker().itemDropped(itemTargets)) {
 
         // If we're picking up a pickaxe (we can't go far underground or mine much)
         if (PickupDroppedItemTask.isIsGettingPickaxeFirst(mod)) {
-          if (_pickupTask.isCollectingPickaxeForThis()) {
+          if (pickupTask.isCollectingPickaxeForThis()) {
             setDebugState("Picking up (pickaxe first!)");
             // Our pickup task is the one collecting the pickaxe, keep it going.
-            return _pickupTask;
+            return pickupTask;
           }
           // Only get items that are CLOSE to us.
-          Optional<ItemEntity> closest = mod.getEntityTracker().getClosestItemDrop(mod.getPlayer().getPos(), _itemTargets);
+          Optional<ItemEntity> closest = mod.getEntityTracker().getClosestItemDrop(mod.getPlayer().getPos(), itemTargets);
           if (closest.isPresent() && !closest.get().isInRange(mod.getPlayer(), 10)) {
             return onResourceTick(mod);
           }
         }
 
         double range = getPickupRange(mod);
-        Optional<ItemEntity> closest = mod.getEntityTracker().getClosestItemDrop(mod.getPlayer().getPos(), _itemTargets);
-        if (range < 0 || (closest.isPresent() && closest.get().isInRange(mod.getPlayer(), range)) || (_pickupTask.isActive() && !_pickupTask.isFinished())) {
+        Optional<ItemEntity> closest = mod.getEntityTracker().getClosestItemDrop(mod.getPlayer().getPos(), itemTargets);
+        if (range < 0 || (closest.isPresent() && closest.get().isInRange(mod.getPlayer(), range)) || (pickupTask.isActive() && !pickupTask.isFinished())) {
           setDebugState("Picking up");
-          return _pickupTask;
+          return pickupTask;
         }
       }
     }
 
     // Check for chests and grab resources from them.
     if (currentContainer == null && allowContainers) {
-      List<ContainerCache> containersWithItem = mod.getItemStorage().getContainersWithItem(Arrays.stream(_itemTargets).reduce(new Item[0], (items, target) -> ArrayUtils.addAll(items, target.getMatches()), ArrayUtils::addAll));
+      List<ContainerCache> containersWithItem = mod.getItemStorage().getContainersWithItem(Arrays.stream(itemTargets).reduce(new Item[0], (items, target) -> ArrayUtils.addAll(items, target.getMatches()), ArrayUtils::addAll));
       if (!containersWithItem.isEmpty()) {
         ContainerCache closest = containersWithItem.stream().min(StlHelper.compareValues(container -> BlockPosVer.getSquaredDistance(container.getBlockPos(),mod.getPlayer().getPos()))).get();
         if (closest.getBlockPos().isWithinDistance(new Vec3i((int) mod.getPlayer().getPos().x, (int) mod.getPlayer().getPos().y, (int) mod.getPlayer().getPos().z), mod.getModSettings().getResourceChestLocateRange())) {
@@ -123,12 +123,12 @@ public abstract class ResourceTask extends Task implements ITaskCanForce {
     if (currentContainer != null) {
       Optional<ContainerCache> container = mod.getItemStorage().getContainerAtPosition(currentContainer.getBlockPos());
       if (container.isPresent()) {
-        if (Arrays.stream(_itemTargets).noneMatch(target -> container.get().hasItem(target.getMatches()))) {
+        if (Arrays.stream(itemTargets).noneMatch(target -> container.get().hasItem(target.getMatches()))) {
           currentContainer = null;
         } else {
           // We have a current chest, grab from it.
           setDebugState("Picking up from container");
-          return new PickupFromContainerTask(currentContainer.getBlockPos(), _itemTargets);
+          return new PickupFromContainerTask(currentContainer.getBlockPos(), itemTargets);
         }
       } else {
         currentContainer = null;
@@ -148,7 +148,7 @@ public abstract class ResourceTask extends Task implements ITaskCanForce {
           }
           if (mineLastClosest != null) {
             if (mineLastClosest.isWithinDistance(new Vec3i((int) mod.getPlayer().getPos().x, (int) mod.getPlayer().getPos().y, (int) mod.getPlayer().getPos().z), mod.getModSettings().getResourceMineRange() * 1.5 + 20)) {
-              return new MineAndCollectTask(_itemTargets, mineIfPresent, MiningRequirement.HAND);
+              return new MineAndCollectTask(itemTargets, mineIfPresent, MiningRequirement.HAND);
             }
           }
         }
@@ -168,8 +168,8 @@ public abstract class ResourceTask extends Task implements ITaskCanForce {
     double range = getPickupRange(controller);
     if (range < 0) return true;
     return controller.getEntityTracker()
-            .getClosestItemDrop(controller.getEntity().getPos(), _itemTargets)
-            .map(itemEntity -> itemEntity.isInRange(controller.getEntity(), range) || (_pickupTask.isActive() && !_pickupTask.isFinished()))
+            .getClosestItemDrop(controller.getEntity().getPos(), itemTargets)
+            .map(itemEntity -> itemEntity.isInRange(controller.getEntity(), range) || (pickupTask.isActive() && !pickupTask.isFinished()))
             .orElse(false);
   }
 
@@ -186,35 +186,35 @@ public abstract class ResourceTask extends Task implements ITaskCanForce {
   @Override
   protected boolean isEqual(Task other) {
     if (other instanceof ResourceTask task) {
-      return Arrays.equals(task._itemTargets, this._itemTargets) && isEqualResource(task);
+      return Arrays.equals(task .itemTargets, this .itemTargets) && isEqualResource(task);
     }
     return false;
   }
 
   @Override
   protected String toDebugString() {
-    return toDebugStringName() + ": " + Arrays.toString(_itemTargets);
+    return toDebugStringName() + ": " + Arrays.toString(itemTargets);
   }
 
   protected boolean isInWrongDimension(AltoClefController controller) {
-    if (_forceDimension) {
-      return WorldHelper.getCurrentDimension(controller) != _targetDimension;
+    if (forceDimension) {
+      return WorldHelper.getCurrentDimension(controller) != targetDimension;
     }
     return false;
   }
 
   protected Task getToCorrectDimensionTask(AltoClefController controller) {
-    return new DefaultGoToDimensionTask(_targetDimension);
+    return new DefaultGoToDimensionTask(targetDimension);
   }
 
   public ResourceTask forceDimension(Dimension dimension) {
-    _forceDimension = true;
-    _targetDimension = dimension;
+    forceDimension = true;
+    targetDimension = dimension;
     return this;
   }
 
   public ItemTarget[] getItemTargets() {
-    return _itemTargets;
+    return itemTargets;
   }
 
   public ResourceTask mineIfPresent(Block[] toMine) {

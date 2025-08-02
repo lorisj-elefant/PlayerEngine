@@ -12,14 +12,14 @@ import java.util.function.Function;
 import net.minecraft.item.Item;
 
 public class CraftWithMatchingPlanksTask extends CraftWithMatchingMaterialsTask {
-  private final ItemTarget _visualTarget;
+  private final ItemTarget visualTarget;
   
-  private final Function<ItemHelper.WoodItems, Item> _getTargetItem;
+  private final Function<ItemHelper.WoodItems, Item> getTargetItem;
   
   public CraftWithMatchingPlanksTask(Item[] validTargets, Function<ItemHelper.WoodItems, Item> getTargetItem, CraftingRecipe recipe, boolean[] sameMask, int count) {
     super(new ItemTarget(validTargets, count), recipe, sameMask);
-    this._getTargetItem = getTargetItem;
-    this._visualTarget = new ItemTarget(validTargets, count);
+    this .getTargetItem = getTargetItem;
+    this .visualTarget = new ItemTarget(validTargets, count);
   }
   
   protected int getExpectedTotalCountOfSameItem(AltoClefController mod, Item sameItem) {
@@ -39,7 +39,7 @@ public class CraftWithMatchingPlanksTask extends CraftWithMatchingMaterialsTask 
   protected Item getSpecificItemCorrespondingToMajorityResource(Item majority) {
     for (ItemHelper.WoodItems woodItems : ItemHelper.getWoodItems()) {
       if (woodItems.planks == majority)
-        return this._getTargetItem.apply(woodItems); 
+        return this .getTargetItem.apply(woodItems); 
     } 
     return null;
   }
@@ -47,13 +47,13 @@ public class CraftWithMatchingPlanksTask extends CraftWithMatchingMaterialsTask 
   protected boolean isEqualResource(ResourceTask other) {
     if (other instanceof adris.altoclef.tasks.resources.CraftWithMatchingPlanksTask) {
       adris.altoclef.tasks.resources.CraftWithMatchingPlanksTask task = (adris.altoclef.tasks.resources.CraftWithMatchingPlanksTask)other;
-      return task._visualTarget.equals(this._visualTarget);
+      return task .visualTarget.equals(this .visualTarget);
     } 
     return false;
   }
   
   protected String toDebugStringName() {
-    return "Crafting: " + String.valueOf(this._visualTarget);
+    return "Crafting: " + String.valueOf(this .visualTarget);
   }
   
   protected boolean shouldAvoidPickingUp(AltoClefController mod) {

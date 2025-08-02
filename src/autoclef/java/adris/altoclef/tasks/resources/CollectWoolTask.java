@@ -16,17 +16,17 @@ import net.minecraft.item.Items;
 import net.minecraft.util.DyeColor;
 
 public class CollectWoolTask extends ResourceTask {
-  private final int _count;
+  private final int count;
   
-  private final HashSet<DyeColor> _colors;
+  private final HashSet<DyeColor> colors;
   
-  private final Item[] _wools;
+  private final Item[] wools;
   
   public CollectWoolTask(DyeColor[] colors, int count) {
     super(new ItemTarget(ItemHelper.WOOL, count));
-    this._colors = new HashSet<>(Arrays.asList(colors));
-    this._count = count;
-    this._wools = getWoolColorItems(colors);
+    this .colors = new HashSet<>(Arrays.asList(colors));
+    this .count = count;
+    this .wools = getWoolColorItems(colors);
   }
   
   public CollectWoolTask(DyeColor color, int count) {
@@ -51,9 +51,9 @@ public class CollectWoolTask extends ResourceTask {
   protected void onResourceStart(AltoClefController mod) {}
   
   protected Task onResourceTick(AltoClefController mod) {
-    Block[] woolBlocks = ItemHelper.itemsToBlocks(this._wools);
+    Block[] woolBlocks = ItemHelper.itemsToBlocks(this .wools);
     if (mod.getBlockScanner().anyFound(woolBlocks))
-      return (Task)new MineAndCollectTask(new ItemTarget(this._wools), woolBlocks, MiningRequirement.HAND); 
+      return (Task)new MineAndCollectTask(new ItemTarget(this .wools), woolBlocks, MiningRequirement.HAND); 
     if (isInWrongDimension(mod) && !mod.getEntityTracker().entityFound(new Class[] { SheepEntity.class }))
       return getToCorrectDimensionTask(mod); 
     if (mod.getItemStorage().hasItem(new Item[] { Items.SHEARS }))
@@ -61,19 +61,19 @@ public class CollectWoolTask extends ResourceTask {
     return (Task)new KillAndLootTask(SheepEntity.class, entity -> {
           if (entity instanceof SheepEntity) {
             SheepEntity sheep = (SheepEntity)entity;
-            return (this._colors.contains(sheep.getColor()) && !sheep.isSheared());
+            return (this .colors.contains(sheep.getColor()) && !sheep.isSheared());
           } 
           return false;
-        }, new ItemTarget[] { new ItemTarget(this._wools, this._count) });
+        }, new ItemTarget[] { new ItemTarget(this .wools, this .count) });
   }
   
   protected void onResourceStop(AltoClefController mod, Task interruptTask) {}
   
   protected boolean isEqualResource(ResourceTask other) {
-    return (other instanceof adris.altoclef.tasks.resources.CollectWoolTask && ((adris.altoclef.tasks.resources.CollectWoolTask)other)._count == this._count);
+    return (other instanceof adris.altoclef.tasks.resources.CollectWoolTask && ((adris.altoclef.tasks.resources.CollectWoolTask)other) .count == this .count);
   }
   
   protected String toDebugStringName() {
-    return "Collect " + this._count + " wool.";
+    return "Collect " + this .count + " wool.";
   }
 }

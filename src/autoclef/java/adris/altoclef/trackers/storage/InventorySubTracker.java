@@ -17,8 +17,8 @@ import java.util.*;
 
 public class InventorySubTracker extends Tracker {
 
-  private final Map<Item, List<Integer>> _itemToSlotPlayer = new HashMap<>();
-  private final Map<Item, Integer> _itemCountsPlayer = new HashMap<>();
+  private final Map<Item, List<Integer>> itemToSlotPlayer = new HashMap<>();
+  private final Map<Item, Integer> itemCountsPlayer = new HashMap<>();
 
   public InventorySubTracker(TrackerManager manager) {
     super(manager);
@@ -32,7 +32,7 @@ public class InventorySubTracker extends Tracker {
       if (cursorStack.isOf(item)) {
         result += cursorStack.getCount();
       }
-      result += _itemCountsPlayer.getOrDefault(item, 0);
+      result += itemCountsPlayer.getOrDefault(item, 0);
     }
     return result;
   }
@@ -44,7 +44,7 @@ public class InventorySubTracker extends Tracker {
       if (cursorStack.isOf(item)) {
         return true;
       }
-      if (_itemCountsPlayer.containsKey(item)) {
+      if (itemCountsPlayer.containsKey(item)) {
         return true;
       }
     }
@@ -57,8 +57,8 @@ public class InventorySubTracker extends Tracker {
     LivingEntityInventory inventory = ((IInventoryProvider) mod.getEntity()).getLivingInventory();
 
     for (Item item : items) {
-      if (_itemToSlotPlayer.containsKey(item)) {
-        for(Integer index : _itemToSlotPlayer.get(item)) {
+      if (itemToSlotPlayer.containsKey(item)) {
+        for(Integer index : itemToSlotPlayer.get(item)) {
           result.add(new Slot(inventory.main, index));
         }
       }
@@ -121,7 +121,7 @@ public class InventorySubTracker extends Tracker {
 
   public boolean hasEmptySlot() {
     ensureUpdated();
-    return _itemCountsPlayer.getOrDefault(Items.AIR, 0) > 0;
+    return itemCountsPlayer.getOrDefault(Items.AIR, 0) > 0;
   }
 
   @Override
@@ -151,17 +151,17 @@ public class InventorySubTracker extends Tracker {
     Item item = stack.isEmpty() ? Items.AIR : stack.getItem();
     int count = stack.getCount();
 
-    _itemCountsPlayer.put(item, _itemCountsPlayer.getOrDefault(item, 0) + count);
+    itemCountsPlayer.put(item, itemCountsPlayer.getOrDefault(item, 0) + count);
 
     // We only map slots for main inventory as armor/offhand are handled separately.
     if (inventory instanceof net.minecraft.util.collection.DefaultedList) {
-      _itemToSlotPlayer.computeIfAbsent(item, k -> new ArrayList<>()).add(index);
+      itemToSlotPlayer.computeIfAbsent(item, k -> new ArrayList<>()).add(index);
     }
   }
 
   @Override
   protected void reset() {
-    _itemToSlotPlayer.clear();
-    _itemCountsPlayer.clear();
+    itemToSlotPlayer.clear();
+    itemCountsPlayer.clear();
   }
 }

@@ -10,44 +10,44 @@ import net.minecraft.item.Items;
 import net.minecraft.util.math.BlockPos;
 
 public class GoToStrongholdPortalTask extends Task {
-  private LocateStrongholdCoordinatesTask _locateCoordsTask;
+  private LocateStrongholdCoordinatesTask locateCoordsTask;
   
-  private final int _targetEyes;
+  private final int targetEyes;
   
   private final int MINIMUM_EYES = 12;
   
-  private BlockPos _strongholdCoordinates;
+  private BlockPos strongholdCoordinates;
   
   public GoToStrongholdPortalTask(int targetEyes) {
-    this._targetEyes = targetEyes;
-    this._strongholdCoordinates = null;
-    this._locateCoordsTask = new LocateStrongholdCoordinatesTask(targetEyes);
+    this .targetEyes = targetEyes;
+    this .strongholdCoordinates = null;
+    this .locateCoordsTask = new LocateStrongholdCoordinatesTask(targetEyes);
   }
   
   protected void onStart() {}
   
   protected Task onTick() {
     AltoClefController mod = controller;
-    if (this._strongholdCoordinates == null) {
-      this._strongholdCoordinates = this._locateCoordsTask.getStrongholdCoordinates().orElse(null);
-      if (this._strongholdCoordinates == null) {
+    if (this .strongholdCoordinates == null) {
+      this .strongholdCoordinates = this .locateCoordsTask.getStrongholdCoordinates().orElse(null);
+      if (this .strongholdCoordinates == null) {
         if (mod.getItemStorage().getItemCount(new Item[] { Items.ENDER_EYE }) < 12 && mod.getEntityTracker().itemDropped(new Item[] { Items.ENDER_EYE })) {
           setDebugState("Picking up dropped eye");
           return (Task)new PickupDroppedItemTask(Items.ENDER_EYE, 12);
         } 
         setDebugState("Triangulating stronghold...");
-        return (Task)this._locateCoordsTask;
+        return (Task)this .locateCoordsTask;
       } 
     } 
-    if (mod.getPlayer().getPos().distanceTo(WorldHelper.toVec3d(this._strongholdCoordinates)) < 10.0D && !mod.getBlockScanner().anyFound(new Block[] { Blocks.END_PORTAL_FRAME })) {
+    if (mod.getPlayer().getPos().distanceTo(WorldHelper.toVec3d(this .strongholdCoordinates)) < 10.0D && !mod.getBlockScanner().anyFound(new Block[] { Blocks.END_PORTAL_FRAME })) {
       mod.log("Something went wrong whilst triangulating the stronghold... either the action got disrupted or the second eye went to a different stronghold");
       mod.log("We will try to triangulate again now...");
-      this._strongholdCoordinates = null;
-      this._locateCoordsTask = new LocateStrongholdCoordinatesTask(this._targetEyes);
+      this .strongholdCoordinates = null;
+      this .locateCoordsTask = new LocateStrongholdCoordinatesTask(this .targetEyes);
       return null;
     } 
     setDebugState("Searching for Stronghold...");
-    return (Task)new FastTravelTask(this._strongholdCoordinates, Integer.valueOf(300), true);
+    return (Task)new FastTravelTask(this .strongholdCoordinates, Integer.valueOf(300), true);
   }
   
   protected void onStop(Task interruptTask) {}

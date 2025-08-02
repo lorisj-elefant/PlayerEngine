@@ -40,7 +40,7 @@ public class GiveItemToPlayerTask extends Task {
   
   private Task throwTask;
   
-  private TimerGame _throwTimeout = new TimerGame(0.4D);
+  private TimerGame throwTimeout = new TimerGame(0.4D);
   
   public GiveItemToPlayerTask(String player, ItemTarget... targets) {
     this.playerName = player;
@@ -71,9 +71,9 @@ public class GiveItemToPlayerTask extends Task {
     Vec3d targetPos = ((Vec3d)lastPos.get()).add(0.0D, 0.20000000298023224D, 0.0D);
     if (this.droppingItems) {
       setDebugState("Throwing items");
-      if (!this._throwTimeout.elapsed())
+      if (!this .throwTimeout.elapsed())
         return null; 
-      this._throwTimeout.reset();
+      this .throwTimeout.reset();
       LookHelper.lookAt(mod, targetPos);
       for (int i = 0; i < this.throwTarget.size(); i++) {
         ItemTarget target = this.throwTarget.get(i);
@@ -98,7 +98,7 @@ public class GiveItemToPlayerTask extends Task {
           } 
         } 
       } 
-      this._throwTimeout.forceElapse();
+      this .throwTimeout.forceElapse();
       if (!targetPos.isInRange((Position)mod.getPlayer().getPos(), 4.0D)) {
         mod.log("Finished giving items.");
         stop();
@@ -121,7 +121,7 @@ public class GiveItemToPlayerTask extends Task {
         if (LookHelper.seesPlayer((Entity)p, (Entity)mod.getPlayer(), 6.0D)) {
           this.droppingItems = true;
           this.throwTarget.addAll(Arrays.asList(this.targets));
-          this._throwTimeout.reset();
+          this .throwTimeout.reset();
         }  
     } 
     setDebugState("Going to player...");

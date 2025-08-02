@@ -74,7 +74,7 @@ public final class LookBehavior extends Behavior implements ILookBehavior {
         this.force = false;
     }
 
-    @Contract("null, true, _ -> fail; null, _, null -> fail")
+    @Contract("null, true,  -> fail; null, , null -> fail")
     private void updateLook(@Nullable Rotation primaryTarget, boolean forcePrimary, @Nullable Rotation secondaryTarget) {
         Preconditions.checkArgument(primaryTarget != null || !forcePrimary);
         Preconditions.checkArgument(primaryTarget != null || secondaryTarget != null);

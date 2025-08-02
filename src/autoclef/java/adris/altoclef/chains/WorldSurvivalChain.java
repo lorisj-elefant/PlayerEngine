@@ -30,7 +30,7 @@ public class WorldSurvivalChain extends SingleTaskChain {
   
   private boolean wasAvoidingDrowning;
   
-  private BlockPos _extinguishWaterPosition;
+  private BlockPos extinguishWaterPosition;
   
   public WorldSurvivalChain(TaskRunner runner) {
     super(runner);
@@ -61,7 +61,7 @@ public class WorldSurvivalChain extends SingleTaskChain {
               mod.getBaritone().getLookBehavior().updateTarget(reach.get(), true);
               if (mod.getBaritone().getEntityContext().isLookingAt(targetWaterPos.down()) &&
                 mod.getSlotHandler().forceEquipItem(Items.WATER_BUCKET)) {
-                this._extinguishWaterPosition = targetWaterPos;
+                this .extinguishWaterPosition = targetWaterPos;
                 mod.getInputControls().tryPress(Input.CLICK_RIGHT);
                 setTask(null);
                 return 90.0F;
@@ -72,11 +72,11 @@ public class WorldSurvivalChain extends SingleTaskChain {
         setTask((Task)new DoToClosestBlockTask(adris.altoclef.tasks.movement.GetToBlockTask::new, new Block[] { Blocks.WATER }));
         return 90.0F;
       } 
-      if (mod.getItemStorage().hasItem(new Item[] { Items.BUCKET }) && this._extinguishWaterPosition != null && mod.getBlockScanner().isBlockAtPosition(this._extinguishWaterPosition, new Block[] { Blocks.WATER })) {
-        setTask((Task)new InteractWithBlockTask(new ItemTarget(Items.BUCKET, 1), Direction.UP, this._extinguishWaterPosition.down(), true));
+      if (mod.getItemStorage().hasItem(new Item[] { Items.BUCKET }) && this .extinguishWaterPosition != null && mod.getBlockScanner().isBlockAtPosition(this .extinguishWaterPosition, new Block[] { Blocks.WATER })) {
+        setTask((Task)new InteractWithBlockTask(new ItemTarget(Items.BUCKET, 1), Direction.UP, this .extinguishWaterPosition.down(), true));
         return 60.0F;
       } 
-      this._extinguishWaterPosition = null;
+      this .extinguishWaterPosition = null;
     } 
     if (isStuckInNetherPortal()) {
       mod.getExtraBaritoneSettings().setInteractionPaused(true);

@@ -17,13 +17,13 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.biome.Biomes;
 
 public class CollectCocoaBeansTask extends ResourceTask {
-  private final int _count;
+  private final int count;
   
-  private final HashSet<BlockPos> _wasFullyGrown = new HashSet<>();
+  private final HashSet<BlockPos> wasFullyGrown = new HashSet<>();
   
   public CollectCocoaBeansTask(int targetCount) {
     super(Items.COCOA_BEANS, targetCount);
-    this._count = targetCount;
+    this .count = targetCount;
   }
   
   protected boolean shouldAvoidPickingUp(AltoClefController mod) {
@@ -35,14 +35,14 @@ public class CollectCocoaBeansTask extends ResourceTask {
   protected Task onResourceTick(AltoClefController mod) {
     Predicate<BlockPos> validCocoa = blockPos -> {
         if (!mod.getChunkTracker().isChunkLoaded(blockPos))
-          return this._wasFullyGrown.contains(blockPos); 
+          return this .wasFullyGrown.contains(blockPos); 
         BlockState s = mod.getWorld().getBlockState(blockPos);
         boolean mature = (((Integer)s.get((Property)CocoaBlock.AGE)).intValue() == 2);
-        if (this._wasFullyGrown.contains(blockPos)) {
+        if (this .wasFullyGrown.contains(blockPos)) {
           if (!mature)
-            this._wasFullyGrown.remove(blockPos); 
+            this .wasFullyGrown.remove(blockPos); 
         } else if (mature) {
-          this._wasFullyGrown.add(blockPos);
+          this .wasFullyGrown.add(blockPos);
         } 
         return mature;
       };
@@ -63,6 +63,6 @@ public class CollectCocoaBeansTask extends ResourceTask {
   }
   
   protected String toDebugStringName() {
-    return "Collecting " + this._count + " cocoa beans.";
+    return "Collecting " + this .count + " cocoa beans.";
   }
 }

@@ -13,7 +13,7 @@ import net.minecraft.util.math.Box;
 public class EntityStuckTracker extends Tracker {
   final float MOB_RANGE = 25.0F;
   
-  private final Set<BlockPos> _blockedSpots = new HashSet<>();
+  private final Set<BlockPos> blockedSpots = new HashSet<>();
   
   public EntityStuckTracker(TrackerManager manager) {
     super(manager);
@@ -22,13 +22,13 @@ public class EntityStuckTracker extends Tracker {
   public boolean isBlockedByEntity(BlockPos pos) {
     ensureUpdated();
     synchronized (BaritoneHelper.MINECRAFT_LOCK) {
-      return this._blockedSpots.contains(pos);
+      return this .blockedSpots.contains(pos);
     } 
   }
   
   protected synchronized void updateState() {
     synchronized (BaritoneHelper.MINECRAFT_LOCK) {
-      this._blockedSpots.clear();
+      this .blockedSpots.clear();
       LivingEntity clientPlayerEntity = mod.getEntity();
       for (Entity entity : mod.getWorld().iterateEntities()) {
         if (entity == null || !entity.isAlive())
@@ -39,12 +39,12 @@ public class EntityStuckTracker extends Tracker {
           continue; 
         Box b = entity.getBoundingBox();
         for (BlockPos p : WorldHelper.getBlocksTouchingBox(b))
-          this._blockedSpots.add(p); 
+          this .blockedSpots.add(p); 
       } 
     } 
   }
   
   protected void reset() {
-    this._blockedSpots.clear();
+    this .blockedSpots.clear();
   }
 }

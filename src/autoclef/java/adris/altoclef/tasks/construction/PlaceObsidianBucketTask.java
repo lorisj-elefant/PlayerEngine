@@ -26,16 +26,16 @@ import net.minecraft.util.math.Vec3i;
 public class PlaceObsidianBucketTask extends Task {
   public static final Vec3i[] CAST_FRAME = new Vec3i[] { new Vec3i(0, -1, 0), new Vec3i(0, -1, -1), new Vec3i(0, -1, 1), new Vec3i(-1, -1, 0), new Vec3i(1, -1, 0), new Vec3i(0, 0, -1), new Vec3i(0, 0, 1), new Vec3i(-1, 0, 0), new Vec3i(1, 0, 0), new Vec3i(1, 1, 0) };
   
-  private final MovementProgressChecker _progressChecker = new MovementProgressChecker();
+  private final MovementProgressChecker progressChecker = new MovementProgressChecker();
   
-  private final BlockPos _pos;
+  private final BlockPos pos;
   
-  private BlockPos _currentCastTarget;
+  private BlockPos currentCastTarget;
   
-  private BlockPos _currentDestroyTarget;
+  private BlockPos currentDestroyTarget;
   
   public PlaceObsidianBucketTask(BlockPos pos) {
-    this._pos = pos;
+    this .pos = pos;
   }
   
   protected void onStart() {
@@ -43,7 +43,7 @@ public class PlaceObsidianBucketTask extends Task {
     botBehaviour.push();
     botBehaviour.avoidBlockBreaking(this::isBlockInCastFrame);
     botBehaviour.avoidBlockPlacing(this::isBlockInCastWaterOrLava);
-    this._progressChecker.reset();
+    this .progressChecker.reset();
     Debug.logInternal("Started onStart method");
     Debug.logInternal("Behaviour pushed");
     Debug.logInternal("Avoiding block breaking");
@@ -52,103 +52,103 @@ public class PlaceObsidianBucketTask extends Task {
   }
   
   private boolean isBlockInCastFrame(BlockPos block) {
-    Objects.requireNonNull(this._pos);
+    Objects.requireNonNull(this .pos);
     Objects.requireNonNull(block);
-    return Arrays.<Vec3i>stream(CAST_FRAME).map(this._pos::add).anyMatch(block::equals);
+    return Arrays.<Vec3i>stream(CAST_FRAME).map(this .pos::add).anyMatch(block::equals);
   }
   
   private boolean isBlockInCastWaterOrLava(BlockPos blockPos) {
-    BlockPos waterTarget = this._pos.up();
+    BlockPos waterTarget = this .pos.up();
     Debug.logInternal("blockPos: " + String.valueOf(blockPos));
     Debug.logInternal("waterTarget: " + String.valueOf(waterTarget));
-    return (blockPos.equals(this._pos) || blockPos.equals(waterTarget));
+    return (blockPos.equals(this .pos) || blockPos.equals(waterTarget));
   }
   
   protected Task onTick() {
     AltoClefController mod = controller;
     if (mod.getBaritone().getPathingBehavior().isPathing())
-      this._progressChecker.reset(); 
-    if (mod.getBlockScanner().isBlockAtPosition(this._pos, new Block[] { Blocks.OBSIDIAN }) && mod.getBlockScanner().isBlockAtPosition(this._pos.up(), new Block[] { Blocks.WATER }))
-      return (Task)new ClearLiquidTask(this._pos.up()); 
+      this .progressChecker.reset(); 
+    if (mod.getBlockScanner().isBlockAtPosition(this .pos, new Block[] { Blocks.OBSIDIAN }) && mod.getBlockScanner().isBlockAtPosition(this .pos.up(), new Block[] { Blocks.WATER }))
+      return (Task)new ClearLiquidTask(this .pos.up()); 
     if (!mod.getItemStorage().hasItem(new Item[] { Items.WATER_BUCKET })) {
-      this._progressChecker.reset();
+      this .progressChecker.reset();
       return (Task)TaskCatalogue.getItemTask(Items.WATER_BUCKET, 1);
     } 
     if (!mod.getItemStorage().hasItem(new Item[] { Items.LAVA_BUCKET }))
-      if (!mod.getBlockScanner().isBlockAtPosition(this._pos, new Block[] { Blocks.LAVA })) {
-        this._progressChecker.reset();
+      if (!mod.getBlockScanner().isBlockAtPosition(this .pos, new Block[] { Blocks.LAVA })) {
+        this .progressChecker.reset();
         return (Task)TaskCatalogue.getItemTask(Items.LAVA_BUCKET, 1);
       }  
-    if (!this._progressChecker.check(mod)) {
+    if (!this .progressChecker.check(mod)) {
       mod.getBaritone().getPathingBehavior().forceCancel();
-      mod.getBlockScanner().requestBlockUnreachable(this._pos);
-      this._progressChecker.reset();
+      mod.getBlockScanner().requestBlockUnreachable(this .pos);
+      this .progressChecker.reset();
       return (Task)new TimeoutWanderTask(5.0F);
     } 
-    if (this._currentCastTarget != null)
-      if (WorldHelper.isSolidBlock(controller, this._currentCastTarget)) {
-        this._currentCastTarget = null;
+    if (this .currentCastTarget != null)
+      if (WorldHelper.isSolidBlock(controller, this .currentCastTarget)) {
+        this .currentCastTarget = null;
       } else {
-        return (Task)new PlaceBlockTask(this._currentCastTarget, 
+        return (Task)new PlaceBlockTask(this .currentCastTarget, 
             (Block[])Arrays.<Block>stream(ItemHelper.itemsToBlocks(mod.getModSettings().getThrowawayItems(mod))).filter(b -> !Arrays.<Block>stream(ItemHelper.itemsToBlocks(ItemHelper.LEAVES)).toList().contains(b)).toArray(x$0 -> new Block[x$0]));
       }  
-    if (this._currentDestroyTarget != null)
-      if (!WorldHelper.isSolidBlock(controller, this._currentDestroyTarget)) {
-        this._currentDestroyTarget = null;
+    if (this .currentDestroyTarget != null)
+      if (!WorldHelper.isSolidBlock(controller, this .currentDestroyTarget)) {
+        this .currentDestroyTarget = null;
       } else {
-        return (Task)new DestroyBlockTask(this._currentDestroyTarget);
+        return (Task)new DestroyBlockTask(this .currentDestroyTarget);
       }  
-    if (this._currentCastTarget != null && WorldHelper.isSolidBlock(controller, this._currentCastTarget))
-      this._currentCastTarget = null; 
+    if (this .currentCastTarget != null && WorldHelper.isSolidBlock(controller, this .currentCastTarget))
+      this .currentCastTarget = null; 
     for (Vec3i castPosRelative : CAST_FRAME) {
-      BlockPos castPos = this._pos.add(castPosRelative);
+      BlockPos castPos = this .pos.add(castPosRelative);
       if (!WorldHelper.isSolidBlock(controller, castPos)) {
-        this._currentCastTarget = castPos;
+        this .currentCastTarget = castPos;
         Debug.logInternal("Building cast frame...");
         return null;
       } 
     } 
-    if (mod.getWorld().getBlockState(this._pos).getBlock() != Blocks.LAVA) {
-      BlockPos targetPos = this._pos.add(-1, 1, 0);
+    if (mod.getWorld().getBlockState(this .pos).getBlock() != Blocks.LAVA) {
+      BlockPos targetPos = this .pos.add(-1, 1, 0);
       if (!mod.getPlayer().getBlockPos().equals(targetPos) && mod.getItemStorage().hasItem(new Item[] { Items.LAVA_BUCKET })) {
         Debug.logInternal("Positioning player before placing lava...");
         return (Task)new GetToBlockTask(targetPos, false);
       } 
-      if (WorldHelper.isSolidBlock(controller, this._pos)) {
+      if (WorldHelper.isSolidBlock(controller, this .pos)) {
         Debug.logInternal("Clearing space around lava...");
-        this._currentDestroyTarget = this._pos;
+        this .currentDestroyTarget = this .pos;
         return null;
       } 
-      if (WorldHelper.isSolidBlock(controller, this._pos.up())) {
+      if (WorldHelper.isSolidBlock(controller, this .pos.up())) {
         Debug.logInternal("Clearing space around lava...");
-        this._currentDestroyTarget = this._pos.up();
+        this .currentDestroyTarget = this .pos.up();
         return null;
       } 
-      if (WorldHelper.isSolidBlock(controller, this._pos.up(2))) {
+      if (WorldHelper.isSolidBlock(controller, this .pos.up(2))) {
         Debug.logInternal("Clearing space around lava...");
-        this._currentDestroyTarget = this._pos.up(2);
+        this .currentDestroyTarget = this .pos.up(2);
         return null;
       } 
       Debug.logInternal("Placing lava for cast...");
-      return (Task)new InteractWithBlockTask(new ItemTarget(Items.LAVA_BUCKET, 1), Direction.WEST, this._pos.add(1, 0, 0), false);
+      return (Task)new InteractWithBlockTask(new ItemTarget(Items.LAVA_BUCKET, 1), Direction.WEST, this .pos.add(1, 0, 0), false);
     } 
-    BlockPos waterCheck = this._pos.up();
+    BlockPos waterCheck = this .pos.up();
     if (mod.getWorld().getBlockState(waterCheck).getBlock() != Blocks.WATER) {
       Debug.logInternal("Placing water for cast...");
-      BlockPos targetPos = this._pos.add(-1, 1, 0);
+      BlockPos targetPos = this .pos.add(-1, 1, 0);
       if (!mod.getPlayer().getBlockPos().equals(targetPos) && mod.getItemStorage().hasItem(new Item[] { Items.WATER_BUCKET })) {
         Debug.logInternal("Positioning player before placing water...");
         return (Task)new GetToBlockTask(targetPos, false);
       } 
       if (WorldHelper.isSolidBlock(controller, waterCheck)) {
-        this._currentDestroyTarget = waterCheck;
+        this .currentDestroyTarget = waterCheck;
         return null;
       } 
       if (WorldHelper.isSolidBlock(controller, waterCheck.up())) {
-        this._currentDestroyTarget = waterCheck.up();
+        this .currentDestroyTarget = waterCheck.up();
         return null;
       } 
-      return (Task)new InteractWithBlockTask(new ItemTarget(Items.WATER_BUCKET, 1), Direction.WEST, this._pos.add(1, 1, 0), true);
+      return (Task)new InteractWithBlockTask(new ItemTarget(Items.WATER_BUCKET, 1), Direction.WEST, this .pos.add(1, 1, 0), true);
     } 
     return null;
   }
@@ -162,7 +162,7 @@ public class PlaceObsidianBucketTask extends Task {
   
   public boolean isFinished() {
     BlockScanner blockTracker = controller.getBlockScanner();
-    BlockPos pos = this._pos;
+    BlockPos pos = this .pos;
     boolean isObsidian = blockTracker.isBlockAtPosition(pos, new Block[] { Blocks.OBSIDIAN });
     Debug.logInternal("isObsidian: " + isObsidian);
     boolean isNotWaterAbove = !blockTracker.isBlockAtPosition(pos.up(), new Block[] { Blocks.WATER });
@@ -184,11 +184,11 @@ public class PlaceObsidianBucketTask extends Task {
   }
   
   protected String toDebugString() {
-    return "Placing obsidian at " + String.valueOf(this._pos) + " with a cast";
+    return "Placing obsidian at " + String.valueOf(this .pos) + " with a cast";
   }
   
   public BlockPos getPos() {
     Debug.logInternal("Entering getPos()");
-    return this._pos;
+    return this .pos;
   }
 }

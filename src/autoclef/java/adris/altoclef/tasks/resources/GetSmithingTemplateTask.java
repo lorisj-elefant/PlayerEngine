@@ -15,15 +15,15 @@ import net.minecraft.item.Items;
 import net.minecraft.util.math.BlockPos;
 
 public class GetSmithingTemplateTask extends ResourceTask {
-  private final Task _searcher = (Task)new SearchChunkForBlockTask(new Block[] { Blocks.BLACKSTONE });
+  private final Task searcher = (Task)new SearchChunkForBlockTask(new Block[] { Blocks.BLACKSTONE });
   
-  private final int _count;
+  private final int count;
   
-  private BlockPos _chestloc = null;
+  private BlockPos chestloc = null;
   
   public GetSmithingTemplateTask(int count) {
     super(Items.NETHERITE_UPGRADE_SMITHING_TEMPLATE, count);
-    this._count = count;
+    this .count = count;
   }
   
   protected void onResourceStart(AltoClefController mod) {}
@@ -33,27 +33,27 @@ public class GetSmithingTemplateTask extends ResourceTask {
       setDebugState("Going to nether");
       return (Task)new DefaultGoToDimensionTask(Dimension.NETHER);
     } 
-    if (this._chestloc == null)
+    if (this .chestloc == null)
       for (BlockPos pos : mod.getBlockScanner().getKnownLocations(new Block[] { Blocks.CHEST })) {
         if (WorldHelper.isInteractableBlock(mod, pos)) {
-          this._chestloc = pos;
+          this .chestloc = pos;
           break;
         } 
       }  
-    if (this._chestloc != null) {
+    if (this .chestloc != null) {
       setDebugState("Destroying Chest");
-      if (WorldHelper.isInteractableBlock(mod, this._chestloc))
-        return (Task)new DestroyBlockTask(this._chestloc);
-      this._chestloc = null;
+      if (WorldHelper.isInteractableBlock(mod, this .chestloc))
+        return (Task)new DestroyBlockTask(this .chestloc);
+      this .chestloc = null;
       for (BlockPos pos : mod.getBlockScanner().getKnownLocations(new Block[] { Blocks.CHEST })) {
         if (WorldHelper.isInteractableBlock(mod, pos)) {
-          this._chestloc = pos;
+          this .chestloc = pos;
           break;
         } 
       } 
     } 
     setDebugState("Searching for/Traveling around bastion");
-    return this._searcher;
+    return this .searcher;
   }
   
   protected void onResourceStop(AltoClefController mod, Task interruptTask) {}
@@ -63,7 +63,7 @@ public class GetSmithingTemplateTask extends ResourceTask {
   }
   
   protected String toDebugStringName() {
-    return "Collect " + this._count + " smithing templates";
+    return "Collect " + this .count + " smithing templates";
   }
   
   protected boolean shouldAvoidPickingUp(AltoClefController mod) {

@@ -43,14 +43,14 @@ import net.minecraft.world.RaycastContext;
 import net.minecraft.world.World;
 
 public class MLGBucketTask extends Task {
-  private static MLGClutchConfig _config;
+  private static MLGClutchConfig config;
   
   private BlockPos placedPos;
   
   private BlockPos movingTorwards;
   
   static {
-    ConfigHelper.loadConfig("configs/mlg_clutch_settings.json", adris.altoclef.tasks.movement.MLGBucketTask.MLGClutchConfig::new, MLGClutchConfig.class, newConfig -> _config = newConfig);
+    ConfigHelper.loadConfig("configs/mlg_clutch_settings.json", adris.altoclef.tasks.movement.MLGBucketTask.MLGClutchConfig::new, MLGClutchConfig.class, newConfig -> config = newConfig);
   }
   
   private static boolean isLava(AltoClefController controller, BlockPos pos) {
@@ -63,7 +63,7 @@ public class MLGBucketTask extends Task {
     BlockState state = controller.getWorld().getBlockState(pos);
     if (state.getBlock() == Blocks.LAVA) {
       int level = state.getFluidState().getLevel();
-      return (level == 0 || level >= _config.lavaLevelOrGreaterWillCancelFallDamage);
+      return (level == 0 || level >= config.lavaLevelOrGreaterWillCancelFallDamage);
     } 
     return false;
   }
@@ -79,7 +79,7 @@ public class MLGBucketTask extends Task {
     double verticalDist = clientPlayerEntity.getPos().getY() - pos.getY() - 1.0D;
     double verticalVelocity = -1.0D * (clientPlayerEntity.getVelocity()).y;
     double grav = 0.08D;
-    double movementSpeedPerTick = _config.averageHorizontalMovementSpeedPerTick;
+    double movementSpeedPerTick = config.averageHorizontalMovementSpeedPerTick;
     double ticksToTravelSq = (-verticalVelocity + Math.sqrt(verticalVelocity * verticalVelocity + 2.0D * grav * verticalDist)) / grav;
     double maxMoveDistanceSq = movementSpeedPerTick * movementSpeedPerTick * ticksToTravelSq * ticksToTravelSq;
     double horizontalDistance = WorldHelper.distanceXZ(clientPlayerEntity.getPos(), WorldHelper.toVec3d(pos)) - 0.8D;
@@ -97,7 +97,7 @@ public class MLGBucketTask extends Task {
       damage *= 0.20000000298023224D; 
     assert clientPlayerEntity != null;
     double resultingHealth = (clientPlayerEntity.getHealth() - (float)damage);
-    return (resultingHealth < _config.preferLavaWhenFallDropsHealthBelowThreshold);
+    return (resultingHealth < config.preferLavaWhenFallDropsHealthBelowThreshold);
   }
   
   private static double calculateFallDamageToLandOn(AltoClefController controller, BlockPos pos) {
@@ -182,8 +182,8 @@ public class MLGBucketTask extends Task {
       LookHelper.lookAt(controller, reachable.get());
       boolean hasClutch = (!mod.getWorld().getDimension().ultraWarm() && mod.getSlotHandler().forceEquipItem(Items.WATER_BUCKET));
       if (!hasClutch)
-        if (!_config.clutchItems.isEmpty())
-          for (Item tryEquip : _config.clutchItems) {
+        if (!config.clutchItems.isEmpty())
+          for (Item tryEquip : config.clutchItems) {
             if (mod.getSlotHandler().forceEquipItem(tryEquip)) {
               hasClutch = true;
               break;
@@ -305,15 +305,15 @@ public class MLGBucketTask extends Task {
   }
   
   private Optional<BlockPos> getBestConeClutchBlock(AltoClefController mod, BlockPos oldClutchTarget) {
-    double pitchHalfWidth = _config.epicClutchConePitchAngle;
-    double dpitchStart = pitchHalfWidth / _config.epicClutchConePitchResolution;
+    double pitchHalfWidth = config.epicClutchConePitchAngle;
+    double dpitchStart = pitchHalfWidth / config.epicClutchConePitchResolution;
     ConeClutchContext cctx = new ConeClutchContext(mod);
     if (oldClutchTarget != null)
       cctx.checkBlock(mod, oldClutchTarget); 
     double pitch;
-    for (pitch = dpitchStart; pitch <= pitchHalfWidth; pitch += pitchHalfWidth / _config.epicClutchConePitchResolution) {
+    for (pitch = dpitchStart; pitch <= pitchHalfWidth; pitch += pitchHalfWidth / config.epicClutchConePitchResolution) {
       double pitchProgress = (pitch - dpitchStart) / (pitchHalfWidth - dpitchStart);
-      double yawResolution = _config.epicClutchConeYawDivisionStart + pitchProgress * (_config.epicClutchConeYawDivisionEnd - _config.epicClutchConeYawDivisionStart);
+      double yawResolution = config.epicClutchConeYawDivisionStart + pitchProgress * (config.epicClutchConeYawDivisionEnd - config.epicClutchConeYawDivisionStart);
       double yaw;
       for (yaw = 0.0D; yaw < 360.0D; yaw += 360.0D / yawResolution) {
         RaycastContext rctx = castCone(yaw, pitch);
@@ -333,14 +333,14 @@ public class MLGBucketTask extends Task {
   private RaycastContext castDown(Vec3d origin) {
     LivingEntity clientPlayerEntity = controller.getPlayer();
     assert clientPlayerEntity != null;
-    return new RaycastContext(origin, origin.add(0.0D, -1.0D * _config.castDownDistance, 0.0D), RaycastContext.ShapeType.COLLIDER, RaycastContext.FluidHandling.ANY, (Entity)clientPlayerEntity);
+    return new RaycastContext(origin, origin.add(0.0D, -1.0D * config.castDownDistance, 0.0D), RaycastContext.ShapeType.COLLIDER, RaycastContext.FluidHandling.ANY, (Entity)clientPlayerEntity);
   }
   
   private RaycastContext castCone(double yaw, double pitch) {
     LivingEntity clientPlayerEntity = controller.getPlayer();
     assert clientPlayerEntity != null;
     Vec3d origin = clientPlayerEntity.getPos();
-    double dy = _config.epicClutchConeCastHeight;
+    double dy = config.epicClutchConeCastHeight;
     double dH = dy * Math.sin(Math.toRadians(pitch));
     double yawRad = Math.toRadians(yaw);
     double dx = dH * Math.cos(yawRad);
@@ -364,7 +364,7 @@ public class MLGBucketTask extends Task {
   private boolean hasClutchItem(AltoClefController mod) {
     if (!mod.getWorld().getDimension().ultraWarm() && mod.getItemStorage().hasItem(new Item[] { Items.WATER_BUCKET }))
       return true; 
-    return _config.clutchItems.stream().anyMatch(item -> mod.getItemStorage().hasItem(new Item[] { item }));
+    return config.clutchItems.stream().anyMatch(item -> mod.getItemStorage().hasItem(new Item[] { item }));
   }
   
   public boolean isFinished() {

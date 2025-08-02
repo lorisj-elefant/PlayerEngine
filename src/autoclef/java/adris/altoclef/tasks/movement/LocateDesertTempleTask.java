@@ -7,17 +7,17 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.biome.Biomes;
 
 public class LocateDesertTempleTask extends Task {
-  private BlockPos _finalPos;
+  private BlockPos finalPos;
   
   protected void onStart() {}
   
   protected Task onTick() {
     BlockPos desertTemplePos = WorldHelper.getADesertTemple(controller);
     if (desertTemplePos != null)
-      this._finalPos = desertTemplePos.up(14); 
-    if (this._finalPos != null) {
+      this .finalPos = desertTemplePos.up(14); 
+    if (this .finalPos != null) {
       setDebugState("Going to found desert temple");
-      return (Task)new GetToBlockTask(this._finalPos, false);
+      return (Task)new GetToBlockTask(this .finalPos, false);
     } 
     return (Task)new SearchWithinBiomeTask(Biomes.DESERT);
   }
@@ -33,6 +33,6 @@ public class LocateDesertTempleTask extends Task {
   }
   
   public boolean isFinished() {
-    return controller.getPlayer().getBlockPos().equals(this._finalPos);
+    return controller.getPlayer().getBlockPos().equals(this .finalPos);
   }
 }

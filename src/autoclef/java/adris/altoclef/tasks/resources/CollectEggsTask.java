@@ -12,16 +12,16 @@ import net.minecraft.entity.passive.ChickenEntity;
 import net.minecraft.item.Items;
 
 public class CollectEggsTask extends ResourceTask {
-  private final int _count;
+  private final int count;
   
-  private final DoToClosestEntityTask _waitNearChickens;
+  private final DoToClosestEntityTask waitNearChickens;
   
-  private AltoClefController _mod;
+  private AltoClefController mod;
   
   public CollectEggsTask(int targetCount) {
     super(Items.EGG, targetCount);
-    this._count = targetCount;
-    this._waitNearChickens = new DoToClosestEntityTask(chicken -> new GetToEntityTask(chicken, 5.0D), new Class[] { ChickenEntity.class });
+    this .count = targetCount;
+    this .waitNearChickens = new DoToClosestEntityTask(chicken -> new GetToEntityTask(chicken, 5.0D), new Class[] { ChickenEntity.class });
   }
   
   protected boolean shouldAvoidPickingUp(AltoClefController mod) {
@@ -29,16 +29,16 @@ public class CollectEggsTask extends ResourceTask {
   }
   
   protected void onResourceStart(AltoClefController mod) {
-    this._mod = mod;
+    this .mod = mod;
   }
   
   protected Task onResourceTick(AltoClefController mod) {
-    if (this._waitNearChickens.wasWandering() && WorldHelper.getCurrentDimension(controller) != Dimension.OVERWORLD) {
+    if (this .waitNearChickens.wasWandering() && WorldHelper.getCurrentDimension(controller) != Dimension.OVERWORLD) {
       setDebugState("Going to right dimension.");
       return (Task)new DefaultGoToDimensionTask(Dimension.OVERWORLD);
     } 
     setDebugState("Waiting around chickens. Yes.");
-    return (Task)this._waitNearChickens;
+    return (Task)this .waitNearChickens;
   }
   
   protected void onResourceStop(AltoClefController mod, Task interruptTask) {}
@@ -48,6 +48,6 @@ public class CollectEggsTask extends ResourceTask {
   }
   
   protected String toDebugStringName() {
-    return "Collecting " + this._count + " eggs.";
+    return "Collecting " + this .count + " eggs.";
   }
 }

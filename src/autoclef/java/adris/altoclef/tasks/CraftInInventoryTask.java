@@ -14,15 +14,15 @@ import net.minecraft.item.ItemStack;
 
 public class CraftInInventoryTask extends ResourceTask {
 
-  private final RecipeTarget _target;
-  private final boolean _collect;
-  private final boolean _ignoreUncataloguedSlots;
+  private final RecipeTarget target;
+  private final boolean collect;
+  private final boolean ignoreUncataloguedSlots;
 
   public CraftInInventoryTask(RecipeTarget target, boolean collect, boolean ignoreUncataloguedSlots) {
     super(new ItemTarget(target.getOutputItem(), target.getTargetCount()));
-    this._target = target;
-    this._collect = collect;
-    this._ignoreUncataloguedSlots = ignoreUncataloguedSlots;
+    this .target = target;
+    this .collect = collect;
+    this .ignoreUncataloguedSlots = ignoreUncataloguedSlots;
 
     if (target.getRecipe().isBig()) {
       Debug.logError("CraftInInventoryTask was used for a 3x3 recipe. This is not supported. Use CraftInTableTask instead.");
@@ -44,21 +44,21 @@ public class CraftInInventoryTask extends ResourceTask {
 
   @Override
   protected Task onResourceTick(AltoClefController controller) {
-    int targetCount = _target.getTargetCount();
-    Item outputItem = _target.getOutputItem();
+    int targetCount = target.getTargetCount();
+    Item outputItem = target.getOutputItem();
 
     if (controller.getItemStorage().getItemCount(outputItem) >= targetCount) {
       return null;
     }
 
-    if (_collect && !StorageHelper.hasRecipeMaterialsOrTarget(controller, _target)) {
+    if (collect && !StorageHelper.hasRecipeMaterialsOrTarget(controller, target)) {
       setDebugState("Collecting ingredients for " + outputItem.getName().getString());
-      return new CollectRecipeCataloguedResourcesTask(_ignoreUncataloguedSlots, _target);
+      return new CollectRecipeCataloguedResourcesTask(ignoreUncataloguedSlots, target);
     }
 
     setDebugState("Crafting " + outputItem.getName().getString());
 
-    int craftsNeeded = (int) Math.ceil((double) (targetCount - controller.getItemStorage().getItemCount(outputItem)) / _target.getRecipe().outputCount());
+    int craftsNeeded = (int) Math.ceil((double) (targetCount - controller.getItemStorage().getItemCount(outputItem)) / target.getRecipe().outputCount());
     if (craftsNeeded <= 0) {
       return null;
     }
@@ -66,17 +66,17 @@ public class CraftInInventoryTask extends ResourceTask {
     LivingEntityInventory inventory = ((IInventoryProvider) controller.getEntity()).getLivingInventory();
 
     for (int i = 0; i < craftsNeeded; i++) {
-      if (!StorageHelper.hasRecipeMaterialsOrTarget(controller, new RecipeTarget(_target.getOutputItem(), _target.getRecipe().outputCount(), _target.getRecipe()))) {
+      if (!StorageHelper.hasRecipeMaterialsOrTarget(controller, new RecipeTarget(target.getOutputItem(), target.getRecipe().outputCount(), target.getRecipe()))) {
         Debug.logWarning("Failed to craft " + outputItem.getName().getString() + ", not enough ingredients even though we passed the initial check.");
         break;
       }
 
-      for (ItemTarget ingredient : _target.getRecipe().getSlots()) {
+      for (ItemTarget ingredient : target.getRecipe().getSlots()) {
         if (ingredient == null || ingredient.isEmpty()) continue;
         inventory.remove(stack -> ingredient.matches(stack.getItem()), ingredient.getTargetCount(), inventory);
       }
 
-      ItemStack result = new ItemStack(_target.getOutputItem(), _target.getRecipe().outputCount());
+      ItemStack result = new ItemStack(target.getOutputItem(), target.getRecipe().outputCount());
       inventory.insertStack(result);
       controller.getItemStorage().registerSlotAction();
     }
@@ -91,17 +91,17 @@ public class CraftInInventoryTask extends ResourceTask {
   @Override
   protected boolean isEqualResource(ResourceTask other) {
     if (other instanceof CraftInInventoryTask task) {
-      return task._target.equals(this._target);
+      return task .target.equals(this .target);
     }
     return false;
   }
 
   @Override
   protected String toDebugStringName() {
-    return "Craft in inventory: " + _target.getOutputItem().getName().getString();
+    return "Craft in inventory: " + target.getOutputItem().getName().getString();
   }
 
   public RecipeTarget getRecipeTarget(){
-    return _target;
+    return target;
   }
 }

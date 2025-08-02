@@ -13,19 +13,19 @@ import java.util.Objects;
  */
 public class DestroyBlockTask extends Task implements ITaskRequiresGrounded {
 
-  private final BlockPos _pos;
-  private boolean _isClear;
+  private final BlockPos pos;
+  private boolean isClear;
 
   public DestroyBlockTask(BlockPos pos) {
-    this._pos = pos;
+    this .pos = pos;
   }
 
   @Override
   protected void onStart() {
-    _isClear = false;
+    isClear = false;
     IBuilderProcess builder = controller.getBaritone().getBuilderProcess();
     // Tell baritone to clear a 1x1x1 area at our target position.
-    builder.clearArea(_pos, _pos);
+    builder.clearArea(pos, pos);
   }
 
   @Override
@@ -34,7 +34,7 @@ public class DestroyBlockTask extends Task implements ITaskRequiresGrounded {
 
     // If the builder process stops for any reason, assume we're done or something went wrong.
     if (!builder.isActive()) {
-      _isClear = true; // Let isFinished handle the final check.
+      isClear = true; // Let isFinished handle the final check.
       return null;
     }
 
@@ -54,19 +54,19 @@ public class DestroyBlockTask extends Task implements ITaskRequiresGrounded {
   @Override
   public boolean isFinished() {
     // The task is finished if the block is air.
-    return _isClear || controller.getWorld().isAir(_pos);
+    return isClear || controller.getWorld().isAir(pos);
   }
 
   @Override
   protected boolean isEqual(Task other) {
     if (other instanceof DestroyBlockTask task) {
-      return Objects.equals(task._pos, this._pos);
+      return Objects.equals(task .pos, this .pos);
     }
     return false;
   }
 
   @Override
   protected String toDebugString() {
-    return "Destroying block at " + _pos.toShortString();
+    return "Destroying block at " + pos.toShortString();
   }
 }

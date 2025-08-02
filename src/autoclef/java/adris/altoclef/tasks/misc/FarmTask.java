@@ -30,12 +30,12 @@ import java.util.Objects;
  */
 public class FarmTask extends Task {
 
-    private final Integer _range;
-    private final BlockPos _center;
+    private final Integer range;
+    private final BlockPos center;
 
     public FarmTask(Integer range, BlockPos center) {
-        this._range = range;
-        this._center = center;
+        this .range = range;
+        this .center = center;
     }
 
     public FarmTask() {
@@ -45,10 +45,10 @@ public class FarmTask extends Task {
     @Override
     protected void onStart() {
         IFarmProcess farmProcess = controller.getBaritone().getFarmProcess();
-        if (_range != null && _center != null) {
-            farmProcess.farm(_range, _center);
-        } else if (_range != null) {
-            farmProcess.farm(_range);
+        if (range != null && center != null) {
+            farmProcess.farm(range, center);
+        } else if (range != null) {
+            farmProcess.farm(range);
         } else {
             farmProcess.farm();
         }
@@ -82,15 +82,15 @@ public class FarmTask extends Task {
     @Override
     protected boolean isEqual(Task other) {
         if (other instanceof FarmTask task) {
-            return Objects.equals(task._range, _range) && Objects.equals(task._center, _center);
+            return Objects.equals(task .range, range) && Objects.equals(task .center, center);
         }
         return false;
     }
 
     @Override
     protected String toDebugString() {
-        if (_range != null && _center != null) {
-            return "Farming in range " + _range + " around " + _center.toShortString();
+        if (range != null && center != null) {
+            return "Farming in range " + range + " around " + center.toShortString();
         }
         return "Farming nearby";
     }

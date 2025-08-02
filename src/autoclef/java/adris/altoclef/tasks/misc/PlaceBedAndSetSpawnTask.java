@@ -95,7 +95,7 @@ public class PlaceBedAndSetSpawnTask extends Task {
   public adris.altoclef.tasks.misc.PlaceBedAndSetSpawnTask stayInBed() {
     Debug.logInternal("Stay in bed method called");
     this.stayInBed = true;
-    Debug.logInternal("Setting _stayInBed to true");
+    Debug.logInternal("Setting stayInBed to true");
     return this;
   }
   

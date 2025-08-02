@@ -15,19 +15,19 @@ import net.minecraft.item.Items;
 import net.minecraft.util.math.BlockPos;
 
 public class CollectStrippedLogTask extends ResourceTask {
-  private static final Item[] _axes = new Item[] { Items.WOODEN_AXE, Items.STONE_AXE, Items.GOLDEN_AXE, Items.IRON_AXE, Items.DIAMOND_AXE, Items.NETHERITE_AXE };
+  private static final Item[] axes = new Item[] { Items.WOODEN_AXE, Items.STONE_AXE, Items.GOLDEN_AXE, Items.IRON_AXE, Items.DIAMOND_AXE, Items.NETHERITE_AXE };
   
-  private final Item[] _strippedLogs;
+  private final Item[] strippedLogs;
   
-  private final Item[] _strippableLogs;
+  private final Item[] strippableLogs;
   
-  private final int _targetCount;
+  private final int targetCount;
   
   public CollectStrippedLogTask(Item[] strippedLogs, Item[] strippableLogs, int count) {
     super(new ItemTarget(strippedLogs, count));
-    this._strippedLogs = strippedLogs;
-    this._strippableLogs = strippableLogs;
-    this._targetCount = count;
+    this .strippedLogs = strippedLogs;
+    this .strippableLogs = strippableLogs;
+    this .targetCount = count;
   }
   
   public CollectStrippedLogTask(int count) {
@@ -49,21 +49,21 @@ public class CollectStrippedLogTask extends ResourceTask {
   protected void onResourceStart(AltoClefController mod) {}
   
   protected Task onResourceTick(AltoClefController mod) {
-    if (!mod.getItemStorage().hasItem(_axes)) {
+    if (!mod.getItemStorage().hasItem(axes)) {
       setDebugState("Getting axe for stripping");
       return (Task)TaskCatalogue.getItemTask(Items.WOODEN_AXE, 1);
     } 
-    if (mod.getItemStorage().getItemCount(this._strippedLogs) < this._targetCount) {
-      Optional<BlockPos> strippedLogBlockPos = mod.getBlockScanner().getNearestBlock(ItemHelper.itemsToBlocks(this._strippedLogs));
+    if (mod.getItemStorage().getItemCount(this .strippedLogs) < this .targetCount) {
+      Optional<BlockPos> strippedLogBlockPos = mod.getBlockScanner().getNearestBlock(ItemHelper.itemsToBlocks(this .strippedLogs));
       if (strippedLogBlockPos.isPresent()) {
         setDebugState("Getting stripped log");
-        return (Task)new MineAndCollectTask(new ItemTarget(this._strippedLogs), ItemHelper.itemsToBlocks(this._strippedLogs), MiningRequirement.HAND);
+        return (Task)new MineAndCollectTask(new ItemTarget(this .strippedLogs), ItemHelper.itemsToBlocks(this .strippedLogs), MiningRequirement.HAND);
       } 
     } 
-    Optional<BlockPos> strippableLogBlockPos = mod.getBlockScanner().getNearestBlock(ItemHelper.itemsToBlocks(this._strippableLogs));
+    Optional<BlockPos> strippableLogBlockPos = mod.getBlockScanner().getNearestBlock(ItemHelper.itemsToBlocks(this .strippableLogs));
     if (strippableLogBlockPos.isPresent()) {
       setDebugState("Stripping log");
-      return (Task)new InteractWithBlockTask(new ItemTarget(_axes), strippableLogBlockPos.get());
+      return (Task)new InteractWithBlockTask(new ItemTarget(axes), strippableLogBlockPos.get());
     } 
     setDebugState("Searching log");
     return (Task)new TimeoutWanderTask();
@@ -74,7 +74,7 @@ public class CollectStrippedLogTask extends ResourceTask {
   protected boolean isEqualResource(ResourceTask other) {
     if (other instanceof adris.altoclef.tasks.resources.CollectStrippedLogTask) {
       adris.altoclef.tasks.resources.CollectStrippedLogTask task = (adris.altoclef.tasks.resources.CollectStrippedLogTask)other;
-      return (task._targetCount == this._targetCount);
+      return (task .targetCount == this .targetCount);
     } 
     return false;
   }

@@ -55,12 +55,12 @@ public class CollectFoodTask extends Task {
           new CropTarget(Items.CARROT, Blocks.CARROTS)
   };
 
-  private final double _unitsNeeded;
-  private final TimerGame _checkNewOptionsTimer = new TimerGame(10);
-  private Task _currentResourceTask = null;
+  private final double unitsNeeded;
+  private final TimerGame checkNewOptionsTimer = new TimerGame(10);
+  private Task currentResourceTask = null;
 
   public CollectFoodTask(double unitsNeeded) {
-    this._unitsNeeded = unitsNeeded;
+    this .unitsNeeded = unitsNeeded;
   }
 
   @Override
@@ -84,28 +84,28 @@ public class CollectFoodTask extends Task {
     }
 
     // Re-evaluate our strategy every so often.
-    if (_checkNewOptionsTimer.elapsed()) {
-      _checkNewOptionsTimer.reset();
-      _currentResourceTask = null;
+    if (checkNewOptionsTimer.elapsed()) {
+      checkNewOptionsTimer.reset();
+      currentResourceTask = null;
     }
 
     // If we have a cached task, run it.
-    if (_currentResourceTask != null && _currentResourceTask.isActive() && !_currentResourceTask.isFinished() && !_currentResourceTask.thisOrChildAreTimedOut()) {
-      return _currentResourceTask;
+    if (currentResourceTask != null && currentResourceTask.isActive() && !currentResourceTask.isFinished() && !currentResourceTask.thisOrChildAreTimedOut()) {
+      return currentResourceTask;
     }
 
     // If we have enough materials to meet our food goal, process them.
     double potentialFood = StorageHelper.calculateInventoryFoodScore(controller);
-    if (potentialFood >= _unitsNeeded) {
+    if (potentialFood >= unitsNeeded) {
       if (controller.getItemStorage().getItemCount(Items.HAY_BLOCK) >= 1) {
         setDebugState("Crafting wheat from hay");
-        _currentResourceTask = new CraftInInventoryTask(new RecipeTarget(Items.WHEAT, 9, CraftingRecipe.newShapedRecipe("wheat", new ItemTarget[]{new ItemTarget(Items.HAY_BLOCK, 1)}, 9)));
-        return _currentResourceTask;
+        currentResourceTask = new CraftInInventoryTask(new RecipeTarget(Items.WHEAT, 9, CraftingRecipe.newShapedRecipe("wheat", new ItemTarget[]{new ItemTarget(Items.HAY_BLOCK, 1)}, 9)));
+        return currentResourceTask;
       }
       if (controller.getItemStorage().getItemCount(Items.WHEAT) >= 3) {
         setDebugState("Crafting bread");
-        _currentResourceTask = new CraftInTableTask(new RecipeTarget(Items.BREAD, 1, CraftingRecipe.newShapedRecipe("bread", new ItemTarget[]{new ItemTarget(Items.WHEAT, 3)}, 1)));
-        return _currentResourceTask;
+        currentResourceTask = new CraftInTableTask(new RecipeTarget(Items.BREAD, 1, CraftingRecipe.newShapedRecipe("bread", new ItemTarget[]{new ItemTarget(Items.WHEAT, 3)}, 1)));
+        return currentResourceTask;
       }
     }
 
@@ -114,8 +114,8 @@ public class CollectFoodTask extends Task {
     for (Item item : ITEMS_TO_PICK_UP) {
       if (controller.getEntityTracker().itemDropped(item)) {
         setDebugState("Picking up high-value food: " + item.getName().getString());
-        _currentResourceTask = new PickupDroppedItemTask(new ItemTarget(item), true);
-        return _currentResourceTask;
+        currentResourceTask = new PickupDroppedItemTask(new ItemTarget(item), true);
+        return currentResourceTask;
       }
     }
 
@@ -123,24 +123,24 @@ public class CollectFoodTask extends Task {
     for (CookableFoodTarget cookable : COOKABLE_FOODS) {
       if (controller.getEntityTracker().itemDropped(cookable.getRaw(), cookable.getCooked())) {
         setDebugState("Picking up dropped meat");
-        _currentResourceTask = new PickupDroppedItemTask(new ItemTarget(cookable.getRaw(), cookable.getCooked()), true);
-        return _currentResourceTask;
+        currentResourceTask = new PickupDroppedItemTask(new ItemTarget(cookable.getRaw(), cookable.getCooked()), true);
+        return currentResourceTask;
       }
     }
 
     // 3. Collect Hay Bales if nearby
     if (controller.getBlockScanner().anyFound(Blocks.HAY_BLOCK)) {
       setDebugState("Collecting hay bales");
-      _currentResourceTask = new MineAndCollectTask(new ItemTarget(Items.HAY_BLOCK, 9999), new Block[]{Blocks.HAY_BLOCK}, MiningRequirement.HAND);
-      return _currentResourceTask;
+      currentResourceTask = new MineAndCollectTask(new ItemTarget(Items.HAY_BLOCK, 9999), new Block[]{Blocks.HAY_BLOCK}, MiningRequirement.HAND);
+      return currentResourceTask;
     }
 
     // 4. Harvest mature crops
     for (CropTarget crop : CROPS) {
       if (controller.getBlockScanner().anyFound(pos -> isCropMature(controller, pos, crop.cropBlock), crop.cropBlock)) {
         setDebugState("Harvesting " + crop.cropItem.getName().getString());
-        _currentResourceTask = new CollectCropTask(new ItemTarget(crop.cropItem, 9999), new Block[]{crop.cropBlock}, crop.cropItem);
-        return _currentResourceTask;
+        currentResourceTask = new CollectCropTask(new ItemTarget(crop.cropItem, 9999), new Block[]{crop.cropBlock}, crop.cropItem);
+        return currentResourceTask;
       }
     }
 
@@ -149,15 +149,15 @@ public class CollectFoodTask extends Task {
     if (bestEntityToKill != null) {
       setDebugState("Killing " + bestEntityToKill.getType().getName().getString());
       Item rawFood = Arrays.stream(COOKABLE_FOODS).filter(c -> c.mobToKill == bestEntityToKill.getClass()).findFirst().get().getRaw();
-      _currentResourceTask = new KillAndLootTask(bestEntityToKill.getClass(), new ItemTarget(rawFood, 1));
-      return _currentResourceTask;
+      currentResourceTask = new KillAndLootTask(bestEntityToKill.getClass(), new ItemTarget(rawFood, 1));
+      return currentResourceTask;
     }
 
     // 6. As a last resort, gather sweet berries
     if(controller.getBlockScanner().anyFound(Blocks.SWEET_BERRY_BUSH)) {
       setDebugState("Collecting sweet berries");
-      _currentResourceTask = new MineAndCollectTask(new ItemTarget(Items.SWEET_BERRIES, 9999), new Block[]{Blocks.SWEET_BERRY_BUSH}, MiningRequirement.HAND);
-      return _currentResourceTask;
+      currentResourceTask = new MineAndCollectTask(new ItemTarget(Items.SWEET_BERRIES, 9999), new Block[]{Blocks.SWEET_BERRY_BUSH}, MiningRequirement.HAND);
+      return currentResourceTask;
     }
 
     // 7. If nothing is found, wander around.
@@ -172,20 +172,20 @@ public class CollectFoodTask extends Task {
 
   @Override
   public boolean isFinished() {
-    return StorageHelper.calculateInventoryFoodScore(controller) >= _unitsNeeded;
+    return StorageHelper.calculateInventoryFoodScore(controller) >= unitsNeeded;
   }
 
   @Override
   protected boolean isEqual(Task other) {
     if (other instanceof CollectFoodTask task) {
-      return task._unitsNeeded == this._unitsNeeded;
+      return task .unitsNeeded == this .unitsNeeded;
     }
     return false;
   }
 
   @Override
   protected String toDebugString() {
-    return "Collecting " + _unitsNeeded + " food units.";
+    return "Collecting " + unitsNeeded + " food units.";
   }
 
   private SmeltTarget getBestSmeltTarget(AltoClefController controller) {

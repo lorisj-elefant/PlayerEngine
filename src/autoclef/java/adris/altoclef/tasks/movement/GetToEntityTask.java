@@ -16,23 +16,23 @@ import net.minecraft.util.math.BlockPos;
 public class GetToEntityTask extends Task implements ITaskRequiresGrounded {
   private final MovementProgressChecker stuckCheck = new MovementProgressChecker();
   
-  private final MovementProgressChecker _progress = new MovementProgressChecker();
+  private final MovementProgressChecker progress = new MovementProgressChecker();
   
-  private final TimeoutWanderTask _wanderTask = new TimeoutWanderTask(5.0F);
+  private final TimeoutWanderTask wanderTask = new TimeoutWanderTask(5.0F);
   
-  private final Entity _entity;
+  private final Entity entity;
   
-  private final double _closeEnoughDistance;
+  private final double closeEnoughDistance;
   
   Block[] annoyingBlocks = new Block[] { 
       Blocks.VINE, Blocks.NETHER_SPROUTS, Blocks.CAVE_VINES, Blocks.CAVE_VINES_PLANT, Blocks.TWISTING_VINES, Blocks.TWISTING_VINES_PLANT, Blocks.WEEPING_VINES_PLANT, Blocks.LADDER, Blocks.BIG_DRIPLEAF, Blocks.BIG_DRIPLEAF_STEM,
       Blocks.SMALL_DRIPLEAF, Blocks.TALL_GRASS, Blocks.GRASS, Blocks.SWEET_BERRY_BUSH };
   
-  private Task _unstuckTask = null;
+  private Task unstuckTask = null;
   
   public GetToEntityTask(Entity entity, double closeEnoughDistance) {
-    this._entity = entity;
-    this._closeEnoughDistance = closeEnoughDistance;
+    this .entity = entity;
+    this .closeEnoughDistance = closeEnoughDistance;
   }
   
   public GetToEntityTask(Entity entity) {
@@ -93,15 +93,15 @@ public class GetToEntityTask extends Task implements ITaskRequiresGrounded {
   
   protected void onStart() {
     controller.getBaritone().getPathingBehavior().forceCancel();
-    this._progress.reset();
+    this .progress.reset();
     this.stuckCheck.reset();
-    this._wanderTask.resetWander();
+    this .wanderTask.resetWander();
   }
   
   protected Task onTick() {
     AltoClefController mod = controller;
     if (mod.getBaritone().getPathingBehavior().isPathing())
-      this._progress.reset(); 
+      this .progress.reset(); 
     if (WorldHelper.isInNetherPortal(controller)) {
       if (!mod.getBaritone().getPathingBehavior().isPathing()) {
         setDebugState("Getting out from nether portal");
@@ -117,32 +117,32 @@ public class GetToEntityTask extends Task implements ITaskRequiresGrounded {
       mod.getInputControls().release(Input.MOVE_BACK);
       mod.getInputControls().release(Input.MOVE_FORWARD);
     } 
-    if (this._unstuckTask != null && this._unstuckTask.isActive() && !this._unstuckTask.isFinished() && stuckInBlock(mod) != null) {
+    if (this .unstuckTask != null && this .unstuckTask.isActive() && !this .unstuckTask.isFinished() && stuckInBlock(mod) != null) {
       setDebugState("Getting unstuck from block.");
       this.stuckCheck.reset();
       mod.getBaritone().getCustomGoalProcess().onLostControl();
       mod.getBaritone().getExploreProcess().onLostControl();
-      return this._unstuckTask;
+      return this .unstuckTask;
     } 
-    if (!this._progress.check(mod) || !this.stuckCheck.check(mod)) {
+    if (!this .progress.check(mod) || !this.stuckCheck.check(mod)) {
       BlockPos blockStuck = stuckInBlock(mod);
       if (blockStuck != null) {
-        this._unstuckTask = getFenceUnstuckTask();
-        return this._unstuckTask;
+        this .unstuckTask = getFenceUnstuckTask();
+        return this .unstuckTask;
       } 
       this.stuckCheck.reset();
     } 
-    if (this._wanderTask.isActive() && !this._wanderTask.isFinished()) {
-      this._progress.reset();
+    if (this .wanderTask.isActive() && !this .wanderTask.isFinished()) {
+      this .progress.reset();
       setDebugState("Failed to get to target, wandering for a bit.");
-      return (Task)this._wanderTask;
+      return (Task)this .wanderTask;
     } 
     if (!mod.getBaritone().getCustomGoalProcess().isActive())
-      mod.getBaritone().getCustomGoalProcess().setGoalAndPath((Goal)new GoalFollowEntity(this._entity, this._closeEnoughDistance)); 
-    if (mod.getPlayer().isInRange(this._entity, this._closeEnoughDistance))
-      this._progress.reset(); 
-    if (!this._progress.check(mod))
-      return (Task)this._wanderTask; 
+      mod.getBaritone().getCustomGoalProcess().setGoalAndPath((Goal)new GoalFollowEntity(this .entity, this .closeEnoughDistance)); 
+    if (mod.getPlayer().isInRange(this .entity, this .closeEnoughDistance))
+      this .progress.reset(); 
+    if (!this .progress.check(mod))
+      return (Task)this .wanderTask; 
     setDebugState("Going to entity");
     return null;
   }
@@ -154,12 +154,12 @@ public class GetToEntityTask extends Task implements ITaskRequiresGrounded {
   protected boolean isEqual(Task other) {
     if (other instanceof adris.altoclef.tasks.movement.GetToEntityTask) {
       adris.altoclef.tasks.movement.GetToEntityTask task = (adris.altoclef.tasks.movement.GetToEntityTask)other;
-      return (task._entity.equals(this._entity) && Math.abs(task._closeEnoughDistance - this._closeEnoughDistance) < 0.1D);
+      return (task .entity.equals(this .entity) && Math.abs(task .closeEnoughDistance - this .closeEnoughDistance) < 0.1D);
     } 
     return false;
   }
   
   protected String toDebugString() {
-    return "Approach entity " + this._entity.getType().getTranslationKey();
+    return "Approach entity " + this .entity.getType().getTranslationKey();
   }
 }

@@ -20,11 +20,11 @@ import net.minecraft.util.math.Position;
 public class CollectCoarseDirtTask extends ResourceTask {
   private static final float CLOSE_ENOUGH_COARSE_DIRT = 128.0F;
   
-  private final int _count;
+  private final int count;
   
   public CollectCoarseDirtTask(int targetCount) {
     super(Items.COARSE_DIRT, targetCount);
-    this._count = targetCount;
+    this .count = targetCount;
   }
   
   protected boolean shouldAvoidPickingUp(AltoClefController mod) {
@@ -34,13 +34,13 @@ public class CollectCoarseDirtTask extends ResourceTask {
   protected void onResourceStart(AltoClefController mod) {}
   
   protected Task onResourceTick(AltoClefController mod) {
-    double c = Math.ceil((this._count - mod.getItemStorage().getItemCount(new Item[] { Items.COARSE_DIRT })) / 4.0D) * 2.0D;
+    double c = Math.ceil((this .count - mod.getItemStorage().getItemCount(new Item[] { Items.COARSE_DIRT })) / 4.0D) * 2.0D;
     Optional<BlockPos> closest = mod.getBlockScanner().getNearestBlock(new Block[] { Blocks.COARSE_DIRT });
     if ((mod.getItemStorage().getItemCount(new Item[] { Items.DIRT }) < c || mod
       .getItemStorage().getItemCount(new Item[] { Items.GRAVEL }) < c) && closest
       .isPresent() && ((BlockPos)closest.get()).isCenterWithinDistance((Position)mod.getPlayer().getPos(), 128.0D))
       return (Task)(new MineAndCollectTask(new ItemTarget(Items.COARSE_DIRT), new Block[] { Blocks.COARSE_DIRT }, MiningRequirement.HAND)).forceDimension(Dimension.OVERWORLD); 
-    int target = this._count;
+    int target = this .count;
     ItemTarget d = new ItemTarget(Items.DIRT, 1);
     ItemTarget g = new ItemTarget(Items.GRAVEL, 1);
     return (Task)new CraftInInventoryTask(new RecipeTarget(Items.COARSE_DIRT, target, CraftingRecipe.newShapedRecipe("coarse_dirt", new ItemTarget[] { d, g, g, d }, 4)));
@@ -53,6 +53,6 @@ public class CollectCoarseDirtTask extends ResourceTask {
   }
   
   protected String toDebugStringName() {
-    return "Collecting " + this._count + " Coarse Dirt.";
+    return "Collecting " + this .count + " Coarse Dirt.";
   }
 }

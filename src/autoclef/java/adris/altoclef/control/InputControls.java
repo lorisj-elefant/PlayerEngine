@@ -17,15 +17,15 @@ public class InputControls {
 
   private final Queue<Input> toUnpress = new ArrayDeque<>();
   
-  private final Set<Input> _waitForRelease = new HashSet<>();
+  private final Set<Input> waitForRelease = new HashSet<>();
   
   public void tryPress(Input input) {
-    if (this._waitForRelease.contains(input))
+    if (this .waitForRelease.contains(input))
       return;
 
     controller.getBaritone().getInputOverrideHandler().setInputForceState(input, true);
     this.toUnpress.add(input);
-    this._waitForRelease.add(input);
+    this .waitForRelease.add(input);
   }
   
   public void hold(Input input) {
@@ -51,6 +51,6 @@ public class InputControls {
   }
   
   public void onTickPost() {
-    this._waitForRelease.clear();
+    this .waitForRelease.clear();
   }
 }

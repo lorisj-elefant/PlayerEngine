@@ -10,20 +10,20 @@ import java.util.function.Predicate;
 import net.minecraft.entity.Entity;
 
 public class KillAndLootTask extends ResourceTask {
-  private final Class<?> _toKill;
+  private final Class<?> toKill;
   
-  private final Task _killTask;
+  private final Task killTask;
   
   public KillAndLootTask(Class<?> toKill, Predicate<Entity> shouldKill, ItemTarget... itemTargets) {
     super((ItemTarget[])itemTargets.clone());
-    this._toKill = toKill;
-    this._killTask = (Task)new KillEntitiesTask(shouldKill, new Class[] { this._toKill });
+    this .toKill = toKill;
+    this .killTask = (Task)new KillEntitiesTask(shouldKill, new Class[] { this .toKill });
   }
   
   public KillAndLootTask(Class<?> toKill, ItemTarget... itemTargets) {
     super((ItemTarget[])itemTargets.clone());
-    this._toKill = toKill;
-    this._killTask = (Task)new KillEntitiesTask(new Class[] { this._toKill });
+    this .toKill = toKill;
+    this .killTask = (Task)new KillEntitiesTask(new Class[] { this .toKill });
   }
   
   protected boolean shouldAvoidPickingUp(AltoClefController mod) {
@@ -33,7 +33,7 @@ public class KillAndLootTask extends ResourceTask {
   protected void onResourceStart(AltoClefController mod) {}
   
   protected Task onResourceTick(AltoClefController mod) {
-    if (!mod.getEntityTracker().entityFound(new Class[] { this._toKill })) {
+    if (!mod.getEntityTracker().entityFound(new Class[] { this .toKill })) {
       if (isInWrongDimension(mod)) {
         setDebugState("Going to correct dimension.");
         return getToCorrectDimensionTask(mod);
@@ -41,7 +41,7 @@ public class KillAndLootTask extends ResourceTask {
       setDebugState("Searching for mob...");
       return (Task)new TimeoutWanderTask();
     } 
-    return this._killTask;
+    return this .killTask;
   }
   
   protected void onResourceStop(AltoClefController mod, Task interruptTask) {}
@@ -49,12 +49,12 @@ public class KillAndLootTask extends ResourceTask {
   protected boolean isEqualResource(ResourceTask other) {
     if (other instanceof adris.altoclef.tasks.resources.KillAndLootTask) {
       adris.altoclef.tasks.resources.KillAndLootTask task = (adris.altoclef.tasks.resources.KillAndLootTask)other;
-      return task._toKill.equals(this._toKill);
+      return task .toKill.equals(this .toKill);
     } 
     return false;
   }
   
   protected String toDebugStringName() {
-    return "Collect items from " + this._toKill.toGenericString();
+    return "Collect items from " + this .toKill.toGenericString();
   }
 }

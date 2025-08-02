@@ -17,11 +17,11 @@ import net.minecraft.item.Item;
 import net.minecraft.item.Items;
 
 public class CollectAmethystBlockTask extends ResourceTask {
-  private final int _count;
+  private final int count;
   
   public CollectAmethystBlockTask(int targetCount) {
     super(Items.AMETHYST_BLOCK, targetCount);
-    this._count = targetCount;
+    this .count = targetCount;
   }
   
   protected boolean shouldAvoidPickingUp(AltoClefController mod) {
@@ -54,6 +54,6 @@ public class CollectAmethystBlockTask extends ResourceTask {
   }
   
   protected String toDebugStringName() {
-    return "Collecting " + this._count + " Amethyst Blocks.";
+    return "Collecting " + this .count + " Amethyst Blocks.";
   }
 }

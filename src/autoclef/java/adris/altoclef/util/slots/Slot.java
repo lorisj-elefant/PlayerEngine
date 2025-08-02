@@ -13,20 +13,20 @@ public class Slot {
   @SuppressWarnings("StaticInitializerReferencesSubClass")
   public static final Slot UNDEFINED = new Slot(null, UNDEFINED_SLOT_INDEX);
 
-  private final DefaultedList<ItemStack> _inventory;
-  private final int _index;
+  private final DefaultedList<ItemStack> inventory;
+  private final int index;
 
   public Slot(DefaultedList<ItemStack> inventory, int index) {
-    this._inventory = inventory;
-    this._index = index;
+    this .inventory = inventory;
+    this .index = index;
   }
 
   public DefaultedList<ItemStack> getInventory() {
-    return _inventory;
+    return inventory;
   }
 
   public int getIndex() {
-    return _index;
+    return index;
   }
 
   public static boolean isCursor(Slot slot) {
@@ -34,15 +34,15 @@ public class Slot {
   }
 
   public ItemStack getStack() {
-    if (_inventory == null || _index < 0 || _index >= _inventory.size()) {
+    if (inventory == null || index < 0 || index >= inventory.size()) {
       return ItemStack.EMPTY;
     }
-    return _inventory.get(_index);
+    return inventory.get(index);
   }
 
   @Deprecated
   public int getInventorySlot() {
-    return _index;
+    return index;
   }
 
   @Deprecated
@@ -51,15 +51,15 @@ public class Slot {
   }
 
   protected String getName() {
-    if (_inventory == null) return "Special";
-    return _inventory.getClass().getSimpleName();
+    if (inventory == null) return "Special";
+    return inventory.getClass().getSimpleName();
   }
 
   @Override
   public String toString() {
     return getName() + " Slot {" +
-            "inventory=" + (_inventory != null ? _inventory.getClass().getSimpleName() : "null") +
-            ", index=" + _index +
+            "inventory=" + (inventory != null ? inventory.getClass().getSimpleName() : "null") +
+            ", index=" + index +
             '}';
   }
 
@@ -68,11 +68,11 @@ public class Slot {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     Slot slot = (Slot) o;
-    return _index == slot._index && Objects.equals(_inventory, slot._inventory);
+    return index == slot .index && Objects.equals(inventory, slot .inventory);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(_inventory, _index);
+    return Objects.hash(inventory, index);
   }
 }

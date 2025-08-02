@@ -34,15 +34,15 @@ public class CollectBlazeRodsTask extends ResourceTask {
   
   private static final int TOO_MANY_BLAZES = 5;
   
-  private final int _count;
+  private final int count;
   
-  private final Task _searcher = (Task)new SearchChunkForBlockTask(new Block[] { Blocks.NETHER_BRICKS });
+  private final Task searcher = (Task)new SearchChunkForBlockTask(new Block[] { Blocks.NETHER_BRICKS });
   
-  private BlockPos _foundBlazeSpawner = null;
+  private BlockPos foundBlazeSpawner = null;
   
   public CollectBlazeRodsTask(int count) {
     super(Items.BLAZE_ROD, count);
-    this._count = count;
+    this .count = count;
   }
   
   private static boolean isHoveringAboveLavaOrTooHigh(AltoClefController mod, Entity entity) {
@@ -72,7 +72,7 @@ public class CollectBlazeRodsTask extends ResourceTask {
         setDebugState("Running away as there are too many blazes nearby.");
         return (Task)new RunAwayFromHostilesTask(30.0D, true);
       } 
-      if (this._foundBlazeSpawner != null && toKill.isPresent()) {
+      if (this .foundBlazeSpawner != null && toKill.isPresent()) {
         Entity kill = toKill.get();
         Vec3d nearest = kill.getPos();
         double sqDistanceToPlayer = nearest.squaredDistanceTo(mod.getPlayer().getPos());
@@ -88,16 +88,16 @@ public class CollectBlazeRodsTask extends ResourceTask {
       Predicate<Entity> safeToPursue = entity -> !isHoveringAboveLavaOrTooHigh(mod, entity);
       return (Task)new KillEntitiesTask(safeToPursue, new Class[] { ((Entity)toKill.get()).getClass() });
     } 
-    if (this._foundBlazeSpawner != null && mod.getChunkTracker().isChunkLoaded(this._foundBlazeSpawner) && !isValidBlazeSpawner(mod, this._foundBlazeSpawner)) {
-      Debug.logMessage("Blaze spawner at " + String.valueOf(this._foundBlazeSpawner) + " too far away or invalid. Re-searching.");
-      this._foundBlazeSpawner = null;
+    if (this .foundBlazeSpawner != null && mod.getChunkTracker().isChunkLoaded(this .foundBlazeSpawner) && !isValidBlazeSpawner(mod, this .foundBlazeSpawner)) {
+      Debug.logMessage("Blaze spawner at " + String.valueOf(this .foundBlazeSpawner) + " too far away or invalid. Re-searching.");
+      this .foundBlazeSpawner = null;
     } 
-    if (this._foundBlazeSpawner != null) {
-      if (!this._foundBlazeSpawner.isCenterWithinDistance((Position)mod.getPlayer().getPos(), 4.0D)) {
+    if (this .foundBlazeSpawner != null) {
+      if (!this .foundBlazeSpawner.isCenterWithinDistance((Position)mod.getPlayer().getPos(), 4.0D)) {
         setDebugState("Going to blaze spawner");
-        return (Task)new GetToBlockTask(this._foundBlazeSpawner.up(), false);
+        return (Task)new GetToBlockTask(this .foundBlazeSpawner.up(), false);
       } 
-      Optional<BlockPos> nearestFire = mod.getBlockScanner().getNearestWithinRange(this._foundBlazeSpawner, 5.0D, new Block[] { Blocks.FIRE });
+      Optional<BlockPos> nearestFire = mod.getBlockScanner().getNearestWithinRange(this .foundBlazeSpawner, 5.0D, new Block[] { Blocks.FIRE });
       if (nearestFire.isPresent()) {
         setDebugState("Clearing fire around spawner to prevent loss of blaze rods.");
         return (Task)new PutOutFireTask(nearestFire.get());
@@ -106,9 +106,9 @@ public class CollectBlazeRodsTask extends ResourceTask {
       return null;
     } 
     Optional<BlockPos> pos = mod.getBlockScanner().getNearestBlock(blockPos -> isValidBlazeSpawner(mod, blockPos), new Block[] { Blocks.SPAWNER });
-    pos.ifPresent(blockPos -> this._foundBlazeSpawner = blockPos);
+    pos.ifPresent(blockPos -> this .foundBlazeSpawner = blockPos);
     setDebugState("Searching for fortress/Traveling around fortress");
-    return this._searcher;
+    return this .searcher;
   }
   
   private boolean isValidBlazeSpawner(AltoClefController mod, BlockPos pos) {
@@ -124,7 +124,7 @@ public class CollectBlazeRodsTask extends ResourceTask {
   }
   
   protected String toDebugStringName() {
-    return "Collect blaze rods - " + controller.getItemStorage().getItemCount(new Item[] { Items.BLAZE_ROD }) + "/" + this._count;
+    return "Collect blaze rods - " + controller.getItemStorage().getItemCount(new Item[] { Items.BLAZE_ROD }) + "/" + this .count;
   }
   
   protected boolean shouldAvoidPickingUp(AltoClefController mod) {

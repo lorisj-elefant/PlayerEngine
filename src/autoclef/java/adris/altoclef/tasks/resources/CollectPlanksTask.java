@@ -17,20 +17,20 @@ import java.util.Arrays;
 import net.minecraft.item.Item;
 
 public class CollectPlanksTask extends ResourceTask {
-  private final Item[] _planks;
+  private final Item[] planks;
   
-  private final Item[] _logs;
+  private final Item[] logs;
   
-  private final int _targetCount;
+  private final int targetCount;
   
-  private boolean _logsInNether;
+  private boolean logsInNether;
   
   public CollectPlanksTask(Item[] planks, Item[] logs, int count, boolean logsInNether) {
     super(new ItemTarget(planks, count));
-    this._planks = planks;
-    this._logs = logs;
-    this._targetCount = count;
-    this._logsInNether = logsInNether;
+    this .planks = planks;
+    this .logs = logs;
+    this .targetCount = count;
+    this .logsInNether = logsInNether;
   }
   
   public CollectPlanksTask(int count) {
@@ -51,7 +51,7 @@ public class CollectPlanksTask extends ResourceTask {
   
   protected double getPickupRange(AltoClefController mod) {
     ItemStorageTracker storage = mod.getItemStorage();
-    if (storage.getItemCount(ItemHelper.LOG) * 4 > this._targetCount)
+    if (storage.getItemCount(ItemHelper.LOG) * 4 > this .targetCount)
       return 10.0D; 
     return 50.0D;
   }
@@ -63,10 +63,10 @@ public class CollectPlanksTask extends ResourceTask {
   protected void onResourceStart(AltoClefController mod) {}
   
   protected Task onResourceTick(AltoClefController mod) {
-    int totalInventoryPlankCount = mod.getItemStorage().getItemCount(this._planks);
-    int potentialPlanks = totalInventoryPlankCount + mod.getItemStorage().getItemCount(this._logs) * 4;
-    if (potentialPlanks >= this._targetCount)
-      for (Item logCheck : this._logs) {
+    int totalInventoryPlankCount = mod.getItemStorage().getItemCount(this .planks);
+    int potentialPlanks = totalInventoryPlankCount + mod.getItemStorage().getItemCount(this .logs) * 4;
+    if (potentialPlanks >= this .targetCount)
+      for (Item logCheck : this .logs) {
         int count = mod.getItemStorage().getItemCount(new Item[] { logCheck });
         if (count > 0) {
           Item plankCheck = ItemHelper.logToPlanks(logCheck);
@@ -74,16 +74,16 @@ public class CollectPlanksTask extends ResourceTask {
             Debug.logError("Invalid/Un-convertable log: " + String.valueOf(logCheck) + " (failed to find corresponding plank)"); 
           int plankCount = mod.getItemStorage().getItemCount(new Item[] { plankCheck });
           int otherPlankCount = totalInventoryPlankCount - plankCount;
-          int targetTotalPlanks = Math.min(count * 4 + plankCount, this._targetCount - otherPlankCount);
+          int targetTotalPlanks = Math.min(count * 4 + plankCount, this .targetCount - otherPlankCount);
           setDebugState("We have " + String.valueOf(logCheck) + ", crafting " + targetTotalPlanks + " planks.");
-          return (Task)new CraftInInventoryTask(new RecipeTarget(plankCheck, targetTotalPlanks, generatePlankRecipe(this._logs)));
+          return (Task)new CraftInInventoryTask(new RecipeTarget(plankCheck, targetTotalPlanks, generatePlankRecipe(this .logs)));
         } 
       }  
     ArrayList<ItemTarget> blocksTomine = new ArrayList<>(2);
-    blocksTomine.add(new ItemTarget(this._logs));
+    blocksTomine.add(new ItemTarget(this .logs));
     if (!mod.getBehaviour().exclusivelyMineLogs());
     MineAndCollectTask mineAndCollectTask = new MineAndCollectTask((ItemTarget[])blocksTomine.toArray(x$0 -> new ItemTarget[x$0]), MiningRequirement.HAND);
-    if (this._logsInNether)
+    if (this .logsInNether)
       mineAndCollectTask.forceDimension(Dimension.NETHER); 
     return (Task)mineAndCollectTask;
   }
@@ -95,11 +95,11 @@ public class CollectPlanksTask extends ResourceTask {
   }
   
   protected String toDebugStringName() {
-    return "Crafting " + this._targetCount + " planks " + Arrays.toString(this._planks);
+    return "Crafting " + this .targetCount + " planks " + Arrays.toString(this .planks);
   }
   
   public adris.altoclef.tasks.resources.CollectPlanksTask logsInNether() {
-    this._logsInNether = true;
+    this .logsInNether = true;
     return this;
   }
 }

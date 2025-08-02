@@ -36,21 +36,21 @@ public class AttackPlayerOrMobCommand extends Command {
 
     private static class AttackAndGetDropsTask extends ResourceTask {
 
-        private final String _toKill;
+        private final String toKill;
     
-        private final Task _killTask;
+        private final Task killTask;
 
-        private int _mobsKilledCount;
+        private int mobsKilledCount;
 
-        private int _mobKillTargetCount;
+        private int mobKillTargetCount;
 
-        private TimerGame _forceCollectTimer = new TimerGame(2);
+        private TimerGame forceCollectTimer = new TimerGame(2);
 
-        private Subscription<EntityDeathEvent> _onMobDied;
+        private Subscription<EntityDeathEvent> onMobDied;
 
-        private Predicate<Entity> _shouldAttackPredicate;
+        private Predicate<Entity> shouldAttackPredicate;
 
-        private Set<Entity> _trackedDeadEntities = new HashSet<>();
+        private Set<Entity> trackedDeadEntities = new HashSet<>();
 
         private static ItemTarget[] drops = new ItemTarget[]{
             new ItemTarget("rotten_flesh", 9999),
@@ -76,30 +76,30 @@ public class AttackPlayerOrMobCommand extends Command {
 
         public AttackAndGetDropsTask(String toKill, int killCount) {
             super(drops);
-            _toKill = toKill;
-            _mobKillTargetCount = killCount;
+            this.toKill = toKill;
+            mobKillTargetCount = killCount;
 
-            _shouldAttackPredicate = (entity) -> {
+            shouldAttackPredicate = (entity) -> {
                 // Done, don't attack any mobs just collect
-                if (_mobsKilledCount >= _mobKillTargetCount) {
+                if (mobsKilledCount >= mobKillTargetCount) {
                     return false;
                 }
 
                 // Attack players possibly
                 if (entity instanceof PlayerEntity) {
                     String playerName = entity.getName().getString();
-                    if (playerName != null && playerName.equalsIgnoreCase(_toKill)) {
+                    if (playerName != null && playerName.equalsIgnoreCase(toKill)) {
                         return true;
                     }
                 }
 
                 // entity type match
                 String name = entity.getType().getUntranslatedName();
-                return name != null && name.equals(_toKill);
+                return name != null && name.equals(toKill);
             };
 
             // Kill any entity matches our name, or if it's a player their username.
-            _killTask = new KillEntitiesTask(_shouldAttackPredicate);// new KillEntitiesTask(shouldKill, _toKill);
+            killTask = new KillEntitiesTask(shouldAttackPredicate);// new KillEntitiesTask(shouldKill, toKill);
         }
 
         @Override
@@ -109,18 +109,18 @@ public class AttackPlayerOrMobCommand extends Command {
 
         @Override
         protected void onResourceStart(AltoClefController mod) {
-            _forceCollectTimer.reset();
+            forceCollectTimer.reset();
             // TODO: Also consider if the target player entity is NOT alive, in the event we're dealing with players
 
-            _onMobDied = EventBus.subscribe(EntityDeathEvent.class, evt -> {
+            onMobDied = EventBus.subscribe(EntityDeathEvent.class, evt -> {
                 Entity diedEntity = evt.entity;
 
                 // don't double count
-                if (_trackedDeadEntities.contains(diedEntity)) {
+                if (trackedDeadEntities.contains(diedEntity)) {
                     return;
                 }
 
-                if (_shouldAttackPredicate.test(diedEntity)) {
+                if (shouldAttackPredicate.test(diedEntity)) {
                     markEntityDead(diedEntity);
                 }
             });
@@ -128,14 +128,14 @@ public class AttackPlayerOrMobCommand extends Command {
 
         private void markEntityDead(Entity entity) {
             // newly dead!
-            _trackedDeadEntities.add(entity);
-            _mobsKilledCount++;
+            trackedDeadEntities.add(entity);
+            mobsKilledCount++;
         }
 
         @Override
         public boolean isFinished() {
             // We've killed enough of the mobs AND our timer has gone...
-            return _mobsKilledCount >= _mobKillTargetCount && _forceCollectTimer.elapsed();
+            return mobsKilledCount >= mobKillTargetCount && forceCollectTimer.elapsed();
         }
 
         @Override
@@ -143,44 +143,44 @@ public class AttackPlayerOrMobCommand extends Command {
 
             // If our target is a player, consider dead players that match to add to our counter
             for (Entity entity : mod.getWorld().iterateEntities()) {
-                if (_trackedDeadEntities.contains(entity)) {
+                if (trackedDeadEntities.contains(entity)) {
                     // don't double count
                     continue;
                 }
 
-                if (_shouldAttackPredicate.test(entity)) {
+                if (shouldAttackPredicate.test(entity)) {
                     if (!entity.isAlive()) {
                         markEntityDead(entity);
                     }
                 }
             }
             // Clear remaining not attack predicate entitites
-            _trackedDeadEntities.removeIf(entity -> entity.isAlive());
+            trackedDeadEntities.removeIf(entity -> entity.isAlive());
 
-            if (_mobsKilledCount < _mobKillTargetCount) {
-                _forceCollectTimer.reset();
+            if (mobsKilledCount < mobKillTargetCount) {
+                forceCollectTimer.reset();
             }
 
-            return _killTask;
+            return killTask;
         }
 
         @Override
         protected void onResourceStop(AltoClefController mod, Task interruptTask) {
-            EventBus.unsubscribe(_onMobDied);
-            _trackedDeadEntities.clear();
+            EventBus.unsubscribe(onMobDied);
+            trackedDeadEntities.clear();
         }
     
         @Override
         protected boolean isEqualResource(ResourceTask other) {
             if (other instanceof AttackAndGetDropsTask task) {
-                return task._toKill.equals(_toKill) && task._mobKillTargetCount == _mobKillTargetCount;
+                return task .toKill.equals(toKill) && task .mobKillTargetCount == mobKillTargetCount;
             }
             return false;
         }
     
         @Override
         protected String toDebugStringName() {
-            return "Attacking and collect items from " + _toKill + " x " + _mobKillTargetCount;
+            return "Attacking and collect items from " + toKill + " x " + mobKillTargetCount;
         }
     }
     

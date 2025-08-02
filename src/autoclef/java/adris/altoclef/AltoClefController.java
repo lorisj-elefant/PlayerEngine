@@ -43,39 +43,39 @@ import java.util.Arrays;
 import java.util.List;
 
 public class AltoClefController {
-    private final IBaritone _baritone;
-    private final IEntityContext _ctx;
+    private final IBaritone baritone;
+    private final IEntityContext ctx;
 
-    private CommandExecutor _commandExecutor;
-    private TaskRunner _taskRunner;
-    private TrackerManager _trackerManager;
-    private BotBehaviour _botBehaviour;
-    private UserTaskChain _userTaskChain;
+    private CommandExecutor commandExecutor;
+    private TaskRunner taskRunner;
+    private TrackerManager trackerManager;
+    private BotBehaviour botBehaviour;
+    private UserTaskChain userTaskChain;
 
     // Chains
-    private FoodChain _foodChain;
-    private MobDefenseChain _mobDefenseChain;
-    private MLGBucketFallChain _mlgBucketChain;
+    private FoodChain foodChain;
+    private MobDefenseChain mobDefenseChain;
+    private MLGBucketFallChain mlgBucketChain;
 
     // Trackers
-    private ItemStorageTracker _storageTracker;
-    private ContainerSubTracker _containerSubTracker;
-    private EntityTracker _entityTracker;
-    private BlockScanner _blockScanner;
-    private SimpleChunkTracker _chunkTracker;
-    private MiscBlockTracker _miscBlockTracker;
-    private CraftingRecipeTracker _craftingRecipeTracker;
-    private EntityStuckTracker _entityStuckTracker;
-    private UserBlockRangeTracker _userBlockRangeTracker;
+    private ItemStorageTracker storageTracker;
+    private ContainerSubTracker containerSubTracker;
+    private EntityTracker entityTracker;
+    private BlockScanner blockScanner;
+    private SimpleChunkTracker chunkTracker;
+    private MiscBlockTracker miscBlockTracker;
+    private CraftingRecipeTracker craftingRecipeTracker;
+    private EntityStuckTracker entityStuckTracker;
+    private UserBlockRangeTracker userBlockRangeTracker;
 
-    private InputControls _inputControls;
-    private SlotHandler _slotHandler;
-    private PlayerExtraController _extraController;
+    private InputControls inputControls;
+    private SlotHandler slotHandler;
+    private PlayerExtraController extraController;
 
-    private Settings _settings;
+    private Settings settings;
 
-    private boolean _paused = false;
-    private Task _storedTask;
+    private boolean paused = false;
+    private Task storedTask;
     private AICommandBridge aiBridge;
     private static long lastHeartbeatTime = System.nanoTime();
     public boolean isStopping = false;
@@ -83,41 +83,41 @@ public class AltoClefController {
     private PlayerEntity owner;
 
     public AltoClefController(IBaritone baritone) {
-        this._baritone = baritone;
-        this._ctx = baritone.getEntityContext();
-        _commandExecutor = new CommandExecutor(this);
-        _taskRunner = new TaskRunner(this);
-        _trackerManager = new TrackerManager(this);
-        _userTaskChain = new UserTaskChain(_taskRunner);
-        _mobDefenseChain = new MobDefenseChain(_taskRunner);
-        new PlayerInteractionFixChain(_taskRunner);
-        _mlgBucketChain = new MLGBucketFallChain(_taskRunner);
-        new UnstuckChain(_taskRunner);
-        new PreEquipItemChain(_taskRunner);
-        new WorldSurvivalChain(_taskRunner);
-        _foodChain = new FoodChain(_taskRunner);
-        new PlayerDefenseChain(_taskRunner);
+        this .baritone = baritone;
+        this .ctx = baritone.getEntityContext();
+        commandExecutor = new CommandExecutor(this);
+        taskRunner = new TaskRunner(this);
+        trackerManager = new TrackerManager(this);
+        userTaskChain = new UserTaskChain(taskRunner);
+        mobDefenseChain = new MobDefenseChain(taskRunner);
+        new PlayerInteractionFixChain(taskRunner);
+        mlgBucketChain = new MLGBucketFallChain(taskRunner);
+        new UnstuckChain(taskRunner);
+        new PreEquipItemChain(taskRunner);
+        new WorldSurvivalChain(taskRunner);
+        foodChain = new FoodChain(taskRunner);
+        new PlayerDefenseChain(taskRunner);
 
-        _storageTracker = new ItemStorageTracker(this, _trackerManager, container -> this._containerSubTracker = container);
-        _entityTracker = new EntityTracker(_trackerManager);
-        _blockScanner = new BlockScanner(this);
-        _chunkTracker = new SimpleChunkTracker(this);
-        _miscBlockTracker = new MiscBlockTracker(this);
-        _craftingRecipeTracker = new CraftingRecipeTracker(_trackerManager);
-        _entityStuckTracker = new EntityStuckTracker(_trackerManager);
-        _userBlockRangeTracker = new UserBlockRangeTracker(_trackerManager);
-        _inputControls = new InputControls(this);
-        _slotHandler = new SlotHandler(this);
-        aiBridge = new AICommandBridge(_commandExecutor, this);
-        _extraController = new PlayerExtraController(this);
+        storageTracker = new ItemStorageTracker(this, trackerManager, container -> this .containerSubTracker = container);
+        entityTracker = new EntityTracker(trackerManager);
+        blockScanner = new BlockScanner(this);
+        chunkTracker = new SimpleChunkTracker(this);
+        miscBlockTracker = new MiscBlockTracker(this);
+        craftingRecipeTracker = new CraftingRecipeTracker(trackerManager);
+        entityStuckTracker = new EntityStuckTracker(trackerManager);
+        userBlockRangeTracker = new UserBlockRangeTracker(trackerManager);
+        inputControls = new InputControls(this);
+        slotHandler = new SlotHandler(this);
+        aiBridge = new AICommandBridge(commandExecutor, this);
+        extraController = new PlayerExtraController(this);
         initializeBaritoneSettings();
 
-        _botBehaviour = new BotBehaviour(this);
+        botBehaviour = new BotBehaviour(this);
         initializeCommands();
 
         Settings.load(newSettings -> {
-            this._settings = newSettings;
-            List<Item> baritoneCanPlace = Arrays.stream(this._settings.getThrowawayItems(this,true)).toList();
+            this .settings = newSettings;
+            List<Item> baritoneCanPlace = Arrays.stream(this .settings.getThrowawayItems(this,true)).toList();
             (getBaritoneSettings().acceptableThrowawayItems.get()).addAll(baritoneCanPlace);
 
             if ((!getUserTaskChain().isActive() || getUserTaskChain().isRunningIdleTask()) && getModSettings().shouldRunIdleCommandWhenNotActive()) {
@@ -125,22 +125,22 @@ public class AltoClefController {
                 getCommandExecutor().executeWithPrefix(getModSettings().getIdleCommand());
             }
 
-            getExtraBaritoneSettings().avoidBlockBreak(_userBlockRangeTracker::isNearUserTrackedBlock);
-            getExtraBaritoneSettings().avoidBlockPlace(_entityStuckTracker::isBlockedByEntity);
+            getExtraBaritoneSettings().avoidBlockBreak(userBlockRangeTracker::isNearUserTrackedBlock);
+            getExtraBaritoneSettings().avoidBlockPlace(entityStuckTracker::isBlockedByEntity);
         });
 
         Playground.IDLE_TEST_INIT_FUNCTION(this);
     }
 
     public void serverTick() {
-        _inputControls.onTickPre();
-        _storageTracker.setDirty();
-        _miscBlockTracker.tick();
-        _trackerManager.tick();
-        _blockScanner.tick();
-        _taskRunner.tick();
-        _inputControls.onTickPost();
-        _baritone.serverTick();
+        inputControls.onTickPre();
+        storageTracker.setDirty();
+        miscBlockTracker.tick();
+        trackerManager.tick();
+        blockScanner.tick();
+        taskRunner.tick();
+        inputControls.onTickPost();
+        baritone.serverTick();
 
         long now = System.nanoTime();
         if (now - lastHeartbeatTime > 60_000_000_000L) {
@@ -155,8 +155,8 @@ public class AltoClefController {
 
     public void stop() {
         getUserTaskChain().cancel(this);
-        if (_taskRunner.getCurrentTaskChain() != null) {
-            _taskRunner.getCurrentTaskChain().stop();
+        if (taskRunner.getCurrentTaskChain() != null) {
+            taskRunner.getCurrentTaskChain().stop();
         }
         getTaskRunner().disable();
         getBaritone().getPathingBehavior().forceCancel();
@@ -165,8 +165,8 @@ public class AltoClefController {
 
     private void initializeBaritoneSettings() {
         getExtraBaritoneSettings().canWalkOnEndPortal(false);
-        getExtraBaritoneSettings().avoidBlockPlace(_entityStuckTracker::isBlockedByEntity);
-        getExtraBaritoneSettings().avoidBlockBreak(_userBlockRangeTracker::isNearUserTrackedBlock);
+        getExtraBaritoneSettings().avoidBlockPlace(entityStuckTracker::isBlockedByEntity);
+        getExtraBaritoneSettings().avoidBlockBreak(userBlockRangeTracker::isNearUserTrackedBlock);
 
         getBaritoneSettings().freeLook.set(false);
         getBaritoneSettings().overshootTraverse.set(true);
@@ -197,7 +197,7 @@ public class AltoClefController {
     }
 
     public void runUserTask(Task task, Runnable onFinish) {
-        _userTaskChain.runTask(this, task, onFinish);
+        userTaskChain.runTask(this, task, onFinish);
     }
 
     public void runUserTask(Task task) {
@@ -205,104 +205,104 @@ public class AltoClefController {
     }
 
     public void cancelUserTask() {
-        _userTaskChain.cancel(this);
+        userTaskChain.cancel(this);
     }
 
 
     public CommandExecutor getCommandExecutor() {
-        return _commandExecutor;
+        return commandExecutor;
     }
 
     public LivingEntity getEntity() {
-        return _ctx.entity();
+        return ctx.entity();
     }
 
     public ServerWorld getWorld() {
-        return _ctx.world();
+        return ctx.world();
     }
 
     public IInteractionController getInteractionManager() {
-        return _ctx.playerController();
+        return ctx.playerController();
     }
 
     public IBaritone getBaritone() {
-        return _baritone;
+        return baritone;
     }
 
     public baritone.api.Settings getBaritoneSettings() {
-        return _baritone.settings();
+        return baritone.settings();
     }
 
     public AltoClefSettings getExtraBaritoneSettings() {
-        return ((Baritone)_baritone).getExtraBaritoneSettings();
+        return ((Baritone)baritone).getExtraBaritoneSettings();
     }
 
     public TaskRunner getTaskRunner() {
-        return _taskRunner;
+        return taskRunner;
     }
 
     public UserTaskChain getUserTaskChain() {
-        return _userTaskChain;
+        return userTaskChain;
     }
 
     public BotBehaviour getBehaviour() {
-        return _botBehaviour;
+        return botBehaviour;
     }
 
     public boolean isPaused() {
-        return _paused;
+        return paused;
     }
 
     public void setPaused(boolean pausing) {
-        this._paused = pausing;
+        this .paused = pausing;
     }
 
     public Task getStoredTask() {
-        return _storedTask;
+        return storedTask;
     }
 
     public void setStoredTask(Task currentTask) {
-        this._storedTask = currentTask;
+        this .storedTask = currentTask;
     }
 
     public ItemStorageTracker getItemStorage() {
-        return _storageTracker;
+        return storageTracker;
     }
 
     public EntityTracker getEntityTracker() {
-        return _entityTracker;
+        return entityTracker;
     }
 
     public CraftingRecipeTracker getCraftingRecipeTracker() {
-        return _craftingRecipeTracker;
+        return craftingRecipeTracker;
     }
 
     public BlockScanner getBlockScanner() {
-        return _blockScanner;
+        return blockScanner;
     }
 
     public SimpleChunkTracker getChunkTracker() {
-        return _chunkTracker;
+        return chunkTracker;
     }
 
     public MiscBlockTracker getMiscBlockTracker() {
-        return _miscBlockTracker;
+        return miscBlockTracker;
     }
 
     public Settings getModSettings() {
-        return _settings;
+        return settings;
     }
 
     public FoodChain getFoodChain() {
-        return _foodChain;
+        return foodChain;
     }
 
     public MobDefenseChain getMobDefenseChain() {
-        return _mobDefenseChain;
+        return mobDefenseChain;
     }
 
     public MLGBucketFallChain getMLGBucketChain() {
-        return _mlgBucketChain;
+        return mlgBucketChain;
     }
 
     public void log(String message) {
@@ -318,15 +318,15 @@ public class AltoClefController {
     }
 
     public LivingEntity getPlayer(){
-        return _ctx.entity();
+        return ctx.entity();
     }
 
     public InputControls getInputControls() {
-        return _inputControls;
+        return inputControls;
     }
 
     public SlotHandler getSlotHandler() {
-        return _slotHandler;
+        return slotHandler;
     }
 
     public LivingEntityInventory getInventory(){
@@ -334,7 +334,7 @@ public class AltoClefController {
     }
 
     public PlayerExtraController getControllerExtras(){
-        return _extraController;
+        return extraController;
     }
 
     public AICommandBridge getAiBridge() {

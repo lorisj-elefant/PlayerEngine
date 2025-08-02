@@ -16,11 +16,11 @@ import net.minecraft.item.Item;
 import net.minecraft.item.Items;
 
 public class CollectDripstoneBlockTask extends ResourceTask {
-  private final int _count;
+  private final int count;
   
   public CollectDripstoneBlockTask(int targetCount) {
     super(Items.DRIPSTONE_BLOCK, targetCount);
-    this._count = targetCount;
+    this .count = targetCount;
   }
   
   protected boolean shouldAvoidPickingUp(AltoClefController mod) {
@@ -45,6 +45,6 @@ public class CollectDripstoneBlockTask extends ResourceTask {
   }
   
   protected String toDebugStringName() {
-    return "Collecting " + this._count + " Dripstone Blocks.";
+    return "Collecting " + this .count + " Dripstone Blocks.";
   }
 }

@@ -8,19 +8,19 @@ import java.util.function.Supplier;
 import net.minecraft.entity.Entity;
 
 public abstract class RunAwayFromEntitiesTask extends CustomBaritoneGoalTask {
-  private final Supplier<List<Entity>> _runAwaySupplier;
+  private final Supplier<List<Entity>> runAwaySupplier;
   
-  private final double _distanceToRun;
+  private final double distanceToRun;
   
-  private final boolean _xz;
+  private final boolean xz;
   
-  private final double _penalty;
+  private final double penalty;
   
   public RunAwayFromEntitiesTask(Supplier<List<Entity>> toRunAwayFrom, double distanceToRun, boolean xz, double penalty) {
-    this._runAwaySupplier = toRunAwayFrom;
-    this._distanceToRun = distanceToRun;
-    this._xz = xz;
-    this._penalty = penalty;
+    this .runAwaySupplier = toRunAwayFrom;
+    this .distanceToRun = distanceToRun;
+    this .xz = xz;
+    this .penalty = penalty;
   }
   
   public RunAwayFromEntitiesTask(Supplier<List<Entity>> toRunAwayFrom, double distanceToRun, double penalty) {
@@ -28,18 +28,18 @@ public abstract class RunAwayFromEntitiesTask extends CustomBaritoneGoalTask {
   }
   
   protected Goal newGoal(AltoClefController mod) {
-    return (Goal)new GoalRunAwayStuff( mod, this._distanceToRun, this._xz);
+    return (Goal)new GoalRunAwayStuff( mod, this .distanceToRun, this .xz);
   }
 
   private class GoalRunAwayStuff extends GoalRunAwayFromEntities {
 
     public GoalRunAwayStuff(AltoClefController mod, double distance, boolean xz) {
-      super(mod, distance, xz, _penalty);
+      super(mod, distance, xz, penalty);
     }
 
     @Override
     protected List<net.minecraft.entity.Entity> getEntities(AltoClefController mod) {
-      return _runAwaySupplier.get();
+      return runAwaySupplier.get();
     }
   }
 }

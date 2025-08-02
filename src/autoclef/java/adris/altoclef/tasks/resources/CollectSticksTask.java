@@ -19,11 +19,11 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Position;
 
 public class CollectSticksTask extends ResourceTask {
-  private final int _targetCount;
+  private final int targetCount;
   
   public CollectSticksTask(int targetCount) {
     super(Items.STICK, targetCount);
-    this._targetCount = targetCount;
+    this .targetCount = targetCount;
   }
   
   protected boolean shouldAvoidPickingUp(AltoClefController mod) {
@@ -36,20 +36,20 @@ public class CollectSticksTask extends ResourceTask {
   
   protected double getPickupRange(AltoClefController mod) {
     ItemStorageTracker storage = mod.getItemStorage();
-    if (storage.getItemCount(ItemHelper.PLANKS) * 4 + storage.getItemCount(ItemHelper.LOG) * 4 * 4 > this._targetCount)
+    if (storage.getItemCount(ItemHelper.PLANKS) * 4 + storage.getItemCount(ItemHelper.LOG) * 4 * 4 > this .targetCount)
       return 10.0D; 
     return 35.0D;
   }
   
   protected Task onResourceTick(AltoClefController mod) {
     if (mod.getItemStorage().getItemCount(new Item[] { Items.BAMBOO }) >= 2)
-      return (Task)new CraftInInventoryTask(new RecipeTarget(Items.STICK, Math.min(mod.getItemStorage().getItemCount(Items.BAMBOO) / 2, this._targetCount), CraftingRecipe.newShapedRecipe("sticks", new ItemTarget[] { new ItemTarget("bamboo"), null, new ItemTarget("bamboo"), null }, 1)));
+      return (Task)new CraftInInventoryTask(new RecipeTarget(Items.STICK, Math.min(mod.getItemStorage().getItemCount(Items.BAMBOO) / 2, this .targetCount), CraftingRecipe.newShapedRecipe("sticks", new ItemTarget[] { new ItemTarget("bamboo"), null, new ItemTarget("bamboo"), null }, 1)));
     Optional<BlockPos> nearestBush = mod.getBlockScanner().getNearestBlock(new Block[] { Blocks.DEAD_BUSH });
     if (nearestBush.isPresent() && ((BlockPos)nearestBush.get()).isCenterWithinDistance((Position)mod.getPlayer().getPos(), 20.0D)) {
       MineAndCollectTask mineAndCollectTask = new MineAndCollectTask(Items.DEAD_BUSH, 1, new Block[] { Blocks.DEAD_BUSH }, MiningRequirement.HAND);
       return (Task)mineAndCollectTask;
     } 
-    return (Task)new CraftInInventoryTask(new RecipeTarget(Items.STICK, this._targetCount, CraftingRecipe.newShapedRecipe("sticks", new ItemTarget[] { new ItemTarget("planks"), null, new ItemTarget("planks"), null }, 4)));
+    return (Task)new CraftInInventoryTask(new RecipeTarget(Items.STICK, this .targetCount, CraftingRecipe.newShapedRecipe("sticks", new ItemTarget[] { new ItemTarget("planks"), null, new ItemTarget("planks"), null }, 4)));
   }
   
   protected void onResourceStop(AltoClefController mod, Task interruptTask) {
@@ -61,6 +61,6 @@ public class CollectSticksTask extends ResourceTask {
   }
   
   protected String toDebugStringName() {
-    return "Crafting " + this._targetCount + " sticks";
+    return "Crafting " + this .targetCount + " sticks";
   }
 }

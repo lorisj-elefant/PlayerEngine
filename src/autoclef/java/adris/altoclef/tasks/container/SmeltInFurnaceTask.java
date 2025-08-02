@@ -35,14 +35,14 @@ import java.util.Optional;
 
 public class SmeltInFurnaceTask extends ResourceTask {
 
-  private final SmeltTarget[] _targets;
-  private final TimerGame _smeltTimer = new TimerGame(10);
-  private BlockPos _furnacePos = null;
-  private boolean _isSmelting = false;
+  private final SmeltTarget[] targets;
+  private final TimerGame smeltTimer = new TimerGame(10);
+  private BlockPos furnacePos = null;
+  private boolean isSmelting = false;
 
   public SmeltInFurnaceTask(SmeltTarget... targets) {
     super(extractItemTargets(targets));
-    _targets = targets;
+    this.targets = targets;
   }
 
   public SmeltInFurnaceTask(SmeltTarget target) {
@@ -65,7 +65,7 @@ public class SmeltInFurnaceTask extends ResourceTask {
   @Override
   protected void onResourceStart(AltoClefController controller) {
     controller.getBehaviour().addProtectedItems(Items.FURNACE);
-    for (SmeltTarget target : _targets) {
+    for (SmeltTarget target : targets) {
       controller.getBehaviour().addProtectedItems(target.getMaterial().getMatches());
     }
   }
@@ -73,7 +73,7 @@ public class SmeltInFurnaceTask extends ResourceTask {
   @Override
   protected Task onResourceTick(AltoClefController controller) {
     // Check if all smelting is done.
-    boolean allDone = Arrays.stream(_targets).allMatch(target ->
+    boolean allDone = Arrays.stream(targets).allMatch(target ->
             controller.getItemStorage().getItemCount(target.getItem()) >= target.getItem().getTargetCount()
     );
     if (allDone) {
@@ -83,7 +83,7 @@ public class SmeltInFurnaceTask extends ResourceTask {
 
     // 3. Find a target to smelt
     SmeltTarget currentTarget = null;
-    for (SmeltTarget target : _targets) {
+    for (SmeltTarget target : targets) {
       if (controller.getItemStorage().getItemCount(target.getItem()) < target.getItem().getTargetCount()) {
         currentTarget = target;
         break;
@@ -108,10 +108,10 @@ public class SmeltInFurnaceTask extends ResourceTask {
     }
 
     // Find or place a furnace.
-    if (_furnacePos == null || !controller.getWorld().getBlockState(_furnacePos).isOf(Blocks.FURNACE)) {
+    if (furnacePos == null || !controller.getWorld().getBlockState(furnacePos).isOf(Blocks.FURNACE)) {
       Optional<BlockPos> nearestFurnace = controller.getBlockScanner().getNearestBlock(Blocks.FURNACE);
       if (nearestFurnace.isPresent()) {
-        _furnacePos = nearestFurnace.get();
+        furnacePos = nearestFurnace.get();
       } else {
         if (controller.getItemStorage().hasItem(Items.FURNACE)) {
           setDebugState("Placing furnace.");
@@ -123,16 +123,16 @@ public class SmeltInFurnaceTask extends ResourceTask {
     }
 
     // Go to the furnace.
-    if (!_furnacePos.isWithinDistance(new Vec3i((int) controller.getEntity().getPos().x, (int) controller.getEntity().getPos().y, (int) controller.getEntity().getPos().z), 4.5)) {
+    if (!furnacePos.isWithinDistance(new Vec3i((int) controller.getEntity().getPos().x, (int) controller.getEntity().getPos().y, (int) controller.getEntity().getPos().z), 4.5)) {
       setDebugState("Going to furnace.");
-      return new GetToBlockTask(_furnacePos);
+      return new GetToBlockTask(furnacePos);
     }
 
     // Interact with furnace (server-side simulation)
-    BlockEntity be = controller.getWorld().getBlockEntity(_furnacePos);
+    BlockEntity be = controller.getWorld().getBlockEntity(furnacePos);
     if (!(be instanceof AbstractFurnaceBlockEntity furnace)) {
       Debug.logWarning("Block at furnace position is not a furnace BE. Resetting.");
-      _furnacePos = null;
+      furnacePos = null;
       return new TimeoutWanderTask(1);
     }
 
@@ -153,10 +153,10 @@ public class SmeltInFurnaceTask extends ResourceTask {
     }
 
     // 2. We are smelting something, wait.
-    if (_isSmelting) {
+    if (isSmelting) {
       setDebugState("Waiting for items to smelt...");
-      if (_smeltTimer.elapsed()) {
-        _isSmelting = false;
+      if (smeltTimer.elapsed()) {
+        isSmelting = false;
       }
       return null;
     }
@@ -187,16 +187,16 @@ public class SmeltInFurnaceTask extends ResourceTask {
       int materialSlotIndex = playerInv.getSlotWithStack(new ItemStack(materialItem));
       if (materialSlotIndex != -1) {
         furnaceInventory.setStack(FurnaceSlot.INPUT_SLOT_MATERIALS, playerInv.removeStack(materialSlotIndex, 1));
-        _isSmelting = true;
-        _smeltTimer.reset();
+        isSmelting = true;
+        smeltTimer.reset();
         furnace.markDirty();
         return null;
       }
     }
 
     // If we are here, it means we are waiting for something to happen inside the furnace.
-    _isSmelting = true;
-    _smeltTimer.reset();
+    isSmelting = true;
+    smeltTimer.reset();
     setDebugState("Waiting for furnace...");
     return null;
   }
@@ -209,7 +209,7 @@ public class SmeltInFurnaceTask extends ResourceTask {
   @Override
   protected boolean isEqualResource(ResourceTask other) {
     if (other instanceof SmeltInFurnaceTask task) {
-      return Arrays.equals(task._targets, this._targets);
+      return Arrays.equals(task .targets, this .targets);
     }
     return false;
   }

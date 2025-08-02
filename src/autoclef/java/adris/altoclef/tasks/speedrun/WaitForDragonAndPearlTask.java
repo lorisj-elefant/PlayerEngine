@@ -56,7 +56,7 @@ public class WaitForDragonAndPearlTask extends Task {
   
   private Task pillarUpFurther;
   
-  private boolean _hasPillar = false;
+  private boolean hasPillar = false;
   
   public void setExitPortalTop(BlockPos top) {
     BlockPos actualTarget = top.down();
@@ -162,7 +162,7 @@ public class WaitForDragonAndPearlTask extends Task {
         LookHelper.lookAt(mod, ((Entity)mod.getEntityTracker().getClosestEntity(new Class[] { EnderDragonEntity.class }).get()).getEyePos()); 
       return null;
     } 
-    if (!WorldHelper.inRangeXZ((Entity)mod.getPlayer(), this.targetToPearl, 38.0D) && mod.getPlayer().getPos().getY() < minHeight && !this._hasPillar) {
+    if (!WorldHelper.inRangeXZ((Entity)mod.getPlayer(), this.targetToPearl, 38.0D) && mod.getPlayer().getPos().getY() < minHeight && !this .hasPillar) {
       if (mod.getEntityTracker().entityFound(entity -> mod.getPlayer().getPos().isInRange((Position)entity.getPos(), 4.0D), new Class[] { AreaEffectCloudEntity.class })) {
         if (mod.getEntityTracker().getClosestEntity(new Class[] { EnderDragonEntity.class }).isPresent() && 
           !mod.getBaritone().getPathingBehavior().isPathing())
@@ -172,8 +172,8 @@ public class WaitForDragonAndPearlTask extends Task {
       setDebugState("Moving in (too far, might hit pillars)");
       return (Task)new GetToXZTask(0, 0);
     } 
-    if (!this._hasPillar)
-      this._hasPillar = true; 
+    if (!this .hasPillar)
+      this .hasPillar = true; 
     this.heightPillarTask = (Task)new GetToBlockTask(new BlockPos(0, minHeight, 75));
     return this.heightPillarTask;
   }

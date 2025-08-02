@@ -17,10 +17,10 @@ public enum MiningRequirement implements Comparable<MiningRequirement> {
     IRON(Items.IRON_PICKAXE),
     DIAMOND(Items.DIAMOND_PICKAXE);
 
-    private final Item _minPickaxe;
+    private final Item minPickaxe;
 
     private MiningRequirement(Item minPickaxe) {
-        this._minPickaxe = minPickaxe;
+        this .minPickaxe = minPickaxe;
     }
 
     public static MiningRequirement getMinimumRequirementForBlock(Block block) {
@@ -42,6 +42,6 @@ public enum MiningRequirement implements Comparable<MiningRequirement> {
     }
 
     public Item getMinimumPickaxe() {
-        return this._minPickaxe;
+        return this .minPickaxe;
     }
 }
