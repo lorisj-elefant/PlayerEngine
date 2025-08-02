@@ -55,9 +55,8 @@ public class AICommandBridge {
             
             Additional Guidelines:
             Meaningful Content: Ensure conversations progress with substantive information.
-            Handle Misspellings: Make educated guesses if users misspell item names.
+            Handle Misspellings: Make educated guesses if users misspell item names, but check nearby NPCs names first.
             Avoid Filler Phrases: Do not engage in repetitive or filler content.
-            Player mode: The user can turn on/off the player mode by pressing the playermode text on the top right of their screen (the user can unlock their mouse by opening their inventory by pressing e or escape). The player mode enables you to talk to other players.
             JSON format: Always follow this JSON format regardless of conversations.
             
             Valid Commands:
