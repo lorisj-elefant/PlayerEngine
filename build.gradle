@@ -24,14 +24,6 @@ sourceSets {
         compileClasspath += main.compileClasspath + main.runtimeClasspath + main.output + autoclef.compileClasspath + autoclef.runtimeClasspath + autoclef.output
         runtimeClasspath += main.compileClasspath + main.runtimeClasspath + main.output + autoclef.compileClasspath + autoclef.runtimeClasspath + autoclef.output
     }
-
-    schematica_api {
-        compileClasspath += main.compileClasspath
-    }
-
-    main {
-        compileClasspath += schematica_api.output
-    }
 }
 
 repositories {
@@ -92,7 +84,6 @@ shadowJar {
     from sourceSets.launch.output
     from sourceSets.main.output
     from sourceSets.autoclef.output
-    from sourceSets.schematica_api.output
 
     filesMatching('fabric.mod.json') {
         expand 'version': project.version
