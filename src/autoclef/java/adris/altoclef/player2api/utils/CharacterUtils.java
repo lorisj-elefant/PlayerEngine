@@ -32,11 +32,12 @@ import java.util.Map;
 import static adris.altoclef.player2api.utils.HTTPUtils.sendRequest;
 
 public class CharacterUtils {
-    public static Character DEFAULT_CHARACTER = new Character("AI agent", "AI", "Greetings", "You are a helpful AI Agent", "minecraft:textures/entity/player/wide/steve.png", new String[0]);;
+    public static Character DEFAULT_CHARACTER = new Character("AI agent", "AI", "Greetings", "You are a helpful AI Agent", "minecraft:textures/entity/player/wide/steve.png", new String[0]);
+    ;
 
     public static Character parseFirstCharacter(Map<String, JsonElement> responseMap) {
         Character[] characters = parseCharacters(responseMap);
-        if(characters.length>0){
+        if (characters.length > 0) {
             return characters[0];
         }
         return DEFAULT_CHARACTER;
@@ -72,25 +73,25 @@ public class CharacterUtils {
         return new Character[0];
     }
 
-    public static Character[] requestCharacters(){
+    public static Character[] requestCharacters() {
         try {
             Map<String, JsonElement> responseMap = sendRequest("/v1/selected_characters", false, null);
             return CharacterUtils.parseCharacters(responseMap);
-        }catch (Exception e){
+        } catch (Exception e) {
             return new Character[0];
         }
     }
 
-    public static Character requestFirstCharacter(){
+    public static Character requestFirstCharacter() {
         try {
             Map<String, JsonElement> responseMap = sendRequest("/v1/selected_characters", false, null);
             return CharacterUtils.parseFirstCharacter(responseMap);
-        }catch (Exception e){
+        } catch (Exception e) {
             return DEFAULT_CHARACTER;
         }
     }
 
-    public static Character readFromBuf(PacketByteBuf buf){
+    public static Character readFromBuf(PacketByteBuf buf) {
         String name = buf.readString();
         String shortName = buf.readString();
         String greetingInfo = buf.readString();
@@ -98,25 +99,25 @@ public class CharacterUtils {
         String skinURL = buf.readString();
         int arrSize = buf.readInt();
         String[] voiceIds = new String[arrSize];
-        for(int i=0;i<arrSize;i++){
+        for (int i = 0; i < arrSize; i++) {
             voiceIds[i] = buf.readString();
         }
         return new Character(name, shortName, greetingInfo, description, skinURL, voiceIds);
     }
 
-    public static void writeToBuf(PacketByteBuf buf, Character character){
+    public static void writeToBuf(PacketByteBuf buf, Character character) {
         buf.writeString(character.name);
         buf.writeString(character.shortName);
         buf.writeString(character.greetingInfo);
         buf.writeString(character.description);
         buf.writeString(character.skinURL);
         buf.writeInt(character.voiceIds.length);
-        for(String id: character.voiceIds){
+        for (String id : character.voiceIds) {
             buf.writeString(id);
         }
     }
 
-    public static Character readFromNBT(NbtCompound compound){
+    public static Character readFromNBT(NbtCompound compound) {
         String name = compound.getString("name");
         String shortName = compound.getString("shortName");
         String greetingInfo = compound.getString("greetingInfo");
@@ -124,20 +125,20 @@ public class CharacterUtils {
         String skinURL = compound.getString("skinURL");
         NbtList voiceIdsList = compound.getList("voiceIds", NbtElement.STRING_TYPE);
         String[] voiceIds = new String[voiceIdsList.size()];
-        for(int i=0;i<voiceIdsList.size();i++){
+        for (int i = 0; i < voiceIdsList.size(); i++) {
             voiceIds[i] = voiceIdsList.getString(i);
         }
         return new Character(name, shortName, greetingInfo, description, skinURL, voiceIds);
     }
 
-    public static void writeToNBT(NbtCompound compound, Character character){
+    public static void writeToNBT(NbtCompound compound, Character character) {
         compound.putString("name", character.name);
         compound.putString("shortName", character.shortName);
         compound.putString("greetingInfo", character.greetingInfo);
         compound.putString("description", character.description);
         compound.putString("skinURL", character.skinURL);
         NbtList voiceIds = new NbtList();
-        for(String id: character.voiceIds){
+        for (String id : character.voiceIds) {
             voiceIds.add(NbtString.of(id));
         }
         compound.put("voiceIds", voiceIds);

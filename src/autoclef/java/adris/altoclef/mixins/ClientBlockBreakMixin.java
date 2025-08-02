@@ -15,17 +15,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin({ClientPlayerInteractionManager.class})
 public final class ClientBlockBreakMixin {
-  @Unique
-  private static int breakCancelFrames;
-  
-  @Inject(method = {"updateBlockBreakingProgress"}, at = {@At("HEAD")})
-  private void onBreakUpdate(BlockPos pos, Direction direction, CallbackInfoReturnable<Boolean> ci) {
-    EventBus.publish(new BlockBreakingEvent(pos));
-  }
-  
-  @Inject(method = {"cancelBlockBreaking"}, at = {@At("HEAD")})
-  private void cancelBlockBreaking(CallbackInfo ci) {
-    if (breakCancelFrames-- == 0)
-      EventBus.publish(new BlockBreakingCancelEvent()); 
-  }
+    @Unique
+    private static int breakCancelFrames;
+
+    @Inject(method = {"updateBlockBreakingProgress"}, at = {@At("HEAD")})
+    private void onBreakUpdate(BlockPos pos, Direction direction, CallbackInfoReturnable<Boolean> ci) {
+        EventBus.publish(new BlockBreakingEvent(pos));
+    }
+
+    @Inject(method = {"cancelBlockBreaking"}, at = {@At("HEAD")})
+    private void cancelBlockBreaking(CallbackInfo ci) {
+        if (breakCancelFrames-- == 0)
+            EventBus.publish(new BlockBreakingCancelEvent());
+    }
 }

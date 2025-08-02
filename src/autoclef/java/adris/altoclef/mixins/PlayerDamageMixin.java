@@ -11,8 +11,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin({LivingEntity.class})
 public class PlayerDamageMixin {
-  @Inject(method = {"damage"}, at = {@At("HEAD")})
-  public void applyDamage(DamageSource source, float amount, CallbackInfoReturnable<Boolean> ci) {
-    EventBus.publish(new PlayerDamageEvent((LivingEntity)(Object)this, source, amount));
-  }
+    @Inject(method = {"damage"}, at = {@At("HEAD")})
+    public void applyDamage(DamageSource source, float amount, CallbackInfoReturnable<Boolean> ci) {
+        EventBus.publish(new PlayerDamageEvent((LivingEntity) (Object) this, source, amount));
+    }
 }

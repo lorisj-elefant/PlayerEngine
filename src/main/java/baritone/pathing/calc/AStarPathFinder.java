@@ -92,7 +92,8 @@ public final class AStarPathFinder extends AbstractNodeCostSearch {
                     // Not busy waiting, only artificially slowing the loop down
                     //noinspection BusyWait
                     Thread.sleep(settings.slowPathTimeDelayMS.get());
-                } catch (InterruptedException ignored) {}
+                } catch (InterruptedException ignored) {
+                }
             }
             PathNode currentNode = openSet.removeLowest();
             mostRecentConsidered = currentNode;

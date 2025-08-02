@@ -38,14 +38,14 @@ public class HTTPUtils {
 
     public static Map<String, JsonElement> sendRequest(String endpoint, boolean postRequest, JsonObject requestBody) throws Exception {
         URL url = (new URI(BASE_URL + endpoint)).toURL();
-        HttpURLConnection connection = (HttpURLConnection)url.openConnection();
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod(postRequest ? "POST" : "GET");
         connection.setRequestProperty("Content-Type", "application/json; charset=utf-8");
         connection.setRequestProperty("Accept", "application/json; charset=utf-8");
         connection.setRequestProperty("player2-game-key", "cnpc-ai-addon");
         if (postRequest && requestBody != null) {
             connection.setDoOutput(true);
-            try(OutputStream os = connection.getOutputStream()) {
+            try (OutputStream os = connection.getOutputStream()) {
                 byte[] input = requestBody.toString().getBytes(StandardCharsets.UTF_8);
                 os.write(input, 0, input.length);
             } catch (Throwable ignored) {

@@ -7,47 +7,47 @@ import java.util.List;
 
 public abstract class TaskChain {
 
-  protected AltoClefController controller;
+    protected AltoClefController controller;
 
-  private final List<Task> cachedTaskChain = new ArrayList<>();
+    private final List<Task> cachedTaskChain = new ArrayList<>();
 
-  public TaskChain(TaskRunner runner) {
-    runner.addTaskChain(this);
-    controller = runner.getMod();
-  }
+    public TaskChain(TaskRunner runner) {
+        runner.addTaskChain(this);
+        controller = runner.getMod();
+    }
 
-  public void tick() {
-    cachedTaskChain.clear();
-    onTick();
-  }
+    public void tick() {
+        cachedTaskChain.clear();
+        onTick();
+    }
 
-  public void stop() {
-    cachedTaskChain.clear();
-    onStop();
-  }
+    public void stop() {
+        cachedTaskChain.clear();
+        onStop();
+    }
 
-  protected abstract void onStop();
+    protected abstract void onStop();
 
-  public abstract void onInterrupt(TaskChain other);
+    public abstract void onInterrupt(TaskChain other);
 
-  protected abstract void onTick();
+    protected abstract void onTick();
 
-  public abstract float getPriority();
+    public abstract float getPriority();
 
-  public abstract boolean isActive();
+    public abstract boolean isActive();
 
-  public abstract String getName();
+    public abstract String getName();
 
-  public List<Task> getTasks() {
-    return cachedTaskChain;
-  }
+    public List<Task> getTasks() {
+        return cachedTaskChain;
+    }
 
-  void addTaskToChain(Task task) {
-    cachedTaskChain.add(task);
-  }
+    void addTaskToChain(Task task) {
+        cachedTaskChain.add(task);
+    }
 
-  public String toString() {
-    return getName();
-  }
+    public String toString() {
+        return getName();
+    }
 
 }

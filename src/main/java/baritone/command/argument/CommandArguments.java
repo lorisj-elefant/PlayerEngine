@@ -30,7 +30,8 @@ import java.util.regex.Pattern;
  */
 public final class CommandArguments {
 
-    private CommandArguments() {}
+    private CommandArguments() {
+    }
 
     private static final Pattern ARG_PATTERN = Pattern.compile("\\S+");
 

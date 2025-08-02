@@ -14,152 +14,152 @@ import net.minecraft.entity.Entity;
 import net.minecraft.util.math.BlockPos;
 
 public class GetToEntityTask extends Task implements ITaskRequiresGrounded {
-  private final MovementProgressChecker stuckCheck = new MovementProgressChecker();
-  
-  private final MovementProgressChecker progress = new MovementProgressChecker();
-  
-  private final TimeoutWanderTask wanderTask = new TimeoutWanderTask(5.0F);
-  
-  private final Entity entity;
-  
-  private final double closeEnoughDistance;
-  
-  Block[] annoyingBlocks = new Block[] { 
-      Blocks.VINE, Blocks.NETHER_SPROUTS, Blocks.CAVE_VINES, Blocks.CAVE_VINES_PLANT, Blocks.TWISTING_VINES, Blocks.TWISTING_VINES_PLANT, Blocks.WEEPING_VINES_PLANT, Blocks.LADDER, Blocks.BIG_DRIPLEAF, Blocks.BIG_DRIPLEAF_STEM,
-      Blocks.SMALL_DRIPLEAF, Blocks.TALL_GRASS, Blocks.GRASS, Blocks.SWEET_BERRY_BUSH };
-  
-  private Task unstuckTask = null;
-  
-  public GetToEntityTask(Entity entity, double closeEnoughDistance) {
-    this .entity = entity;
-    this .closeEnoughDistance = closeEnoughDistance;
-  }
-  
-  public GetToEntityTask(Entity entity) {
-    this(entity, 1.0D);
-  }
-  
-  private static BlockPos[] generateSides(BlockPos pos) {
-    return new BlockPos[] { pos
-        .add(1, 0, 0), pos
-        .add(-1, 0, 0), pos
-        .add(0, 0, 1), pos
-        .add(0, 0, -1), pos
-        .add(1, 0, -1), pos
-        .add(1, 0, 1), pos
-        .add(-1, 0, -1), pos
-        .add(-1, 0, 1) };
-  }
-  
-  private boolean isAnnoying(AltoClefController mod, BlockPos pos) {
-    if (this.annoyingBlocks != null) {
-      Block[] arrayOfBlock = this.annoyingBlocks;
-      int i = arrayOfBlock.length;
-      byte b = 0;
-      if (b < i) {
-        Block AnnoyingBlocks = arrayOfBlock[b];
-        return (mod.getWorld().getBlockState(pos).getBlock() == AnnoyingBlocks || mod
-          .getWorld().getBlockState(pos).getBlock() instanceof net.minecraft.block.DoorBlock || mod
-          .getWorld().getBlockState(pos).getBlock() instanceof net.minecraft.block.FenceBlock || mod
-          .getWorld().getBlockState(pos).getBlock() instanceof net.minecraft.block.FenceGateBlock || mod
-          .getWorld().getBlockState(pos).getBlock() instanceof net.minecraft.block.FlowerBlock);
-      } 
-    } 
-    return false;
-  }
-  
-  private BlockPos stuckInBlock(AltoClefController mod) {
-    BlockPos p = mod.getPlayer().getBlockPos();
-    if (isAnnoying(mod, p))
-      return p; 
-    if (isAnnoying(mod, p.up()))
-      return p.up(); 
-    BlockPos[] toCheck = generateSides(p);
-    for (BlockPos check : toCheck) {
-      if (isAnnoying(mod, check))
-        return check; 
-    } 
-    BlockPos[] toCheckHigh = generateSides(p.up());
-    for (BlockPos check : toCheckHigh) {
-      if (isAnnoying(mod, check))
-        return check; 
-    } 
-    return null;
-  }
-  
-  private Task getFenceUnstuckTask() {
-    return (Task)new SafeRandomShimmyTask();
-  }
-  
-  protected void onStart() {
-    controller.getBaritone().getPathingBehavior().forceCancel();
-    this .progress.reset();
-    this.stuckCheck.reset();
-    this .wanderTask.resetWander();
-  }
-  
-  protected Task onTick() {
-    AltoClefController mod = controller;
-    if (mod.getBaritone().getPathingBehavior().isPathing())
-      this .progress.reset(); 
-    if (WorldHelper.isInNetherPortal(controller)) {
-      if (!mod.getBaritone().getPathingBehavior().isPathing()) {
-        setDebugState("Getting out from nether portal");
-        mod.getInputControls().hold(Input.SNEAK);
-        mod.getInputControls().hold(Input.MOVE_FORWARD);
+    private final MovementProgressChecker stuckCheck = new MovementProgressChecker();
+
+    private final MovementProgressChecker progress = new MovementProgressChecker();
+
+    private final TimeoutWanderTask wanderTask = new TimeoutWanderTask(5.0F);
+
+    private final Entity entity;
+
+    private final double closeEnoughDistance;
+
+    Block[] annoyingBlocks = new Block[]{
+            Blocks.VINE, Blocks.NETHER_SPROUTS, Blocks.CAVE_VINES, Blocks.CAVE_VINES_PLANT, Blocks.TWISTING_VINES, Blocks.TWISTING_VINES_PLANT, Blocks.WEEPING_VINES_PLANT, Blocks.LADDER, Blocks.BIG_DRIPLEAF, Blocks.BIG_DRIPLEAF_STEM,
+            Blocks.SMALL_DRIPLEAF, Blocks.TALL_GRASS, Blocks.GRASS, Blocks.SWEET_BERRY_BUSH};
+
+    private Task unstuckTask = null;
+
+    public GetToEntityTask(Entity entity, double closeEnoughDistance) {
+        this.entity = entity;
+        this.closeEnoughDistance = closeEnoughDistance;
+    }
+
+    public GetToEntityTask(Entity entity) {
+        this(entity, 1.0D);
+    }
+
+    private static BlockPos[] generateSides(BlockPos pos) {
+        return new BlockPos[]{pos
+                .add(1, 0, 0), pos
+                .add(-1, 0, 0), pos
+                .add(0, 0, 1), pos
+                .add(0, 0, -1), pos
+                .add(1, 0, -1), pos
+                .add(1, 0, 1), pos
+                .add(-1, 0, -1), pos
+                .add(-1, 0, 1)};
+    }
+
+    private boolean isAnnoying(AltoClefController mod, BlockPos pos) {
+        if (this.annoyingBlocks != null) {
+            Block[] arrayOfBlock = this.annoyingBlocks;
+            int i = arrayOfBlock.length;
+            byte b = 0;
+            if (b < i) {
+                Block AnnoyingBlocks = arrayOfBlock[b];
+                return (mod.getWorld().getBlockState(pos).getBlock() == AnnoyingBlocks || mod
+                        .getWorld().getBlockState(pos).getBlock() instanceof net.minecraft.block.DoorBlock || mod
+                        .getWorld().getBlockState(pos).getBlock() instanceof net.minecraft.block.FenceBlock || mod
+                        .getWorld().getBlockState(pos).getBlock() instanceof net.minecraft.block.FenceGateBlock || mod
+                        .getWorld().getBlockState(pos).getBlock() instanceof net.minecraft.block.FlowerBlock);
+            }
+        }
+        return false;
+    }
+
+    private BlockPos stuckInBlock(AltoClefController mod) {
+        BlockPos p = mod.getPlayer().getBlockPos();
+        if (isAnnoying(mod, p))
+            return p;
+        if (isAnnoying(mod, p.up()))
+            return p.up();
+        BlockPos[] toCheck = generateSides(p);
+        for (BlockPos check : toCheck) {
+            if (isAnnoying(mod, check))
+                return check;
+        }
+        BlockPos[] toCheckHigh = generateSides(p.up());
+        for (BlockPos check : toCheckHigh) {
+            if (isAnnoying(mod, check))
+                return check;
+        }
         return null;
-      } 
-      mod.getInputControls().release(Input.SNEAK);
-      mod.getInputControls().release(Input.MOVE_BACK);
-      mod.getInputControls().release(Input.MOVE_FORWARD);
-    } else if (mod.getBaritone().getPathingBehavior().isPathing()) {
-      mod.getInputControls().release(Input.SNEAK);
-      mod.getInputControls().release(Input.MOVE_BACK);
-      mod.getInputControls().release(Input.MOVE_FORWARD);
-    } 
-    if (this .unstuckTask != null && this .unstuckTask.isActive() && !this .unstuckTask.isFinished() && stuckInBlock(mod) != null) {
-      setDebugState("Getting unstuck from block.");
-      this.stuckCheck.reset();
-      mod.getBaritone().getCustomGoalProcess().onLostControl();
-      mod.getBaritone().getExploreProcess().onLostControl();
-      return this .unstuckTask;
-    } 
-    if (!this .progress.check(mod) || !this.stuckCheck.check(mod)) {
-      BlockPos blockStuck = stuckInBlock(mod);
-      if (blockStuck != null) {
-        this .unstuckTask = getFenceUnstuckTask();
-        return this .unstuckTask;
-      } 
-      this.stuckCheck.reset();
-    } 
-    if (this .wanderTask.isActive() && !this .wanderTask.isFinished()) {
-      this .progress.reset();
-      setDebugState("Failed to get to target, wandering for a bit.");
-      return (Task)this .wanderTask;
-    } 
-    if (!mod.getBaritone().getCustomGoalProcess().isActive())
-      mod.getBaritone().getCustomGoalProcess().setGoalAndPath((Goal)new GoalFollowEntity(this .entity, this .closeEnoughDistance)); 
-    if (mod.getPlayer().isInRange(this .entity, this .closeEnoughDistance))
-      this .progress.reset(); 
-    if (!this .progress.check(mod))
-      return (Task)this .wanderTask; 
-    setDebugState("Going to entity");
-    return null;
-  }
-  
-  protected void onStop(Task interruptTask) {
-    controller.getBaritone().getPathingBehavior().forceCancel();
-  }
-  
-  protected boolean isEqual(Task other) {
-    if (other instanceof adris.altoclef.tasks.movement.GetToEntityTask) {
-      adris.altoclef.tasks.movement.GetToEntityTask task = (adris.altoclef.tasks.movement.GetToEntityTask)other;
-      return (task .entity.equals(this .entity) && Math.abs(task .closeEnoughDistance - this .closeEnoughDistance) < 0.1D);
-    } 
-    return false;
-  }
-  
-  protected String toDebugString() {
-    return "Approach entity " + this .entity.getType().getTranslationKey();
-  }
+    }
+
+    private Task getFenceUnstuckTask() {
+        return (Task) new SafeRandomShimmyTask();
+    }
+
+    protected void onStart() {
+        controller.getBaritone().getPathingBehavior().forceCancel();
+        this.progress.reset();
+        this.stuckCheck.reset();
+        this.wanderTask.resetWander();
+    }
+
+    protected Task onTick() {
+        AltoClefController mod = controller;
+        if (mod.getBaritone().getPathingBehavior().isPathing())
+            this.progress.reset();
+        if (WorldHelper.isInNetherPortal(controller)) {
+            if (!mod.getBaritone().getPathingBehavior().isPathing()) {
+                setDebugState("Getting out from nether portal");
+                mod.getInputControls().hold(Input.SNEAK);
+                mod.getInputControls().hold(Input.MOVE_FORWARD);
+                return null;
+            }
+            mod.getInputControls().release(Input.SNEAK);
+            mod.getInputControls().release(Input.MOVE_BACK);
+            mod.getInputControls().release(Input.MOVE_FORWARD);
+        } else if (mod.getBaritone().getPathingBehavior().isPathing()) {
+            mod.getInputControls().release(Input.SNEAK);
+            mod.getInputControls().release(Input.MOVE_BACK);
+            mod.getInputControls().release(Input.MOVE_FORWARD);
+        }
+        if (this.unstuckTask != null && this.unstuckTask.isActive() && !this.unstuckTask.isFinished() && stuckInBlock(mod) != null) {
+            setDebugState("Getting unstuck from block.");
+            this.stuckCheck.reset();
+            mod.getBaritone().getCustomGoalProcess().onLostControl();
+            mod.getBaritone().getExploreProcess().onLostControl();
+            return this.unstuckTask;
+        }
+        if (!this.progress.check(mod) || !this.stuckCheck.check(mod)) {
+            BlockPos blockStuck = stuckInBlock(mod);
+            if (blockStuck != null) {
+                this.unstuckTask = getFenceUnstuckTask();
+                return this.unstuckTask;
+            }
+            this.stuckCheck.reset();
+        }
+        if (this.wanderTask.isActive() && !this.wanderTask.isFinished()) {
+            this.progress.reset();
+            setDebugState("Failed to get to target, wandering for a bit.");
+            return (Task) this.wanderTask;
+        }
+        if (!mod.getBaritone().getCustomGoalProcess().isActive())
+            mod.getBaritone().getCustomGoalProcess().setGoalAndPath((Goal) new GoalFollowEntity(this.entity, this.closeEnoughDistance));
+        if (mod.getPlayer().isInRange(this.entity, this.closeEnoughDistance))
+            this.progress.reset();
+        if (!this.progress.check(mod))
+            return (Task) this.wanderTask;
+        setDebugState("Going to entity");
+        return null;
+    }
+
+    protected void onStop(Task interruptTask) {
+        controller.getBaritone().getPathingBehavior().forceCancel();
+    }
+
+    protected boolean isEqual(Task other) {
+        if (other instanceof adris.altoclef.tasks.movement.GetToEntityTask) {
+            adris.altoclef.tasks.movement.GetToEntityTask task = (adris.altoclef.tasks.movement.GetToEntityTask) other;
+            return (task.entity.equals(this.entity) && Math.abs(task.closeEnoughDistance - this.closeEnoughDistance) < 0.1D);
+        }
+        return false;
+    }
+
+    protected String toDebugString() {
+        return "Approach entity " + this.entity.getType().getTranslationKey();
+    }
 }

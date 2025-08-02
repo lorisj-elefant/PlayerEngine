@@ -30,7 +30,8 @@ import net.minecraft.world.RaycastContext;
 public final class RayTraceUtils {
     public static RaycastContext.FluidHandling fluidHandling = RaycastContext.FluidHandling.NONE;
 
-    private RayTraceUtils() {}
+    private RayTraceUtils() {
+    }
 
     /**
      * Performs a block raytrace with the specified rotations. This should only be used when

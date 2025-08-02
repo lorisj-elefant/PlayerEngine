@@ -69,7 +69,7 @@ public class EntityContext implements IEntityContext {
 
     @Override
     public @Nullable LivingEntityHungerManager hungerManager() {
-        return entity instanceof IHungerManagerProvider ? ((IHungerManagerProvider)entity).getHungerManager() : null;
+        return entity instanceof IHungerManagerProvider ? ((IHungerManagerProvider) entity).getHungerManager() : null;
     }
 
     @Override

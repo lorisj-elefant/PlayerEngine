@@ -20,7 +20,10 @@ package baritone.utils;
 import baritone.Automatone;
 import org.apache.commons.lang3.SystemUtils;
 
-import java.awt.*;
+import java.awt.Image;
+import java.awt.SystemTray;
+import java.awt.Toolkit;
+import java.awt.TrayIcon;
 import java.io.IOException;
 
 /**

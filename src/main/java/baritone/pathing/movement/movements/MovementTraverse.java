@@ -32,7 +32,12 @@ import baritone.pathing.movement.MovementState;
 import baritone.utils.BlockStateInterface;
 import baritone.utils.pathing.MutableMoveResult;
 import com.google.common.collect.ImmutableSet;
-import net.minecraft.block.*;
+import net.minecraft.block.AirBlock;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.DoorBlock;
+import net.minecraft.block.FenceGateBlock;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityPose;
@@ -149,7 +154,7 @@ public class MovementTraverse extends Movement {
                 water = true;
             } else {
                 for (int dy = 0; dy < context.height - 1; dy++) {
-                    if (MovementHelper.isWater(context.get(destX, y+dy, destZ))) {
+                    if (MovementHelper.isWater(context.get(destX, y + dy, destZ))) {
                         WC = context.waterWalkSpeed;
                         water = true;
                         break;
@@ -192,7 +197,7 @@ public class MovementTraverse extends Movement {
             }
             result.cost = WC + hardness;
             result.oxygenCost = context.oxygenCost(WC / 2 + hardness, srcHeadState)
-                        + context.oxygenCost(WC / 2, destHeadState);
+                    + context.oxygenCost(WC / 2, destHeadState);
         } else {//this is a bridge, so we need to place a block
             if (srcOnBlock == Blocks.LADDER || srcOnBlock == Blocks.VINE) {
                 return;
@@ -200,7 +205,7 @@ public class MovementTraverse extends Movement {
             if (MovementHelper.isReplaceable(destX, y - 1, destZ, destOn, context.bsi)) {
                 boolean throughWater = false;
                 for (int dy = 0; dy < context.height; dy++) {
-                    if (MovementHelper.isWater(context.get(destX, y+dy, destZ))) {
+                    if (MovementHelper.isWater(context.get(destX, y + dy, destZ))) {
                         throughWater = true;
                         if (MovementHelper.isWater(destOn)) {
                             // this happens when assume walk on water is true and this is a traverse in water, which isn't allowed

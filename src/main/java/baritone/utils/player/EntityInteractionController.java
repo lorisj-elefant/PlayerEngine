@@ -97,8 +97,8 @@ public class EntityInteractionController implements IInteractionController {
         return (getInteractionManager()).isMining() || this.player.getWorld().isAir(loc);
     }
 
-    public LivingEntityInteractionManager getInteractionManager(){
-        if(player instanceof IInteractionManagerProvider managerProvider)
+    public LivingEntityInteractionManager getInteractionManager() {
+        if (player instanceof IInteractionManagerProvider managerProvider)
             return managerProvider.getInteractionManager();
         return null;
     }

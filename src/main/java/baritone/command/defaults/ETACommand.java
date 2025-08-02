@@ -18,13 +18,13 @@
 package baritone.command.defaults;
 
 import baritone.api.IBaritone;
-import baritone.api.pathing.calc.IPathingControlManager;
-import baritone.api.process.IBaritoneProcess;
 import baritone.api.behavior.IPathingBehavior;
 import baritone.api.command.Command;
+import baritone.api.command.argument.IArgConsumer;
 import baritone.api.command.exception.CommandException;
 import baritone.api.command.exception.CommandInvalidStateException;
-import baritone.api.command.argument.IArgConsumer;
+import baritone.api.pathing.calc.IPathingControlManager;
+import baritone.api.process.IBaritoneProcess;
 import net.minecraft.server.command.ServerCommandSource;
 
 import java.util.Arrays;
@@ -48,7 +48,7 @@ public class ETACommand extends Command {
         IPathingBehavior pathingBehavior = baritone.getPathingBehavior();
         logDirect(source, String.format(
                 "Next segment: %.2f\n" +
-                "Goal: %.2f",
+                        "Goal: %.2f",
                 pathingBehavior.ticksRemainingInSegment().orElse(-1.0),
                 pathingBehavior.estimatedTicksToGoal().orElse(-1.0)
         ));

@@ -5,55 +5,55 @@ import adris.altoclef.Debug;
 
 public abstract class Command {
 
-  private final ArgParser parser;
-  private final String name;
-  private final String description;
-  private AltoClefController mod;
-  private Runnable onFinish = null;
+    private final ArgParser parser;
+    private final String name;
+    private final String description;
+    private AltoClefController mod;
+    private Runnable onFinish = null;
 
-  public Command(String name, String description, ArgBase... args) {
-    this.name = name;
-    this.description = description;
-    parser = new ArgParser(args);
-  }
-
-  public void run(AltoClefController mod, String line, Runnable onFinish) throws CommandException {
-    this.onFinish = onFinish;
-    this.mod = mod;
-    parser.loadArgs(line, true);
-    call(mod, parser);
-  }
-
-  protected void finish() {
-    if (onFinish != null)
-      //noinspection unchecked
-      onFinish.run();
-  }
-
-  public String getHelpRepresentation() {
-    StringBuilder sb = new StringBuilder(name);
-    for (ArgBase arg : parser.getArgs()) {
-      sb.append(" ");
-      sb.append(arg.getHelpRepresentation());
+    public Command(String name, String description, ArgBase... args) {
+        this.name = name;
+        this.description = description;
+        parser = new ArgParser(args);
     }
-    return sb.toString();
-  }
 
-  protected void log(Object message) {
-    Debug.logMessage(message.toString());
-  }
+    public void run(AltoClefController mod, String line, Runnable onFinish) throws CommandException {
+        this.onFinish = onFinish;
+        this.mod = mod;
+        parser.loadArgs(line, true);
+        call(mod, parser);
+    }
 
-  protected void logError(Object message) {
-    Debug.logError(message.toString());
-  }
+    protected void finish() {
+        if (onFinish != null)
+            //noinspection unchecked
+            onFinish.run();
+    }
 
-  protected abstract void call(AltoClefController mod, ArgParser parser) throws CommandException;
+    public String getHelpRepresentation() {
+        StringBuilder sb = new StringBuilder(name);
+        for (ArgBase arg : parser.getArgs()) {
+            sb.append(" ");
+            sb.append(arg.getHelpRepresentation());
+        }
+        return sb.toString();
+    }
 
-  public String getName() {
-    return name;
-  }
+    protected void log(Object message) {
+        Debug.logMessage(message.toString());
+    }
 
-  public String getDescription() {
-    return description;
-  }
+    protected void logError(Object message) {
+        Debug.logError(message.toString());
+    }
+
+    protected abstract void call(AltoClefController mod, ArgParser parser) throws CommandException;
+
+    public String getName() {
+        return name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
 }

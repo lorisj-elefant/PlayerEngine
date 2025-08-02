@@ -5,9 +5,9 @@ package adris.altoclef.tasksystem;
  */
 public interface ITaskCanForce {
 
-  /**
-   * @param interruptingCandidate This task will try to interrupt our current task.
-   * @return Whether the task should forcefully keep going, even when the parent decides it shouldn't
-   */
-  boolean shouldForce(Task interruptingCandidate);
+    /**
+     * @param interruptingCandidate This task will try to interrupt our current task.
+     * @return Whether the task should forcefully keep going, even when the parent decides it shouldn't
+     */
+    boolean shouldForce(Task interruptingCandidate);
 }

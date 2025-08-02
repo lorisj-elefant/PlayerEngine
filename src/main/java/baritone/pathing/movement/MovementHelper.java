@@ -333,11 +333,11 @@ public interface MovementHelper extends ActionCosts {
      * through? Includes water because we know that we automatically jump on
      * water
      *
-     * @param bsi   Block state provider
-     * @param x     The block's x position
-     * @param y     The block's y position
-     * @param z     The block's z position
-     * @param state The state of the block at the specified location
+     * @param bsi      Block state provider
+     * @param x        The block's x position
+     * @param y        The block's y position
+     * @param z        The block's z position
+     * @param state    The state of the block at the specified location
      * @param settings
      * @return Whether or not the specified block can be walked on
      */

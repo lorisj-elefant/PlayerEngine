@@ -52,7 +52,7 @@ public class CommandAlias extends Command {
 
     @Override
     public Stream<String> tabComplete(String label, IArgConsumer args) {
-         return ((ArgConsumer) args).getBaritone().getCommandManager().tabComplete(String.format("%s %s", target, args.rawRest()));
+        return ((ArgConsumer) args).getBaritone().getCommandManager().tabComplete(String.format("%s %s", target, args.rawRest()));
     }
 
     @Override

@@ -11,8 +11,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin({LivingEntity.class})
 public abstract class EntityAnimationSwungMixin {
-  @Inject(method = {"swingHand(Lnet/minecraft/util/Hand;)V"}, at = {@At("HEAD")})
-  private void onEntityAnimation(Hand hand, CallbackInfo ci) {
-    EventBus.publish(new EntitySwungEvent((LivingEntity)(Object)this));
-  }
+    @Inject(method = {"swingHand(Lnet/minecraft/util/Hand;)V"}, at = {@At("HEAD")})
+    private void onEntityAnimation(Hand hand, CallbackInfo ci) {
+        EventBus.publish(new EntitySwungEvent((LivingEntity) (Object) this));
+    }
 }

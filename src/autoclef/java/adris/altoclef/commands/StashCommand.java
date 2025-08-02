@@ -1,7 +1,11 @@
 package adris.altoclef.commands;
 
 import adris.altoclef.AltoClefController;
-import adris.altoclef.commandsystem.*;
+import adris.altoclef.commandsystem.Arg;
+import adris.altoclef.commandsystem.ArgParser;
+import adris.altoclef.commandsystem.Command;
+import adris.altoclef.commandsystem.CommandException;
+import adris.altoclef.commandsystem.ItemList;
 import adris.altoclef.tasks.container.StoreInStashTask;
 import adris.altoclef.util.BlockRange;
 import adris.altoclef.util.ItemTarget;

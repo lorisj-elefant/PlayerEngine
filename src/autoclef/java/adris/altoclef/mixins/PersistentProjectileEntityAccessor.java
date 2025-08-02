@@ -6,6 +6,6 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 
 @Mixin({PersistentProjectileEntity.class})
 public interface PersistentProjectileEntityAccessor {
-  @Accessor("inGround")
-  boolean isInGround();
+    @Accessor("inGround")
+    boolean isInGround();
 }

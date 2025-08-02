@@ -84,19 +84,19 @@ public final class BlockOptionalMeta {
 
     private static IntSet getStateHashes(Set<BlockState> blockstates) {
         return blockstates.stream()
-                        .map(BlockState::hashCode)
-                        .collect(Collectors.toCollection(IntOpenHashSet::new));
+                .map(BlockState::hashCode)
+                .collect(Collectors.toCollection(IntOpenHashSet::new));
     }
 
     private static IntSet getStackHashes(ServerWorld world, Set<BlockState> blockstates) {
         //noinspection ConstantConditions
         return blockstates.stream()
-                        .flatMap(state -> drops(world, state.getBlock())
-                                .stream()
-                                .map(item -> new ItemStack(item, 1))
-                        )
-                        .map(stack -> ((IItemStack) (Object) stack).getBaritoneHash())
-                        .collect(Collectors.toCollection(IntOpenHashSet::new));
+                .flatMap(state -> drops(world, state.getBlock())
+                        .stream()
+                        .map(item -> new ItemStack(item, 1))
+                )
+                .map(stack -> ((IItemStack) (Object) stack).getBaritoneHash())
+                .collect(Collectors.toCollection(IntOpenHashSet::new));
     }
 
     public Block getBlock() {
@@ -144,15 +144,15 @@ public final class BlockOptionalMeta {
                 List<Item> items = new ArrayList<>();
 
                 world.getServer().getLootManager().getLootTable(lootTableLocation).generateLoot(
-                    new LootContext.Builder(new LootContextParameterSet.Builder(world)
-                            .add(LootContextParameters.ORIGIN, Vec3d.of(BlockPos.ZERO))
-                            .add(LootContextParameters.TOOL, ItemStack.EMPTY)
-                            .addOptional(LootContextParameters.BLOCK_ENTITY, null)
-                            .add(LootContextParameters.BLOCK_STATE, block.getDefaultState())
-                            .build(LootContextTypes.BLOCK))
-                        .withRandomSeed(world.getSeed())
-                        .build(null),
-                    stack -> items.add(stack.getItem())
+                        new LootContext.Builder(new LootContextParameterSet.Builder(world)
+                                .add(LootContextParameters.ORIGIN, Vec3d.of(BlockPos.ZERO))
+                                .add(LootContextParameters.TOOL, ItemStack.EMPTY)
+                                .addOptional(LootContextParameters.BLOCK_ENTITY, null)
+                                .add(LootContextParameters.BLOCK_STATE, block.getDefaultState())
+                                .build(LootContextTypes.BLOCK))
+                                .withRandomSeed(world.getSeed())
+                                .build(null),
+                        stack -> items.add(stack.getItem())
                 );
                 return items;
             }

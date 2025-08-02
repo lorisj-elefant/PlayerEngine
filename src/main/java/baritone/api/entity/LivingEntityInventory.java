@@ -68,7 +68,7 @@ public class LivingEntityInventory implements Inventory, Nameable {
     }
 
     public ItemStack getMainHandStack() {
-        return isValidHotbarIndex(this.selectedSlot) ? (ItemStack)this.main.get(this.selectedSlot) : ItemStack.EMPTY;
+        return isValidHotbarIndex(this.selectedSlot) ? (ItemStack) this.main.get(this.selectedSlot) : ItemStack.EMPTY;
     }
 
     public static int getHotbarSize() {
@@ -80,8 +80,8 @@ public class LivingEntityInventory implements Inventory, Nameable {
     }
 
     public int getEmptySlot() {
-        for(int i = 0; i < this.main.size(); ++i) {
-            if (((ItemStack)this.main.get(i)).isEmpty()) {
+        for (int i = 0; i < this.main.size(); ++i) {
+            if (((ItemStack) this.main.get(i)).isEmpty()) {
                 return i;
             }
         }
@@ -96,10 +96,10 @@ public class LivingEntityInventory implements Inventory, Nameable {
         } else {
             if (i == -1) {
                 this.selectedSlot = this.getSwappableHotbarSlot();
-                if (!((ItemStack)this.main.get(this.selectedSlot)).isEmpty()) {
+                if (!((ItemStack) this.main.get(this.selectedSlot)).isEmpty()) {
                     int j = this.getEmptySlot();
                     if (j != -1) {
-                        this.main.set(j, (ItemStack)this.main.get(this.selectedSlot));
+                        this.main.set(j, (ItemStack) this.main.get(this.selectedSlot));
                     }
                 }
 
@@ -113,8 +113,8 @@ public class LivingEntityInventory implements Inventory, Nameable {
 
     public void swapSlotWithHotbar(int slot) {
         this.selectedSlot = this.getSwappableHotbarSlot();
-        ItemStack itemStack = (ItemStack)this.main.get(this.selectedSlot);
-        this.main.set(this.selectedSlot, (ItemStack)this.main.get(slot));
+        ItemStack itemStack = (ItemStack) this.main.get(this.selectedSlot);
+        this.main.set(this.selectedSlot, (ItemStack) this.main.get(slot));
         this.main.set(slot, itemStack);
     }
 
@@ -123,8 +123,8 @@ public class LivingEntityInventory implements Inventory, Nameable {
     }
 
     public int getSlotWithStack(ItemStack stack) {
-        for(int i = 0; i < this.main.size(); ++i) {
-            if (!((ItemStack)this.main.get(i)).isEmpty() && ItemStack.canCombine(stack, (ItemStack)this.main.get(i))) {
+        for (int i = 0; i < this.main.size(); ++i) {
+            if (!((ItemStack) this.main.get(i)).isEmpty() && ItemStack.canCombine(stack, (ItemStack) this.main.get(i))) {
                 return i;
             }
         }
@@ -133,9 +133,9 @@ public class LivingEntityInventory implements Inventory, Nameable {
     }
 
     public int indexOf(ItemStack stack) {
-        for(int i = 0; i < this.main.size(); ++i) {
-            ItemStack itemStack = (ItemStack)this.main.get(i);
-            if (!((ItemStack)this.main.get(i)).isEmpty() && ItemStack.canCombine(stack, (ItemStack)this.main.get(i)) && !((ItemStack)this.main.get(i)).isDamaged() && !itemStack.hasEnchantments() && !itemStack.hasCustomName()) {
+        for (int i = 0; i < this.main.size(); ++i) {
+            ItemStack itemStack = (ItemStack) this.main.get(i);
+            if (!((ItemStack) this.main.get(i)).isEmpty() && ItemStack.canCombine(stack, (ItemStack) this.main.get(i)) && !((ItemStack) this.main.get(i)).isDamaged() && !itemStack.hasEnchantments() && !itemStack.hasCustomName()) {
                 return i;
             }
         }
@@ -144,16 +144,16 @@ public class LivingEntityInventory implements Inventory, Nameable {
     }
 
     public int getSwappableHotbarSlot() {
-        for(int i = 0; i < 9; ++i) {
+        for (int i = 0; i < 9; ++i) {
             int j = (this.selectedSlot + i) % 9;
-            if (((ItemStack)this.main.get(j)).isEmpty()) {
+            if (((ItemStack) this.main.get(j)).isEmpty()) {
                 return j;
             }
         }
 
-        for(int i = 0; i < 9; ++i) {
+        for (int i = 0; i < 9; ++i) {
             int j = (this.selectedSlot + i) % 9;
-            if (!((ItemStack)this.main.get(j)).hasEnchantments()) {
+            if (!((ItemStack) this.main.get(j)).hasEnchantments()) {
                 return j;
             }
         }
@@ -162,12 +162,12 @@ public class LivingEntityInventory implements Inventory, Nameable {
     }
 
     public void scrollInHotbar(double scrollAmount) {
-        int i = (int)Math.signum(scrollAmount);
+        int i = (int) Math.signum(scrollAmount);
 
-        for(this.selectedSlot -= i; this.selectedSlot < 0; this.selectedSlot += 9) {
+        for (this.selectedSlot -= i; this.selectedSlot < 0; this.selectedSlot += 9) {
         }
 
-        while(this.selectedSlot >= 9) {
+        while (this.selectedSlot >= 9) {
             this.selectedSlot -= 9;
         }
 
@@ -234,8 +234,8 @@ public class LivingEntityInventory implements Inventory, Nameable {
         } else if (this.canStackAddMore(this.getStack(40), stack)) {
             return 40;
         } else {
-            for(int i = 0; i < this.main.size(); ++i) {
-                if (this.canStackAddMore((ItemStack)this.main.get(i), stack)) {
+            for (int i = 0; i < this.main.size(); ++i) {
+                if (this.canStackAddMore((ItemStack) this.main.get(i), stack)) {
                     return i;
                 }
             }
@@ -245,10 +245,10 @@ public class LivingEntityInventory implements Inventory, Nameable {
     }
 
     public void updateItems() {
-        for(DefaultedList<ItemStack> defaultedList : this.combinedInventory) {
-            for(int i = 0; i < defaultedList.size(); ++i) {
-                if (!((ItemStack)defaultedList.get(i)).isEmpty()) {
-                    ((ItemStack)defaultedList.get(i)).inventoryTick(this.player.getWorld(), this.player, i, this.selectedSlot == i);
+        for (DefaultedList<ItemStack> defaultedList : this.combinedInventory) {
+            for (int i = 0; i < defaultedList.size(); ++i) {
+                if (!((ItemStack) defaultedList.get(i)).isEmpty()) {
+                    ((ItemStack) defaultedList.get(i)).inventoryTick(this.player.getWorld(), this.player, i, this.selectedSlot == i);
                 }
             }
         }
@@ -271,7 +271,7 @@ public class LivingEntityInventory implements Inventory, Nameable {
 
                     if (slot >= 0) {
                         this.main.set(slot, stack.copyAndClear());
-                        ((ItemStack)this.main.get(slot)).setCooldown(5);
+                        ((ItemStack) this.main.get(slot)).setCooldown(5);
                         return true;
                     } else {
                         return false;
@@ -285,7 +285,7 @@ public class LivingEntityInventory implements Inventory, Nameable {
                         } else {
                             stack.setCount(this.addStack(slot, stack));
                         }
-                    } while(!stack.isEmpty() && stack.getCount() < i);
+                    } while (!stack.isEmpty() && stack.getCount() < i);
 
                     return stack.getCount() < i;
                 }
@@ -303,7 +303,7 @@ public class LivingEntityInventory implements Inventory, Nameable {
     public ItemStack removeStack(int slot, int amount) {
         List<ItemStack> list = null;
 
-        for(DefaultedList<ItemStack> defaultedList : this.combinedInventory) {
+        for (DefaultedList<ItemStack> defaultedList : this.combinedInventory) {
             if (slot < defaultedList.size()) {
                 list = defaultedList;
                 break;
@@ -312,12 +312,12 @@ public class LivingEntityInventory implements Inventory, Nameable {
             slot -= defaultedList.size();
         }
 
-        return list != null && !((ItemStack)list.get(slot)).isEmpty() ? Inventories.splitStack(list, slot, amount) : ItemStack.EMPTY;
+        return list != null && !((ItemStack) list.get(slot)).isEmpty() ? Inventories.splitStack(list, slot, amount) : ItemStack.EMPTY;
     }
 
     public void removeOne(ItemStack stack) {
-        for(DefaultedList<ItemStack> defaultedList : this.combinedInventory) {
-            for(int i = 0; i < defaultedList.size(); ++i) {
+        for (DefaultedList<ItemStack> defaultedList : this.combinedInventory) {
+            for (int i = 0; i < defaultedList.size(); ++i) {
                 if (defaultedList.get(i) == stack) {
                     defaultedList.set(i, ItemStack.EMPTY);
                     break;
@@ -330,7 +330,7 @@ public class LivingEntityInventory implements Inventory, Nameable {
     public ItemStack removeStack(int slot) {
         DefaultedList<ItemStack> defaultedList = null;
 
-        for(DefaultedList<ItemStack> defaultedList2 : this.combinedInventory) {
+        for (DefaultedList<ItemStack> defaultedList2 : this.combinedInventory) {
             if (slot < defaultedList2.size()) {
                 defaultedList = defaultedList2;
                 break;
@@ -339,8 +339,8 @@ public class LivingEntityInventory implements Inventory, Nameable {
             slot -= defaultedList2.size();
         }
 
-        if (defaultedList != null && !((ItemStack)defaultedList.get(slot)).isEmpty()) {
-            ItemStack itemStack = (ItemStack)defaultedList.get(slot);
+        if (defaultedList != null && !((ItemStack) defaultedList.get(slot)).isEmpty()) {
+            ItemStack itemStack = (ItemStack) defaultedList.get(slot);
             defaultedList.set(slot, ItemStack.EMPTY);
             return itemStack;
         } else {
@@ -351,7 +351,7 @@ public class LivingEntityInventory implements Inventory, Nameable {
     public void setStack(int slot, ItemStack stack) {
         DefaultedList<ItemStack> defaultedList = null;
 
-        for(DefaultedList<ItemStack> defaultedList2 : this.combinedInventory) {
+        for (DefaultedList<ItemStack> defaultedList2 : this.combinedInventory) {
             if (slot < defaultedList2.size()) {
                 defaultedList = defaultedList2;
                 break;
@@ -367,33 +367,33 @@ public class LivingEntityInventory implements Inventory, Nameable {
     }
 
     public float getBlockBreakingSpeed(BlockState block) {
-        return ((ItemStack)this.main.get(this.selectedSlot)).getMiningSpeedMultiplier(block);
+        return ((ItemStack) this.main.get(this.selectedSlot)).getMiningSpeedMultiplier(block);
     }
 
     public NbtList writeNbt(NbtList nbtList) {
-        for(int i = 0; i < this.main.size(); ++i) {
-            if (!((ItemStack)this.main.get(i)).isEmpty()) {
+        for (int i = 0; i < this.main.size(); ++i) {
+            if (!((ItemStack) this.main.get(i)).isEmpty()) {
                 NbtCompound nbtCompound = new NbtCompound();
-                nbtCompound.putByte("Slot", (byte)i);
-                ((ItemStack)this.main.get(i)).writeNbt(nbtCompound);
+                nbtCompound.putByte("Slot", (byte) i);
+                ((ItemStack) this.main.get(i)).writeNbt(nbtCompound);
                 nbtList.add(nbtCompound);
             }
         }
 
-        for(int i = 0; i < this.armor.size(); ++i) {
-            if (!((ItemStack)this.armor.get(i)).isEmpty()) {
+        for (int i = 0; i < this.armor.size(); ++i) {
+            if (!((ItemStack) this.armor.get(i)).isEmpty()) {
                 NbtCompound nbtCompound = new NbtCompound();
-                nbtCompound.putByte("Slot", (byte)(i + 100));
-                ((ItemStack)this.armor.get(i)).writeNbt(nbtCompound);
+                nbtCompound.putByte("Slot", (byte) (i + 100));
+                ((ItemStack) this.armor.get(i)).writeNbt(nbtCompound);
                 nbtList.add(nbtCompound);
             }
         }
 
-        for(int i = 0; i < this.offHand.size(); ++i) {
-            if (!((ItemStack)this.offHand.get(i)).isEmpty()) {
+        for (int i = 0; i < this.offHand.size(); ++i) {
+            if (!((ItemStack) this.offHand.get(i)).isEmpty()) {
                 NbtCompound nbtCompound = new NbtCompound();
-                nbtCompound.putByte("Slot", (byte)(i + 150));
-                ((ItemStack)this.offHand.get(i)).writeNbt(nbtCompound);
+                nbtCompound.putByte("Slot", (byte) (i + 150));
+                ((ItemStack) this.offHand.get(i)).writeNbt(nbtCompound);
                 nbtList.add(nbtCompound);
             }
         }
@@ -406,7 +406,7 @@ public class LivingEntityInventory implements Inventory, Nameable {
         this.armor.clear();
         this.offHand.clear();
 
-        for(int i = 0; i < nbtList.size(); ++i) {
+        for (int i = 0; i < nbtList.size(); ++i) {
             NbtCompound nbtCompound = nbtList.getCompound(i);
             int j = nbtCompound.getByte("Slot") & 255;
             ItemStack itemStack = ItemStack.fromNbt(nbtCompound);
@@ -428,19 +428,19 @@ public class LivingEntityInventory implements Inventory, Nameable {
     }
 
     public boolean isEmpty() {
-        for(ItemStack itemStack : this.main) {
+        for (ItemStack itemStack : this.main) {
             if (!itemStack.isEmpty()) {
                 return false;
             }
         }
 
-        for(ItemStack itemStack : this.armor) {
+        for (ItemStack itemStack : this.armor) {
             if (!itemStack.isEmpty()) {
                 return false;
             }
         }
 
-        for(ItemStack itemStack : this.offHand) {
+        for (ItemStack itemStack : this.offHand) {
             if (!itemStack.isEmpty()) {
                 return false;
             }
@@ -452,7 +452,7 @@ public class LivingEntityInventory implements Inventory, Nameable {
     public ItemStack getStack(int slot) {
         List<ItemStack> list = null;
 
-        for(DefaultedList<ItemStack> defaultedList : this.combinedInventory) {
+        for (DefaultedList<ItemStack> defaultedList : this.combinedInventory) {
             if (slot < defaultedList.size()) {
                 list = defaultedList;
                 break;
@@ -461,7 +461,7 @@ public class LivingEntityInventory implements Inventory, Nameable {
             slot -= defaultedList.size();
         }
 
-        return list == null ? ItemStack.EMPTY : (ItemStack)list.get(slot);
+        return list == null ? ItemStack.EMPTY : (ItemStack) list.get(slot);
     }
 
     public Text getName() {
@@ -469,7 +469,7 @@ public class LivingEntityInventory implements Inventory, Nameable {
     }
 
     public ItemStack getArmorStack(int slot) {
-        return (ItemStack)this.armor.get(slot);
+        return (ItemStack) this.armor.get(slot);
     }
 
     public void damageArmor(DamageSource damageSource, float amount, int[] slots) {
@@ -479,10 +479,10 @@ public class LivingEntityInventory implements Inventory, Nameable {
                 amount = 1.0F;
             }
 
-            for(int i : slots) {
-                ItemStack itemStack = (ItemStack)this.armor.get(i);
+            for (int i : slots) {
+                ItemStack itemStack = (ItemStack) this.armor.get(i);
                 if ((!damageSource.isTypeIn(DamageTypeTags.IS_FIRE) || !itemStack.getItem().isFireproof()) && itemStack.getItem() instanceof ArmorItem) {
-                    itemStack.damage((int)amount, this.player, (player) -> player.sendEquipmentBreakStatus(EquipmentSlot.fromTypeIndex(EquipmentSlot.Type.ARMOR, i)));
+                    itemStack.damage((int) amount, this.player, (player) -> player.sendEquipmentBreakStatus(EquipmentSlot.fromTypeIndex(EquipmentSlot.Type.ARMOR, i)));
                 }
             }
 
@@ -490,9 +490,9 @@ public class LivingEntityInventory implements Inventory, Nameable {
     }
 
     public void dropAll() {
-        for(List<ItemStack> list : this.combinedInventory) {
-            for(int i = 0; i < list.size(); ++i) {
-                ItemStack itemStack = (ItemStack)list.get(i);
+        for (List<ItemStack> list : this.combinedInventory) {
+            for (int i = 0; i < list.size(); ++i) {
+                ItemStack itemStack = (ItemStack) list.get(i);
                 if (!itemStack.isEmpty()) {
                     this.player.dropStack(itemStack);
                     list.set(i, ItemStack.EMPTY);
@@ -514,13 +514,13 @@ public class LivingEntityInventory implements Inventory, Nameable {
         if (this.player.isRemoved()) {
             return false;
         } else {
-            return !(player.squaredDistanceTo(this.player) > (double)64.0F);
+            return !(player.squaredDistanceTo(this.player) > (double) 64.0F);
         }
     }
 
     public boolean contains(ItemStack stack) {
-        for(List<ItemStack> list : this.combinedInventory) {
-            for(ItemStack itemStack : list) {
+        for (List<ItemStack> list : this.combinedInventory) {
+            for (ItemStack itemStack : list) {
                 if (!itemStack.isEmpty() && ItemStack.canCombine(itemStack, stack)) {
                     return true;
                 }
@@ -531,8 +531,8 @@ public class LivingEntityInventory implements Inventory, Nameable {
     }
 
     public boolean contains(TagKey<Item> key) {
-        for(List<ItemStack> list : this.combinedInventory) {
-            for(ItemStack itemStack : list) {
+        for (List<ItemStack> list : this.combinedInventory) {
+            for (ItemStack itemStack : list) {
                 if (!itemStack.isEmpty() && itemStack.isIn(key)) {
                     return true;
                 }
@@ -543,7 +543,7 @@ public class LivingEntityInventory implements Inventory, Nameable {
     }
 
     public void clone(LivingEntityInventory other) {
-        for(int i = 0; i < this.size(); ++i) {
+        for (int i = 0; i < this.size(); ++i) {
             this.setStack(i, other.getStack(i));
         }
 
@@ -551,14 +551,14 @@ public class LivingEntityInventory implements Inventory, Nameable {
     }
 
     public void clear() {
-        for(List<ItemStack> list : this.combinedInventory) {
+        for (List<ItemStack> list : this.combinedInventory) {
             list.clear();
         }
 
     }
 
     public void populateRecipeFinder(RecipeMatcher finder) {
-        for(ItemStack itemStack : this.main) {
+        for (ItemStack itemStack : this.main) {
             finder.addUnenchantedInput(itemStack);
         }
 

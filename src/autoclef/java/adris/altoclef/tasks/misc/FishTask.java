@@ -31,14 +31,14 @@ public class FishTask extends Task {
 
     @Override
     protected void onStart() {
-       ((Baritone) controller.getBaritone()).getFishingProcess().fish();
+        ((Baritone) controller.getBaritone()).getFishingProcess().fish();
     }
 
     @Override
     protected Task onTick() {
         FishingProcess fishingProcess = ((Baritone) controller.getBaritone()).getFishingProcess();
 
-        if(!controller.getSlotHandler().forceEquipItem(Items.FISHING_ROD)){
+        if (!controller.getSlotHandler().forceEquipItem(Items.FISHING_ROD)) {
             setDebugState("Can't fish without a fishing rod");
             return null;
         }
@@ -61,7 +61,7 @@ public class FishTask extends Task {
 
     @Override
     public boolean isFinished() {
-       return false;
+        return false;
     }
 
     @Override

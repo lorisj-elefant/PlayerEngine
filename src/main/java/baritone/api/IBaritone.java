@@ -23,7 +23,14 @@ import baritone.api.cache.IWorldProvider;
 import baritone.api.command.manager.ICommandManager;
 import baritone.api.event.listener.IEventBus;
 import baritone.api.pathing.calc.IPathingControlManager;
-import baritone.api.process.*;
+import baritone.api.process.IBaritoneProcess;
+import baritone.api.process.IBuilderProcess;
+import baritone.api.process.ICustomGoalProcess;
+import baritone.api.process.IExploreProcess;
+import baritone.api.process.IFarmProcess;
+import baritone.api.process.IFollowProcess;
+import baritone.api.process.IGetToBlockProcess;
+import baritone.api.process.IMineProcess;
 import baritone.api.utils.IEntityContext;
 import baritone.api.utils.IInputOverrideHandler;
 import dev.onyxstudios.cca.api.v3.component.ComponentKey;
@@ -163,9 +170,9 @@ public interface IBaritone extends ServerTickingComponent {
             component.append(Text.literal(" "));
             Arrays.asList(components).forEach(component::append);
             ((PlayerEntity) entity).sendMessage(component, false);
-        }else{
-            for(ServerPlayerEntity p : entity.getWorld().getServer().getPlayerManager().getPlayerList()){
-                if(p.isCreative()){
+        } else {
+            for (ServerPlayerEntity p : entity.getWorld().getServer().getPlayerManager().getPlayerList()) {
+                if (p.isCreative()) {
                     MutableText component = Text.literal("");
                     // If we are not logging as a Toast
                     // Append the prefix to the base component line

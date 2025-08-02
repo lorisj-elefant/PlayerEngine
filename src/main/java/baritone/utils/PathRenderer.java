@@ -19,7 +19,6 @@ package baritone.utils;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.entity.EntityRenderDispatcher;
-import net.minecraft.util.Identifier;
 
 /**
  * @author Brady
@@ -28,7 +27,8 @@ import net.minecraft.util.Identifier;
 public final class PathRenderer {
     static EntityRenderDispatcher renderManager = MinecraftClient.getInstance().getEntityRenderDispatcher();
 
-    private PathRenderer() {}
+    private PathRenderer() {
+    }
 
     public static double posX() {
         return renderManager.camera.getPos().x;

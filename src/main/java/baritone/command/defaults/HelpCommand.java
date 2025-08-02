@@ -57,8 +57,8 @@ public class HelpCommand extends Command {
             Paginator.paginate(
                     args, new Paginator<>(
                             source, ICommandManager.registry.descendingStream()
-                                    .filter(command -> !command.hiddenFromHelp())
-                                    .collect(Collectors.toList())
+                            .filter(command -> !command.hiddenFromHelp())
+                            .collect(Collectors.toList())
                     ),
                     () -> logDirect(source, "All Automatone commands (clickable):"),
                     command -> {

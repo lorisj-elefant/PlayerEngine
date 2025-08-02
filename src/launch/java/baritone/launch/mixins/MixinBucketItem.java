@@ -27,7 +27,9 @@ import org.spongepowered.asm.mixin.Shadow;
 @Mixin(BucketItem.class)
 public class MixinBucketItem implements IBucketAccessor {
 
-    @Shadow @Final private Fluid fluid;
+    @Shadow
+    @Final
+    private Fluid fluid;
 
     @Override
     public Fluid getFluid() {

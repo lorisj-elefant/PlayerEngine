@@ -19,7 +19,11 @@ package baritone.api.cache;
 
 import baritone.api.utils.BetterBlockPos;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * A marker for a position in the world.

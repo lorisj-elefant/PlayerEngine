@@ -1,27 +1,25 @@
 package adris.altoclef.commands;
 
 import adris.altoclef.AltoClefController;
-import adris.altoclef.commandsystem.*;
+import adris.altoclef.commandsystem.Arg;
+import adris.altoclef.commandsystem.ArgParser;
+import adris.altoclef.commandsystem.Command;
+import adris.altoclef.commandsystem.CommandException;
+import adris.altoclef.commandsystem.ItemList;
 import adris.altoclef.tasks.container.StoreInAnyContainerTask;
-import adris.altoclef.tasks.container.StoreInContainerTask;
 import adris.altoclef.util.ItemTarget;
 import adris.altoclef.util.helpers.ItemHelper;
 import adris.altoclef.util.helpers.StorageHelper;
-import adris.altoclef.util.slots.PlayerSlot;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ToolItem;
-import net.minecraft.util.math.BlockPos;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Stream;
-
-import org.apache.commons.lang3.ArrayUtils;
 
 public class DepositCommand extends Command {
 
@@ -37,7 +35,7 @@ public class DepositCommand extends Command {
     public static ItemTarget[] getAllNonEquippedOrToolItemsAsTarget(AltoClefController mod) {
         return StorageHelper.getAllInventoryItemsAsTargets(mod, slot -> {
             // Ignore armor
-            if (slot.getInventory().size()==4)
+            if (slot.getInventory().size() == 4)
                 return false;
             ItemStack stack = StorageHelper.getItemStackInSlot(slot);
             // Ignore tools

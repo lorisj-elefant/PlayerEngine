@@ -17,16 +17,17 @@
 
 package baritone.autoclef;
 
+import net.minecraft.block.BlockState;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.math.BlockPos;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
-import net.minecraft.block.BlockState;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.math.BlockPos;
 
 public class AltoClefSettings {
     private final Object breakMutex = new Object();
@@ -57,38 +58,38 @@ public class AltoClefSettings {
     }
 
     public void avoidBlockBreak(BlockPos pos) {
-        synchronized(this.breakMutex) {
-            this .blocksToAvoidBreaking.add(pos);
+        synchronized (this.breakMutex) {
+            this.blocksToAvoidBreaking.add(pos);
         }
     }
 
     public void avoidBlockBreak(Predicate<BlockPos> avoider) {
-        synchronized(this.breakMutex) {
-            this .breakAvoiders.add(avoider);
+        synchronized (this.breakMutex) {
+            this.breakAvoiders.add(avoider);
         }
     }
 
     public void configurePlaceBucketButDontFall(boolean allow) {
-        synchronized(this.propertiesMutex) {
-            this .dontPlaceBucketButStillFall = allow;
+        synchronized (this.propertiesMutex) {
+            this.dontPlaceBucketButStillFall = allow;
         }
     }
 
     public void treatSoulSandAsOrdinaryBlock(boolean enable) {
-        synchronized(this.propertiesMutex) {
-            this .treatSoulSandAsOrdinaryBlock = enable;
+        synchronized (this.propertiesMutex) {
+            this.treatSoulSandAsOrdinaryBlock = enable;
         }
     }
 
     public void avoidBlockPlace(Predicate<BlockPos> avoider) {
-        synchronized(this.placeMutex) {
-            this .placeAvoiders.add(avoider);
+        synchronized (this.placeMutex) {
+            this.placeAvoiders.add(avoider);
         }
     }
 
     public boolean shouldForceSaveTool(BlockState state, ItemStack tool) {
-        synchronized(this.propertiesMutex) {
-            return this .forceSaveTool.stream().anyMatch((pred) -> pred.test(state, tool));
+        synchronized (this.propertiesMutex) {
+            return this.forceSaveTool.stream().anyMatch((pred) -> pred.test(state, tool));
         }
     }
 
@@ -97,14 +98,14 @@ public class AltoClefSettings {
     }
 
     public boolean shouldAvoidBreaking(BlockPos pos) {
-        synchronized(this.breakMutex) {
-            return this .blocksToAvoidBreaking.contains(pos) ? true : this .breakAvoiders.stream().anyMatch((pred) -> pred.test(pos));
+        synchronized (this.breakMutex) {
+            return this.blocksToAvoidBreaking.contains(pos) ? true : this.breakAvoiders.stream().anyMatch((pred) -> pred.test(pos));
         }
     }
 
     public boolean shouldAvoidPlacingAt(BlockPos pos) {
-        synchronized(this.placeMutex) {
-            return this .placeAvoiders.stream().anyMatch((pred) -> pred.test(pos));
+        synchronized (this.placeMutex) {
+            return this.placeAvoiders.stream().anyMatch((pred) -> pred.test(pos));
         }
     }
 
@@ -113,14 +114,14 @@ public class AltoClefSettings {
     }
 
     public boolean canWalkOnForce(int x, int y, int z) {
-        synchronized(this.propertiesMutex) {
-            return this .forceCanWalkOn.stream().anyMatch((pred) -> pred.test(new BlockPos(x, y, z)));
+        synchronized (this.propertiesMutex) {
+            return this.forceCanWalkOn.stream().anyMatch((pred) -> pred.test(new BlockPos(x, y, z)));
         }
     }
 
     public boolean shouldAvoidWalkThroughForce(BlockPos pos) {
-        synchronized(this.propertiesMutex) {
-            return this .forceAvoidWalkThrough.stream().anyMatch((pred) -> pred.test(pos));
+        synchronized (this.propertiesMutex) {
+            return this.forceAvoidWalkThrough.stream().anyMatch((pred) -> pred.test(pos));
         }
     }
 
@@ -129,56 +130,56 @@ public class AltoClefSettings {
     }
 
     public boolean shouldForceUseTool(BlockState state, ItemStack tool) {
-        synchronized(this.propertiesMutex) {
-            return this .forceUseTool.stream().anyMatch((pred) -> pred.test(state, tool));
+        synchronized (this.propertiesMutex) {
+            return this.forceUseTool.stream().anyMatch((pred) -> pred.test(state, tool));
         }
     }
 
     public boolean shouldNotPlaceBucketButStillFall() {
-        synchronized(this.propertiesMutex) {
-            return this .dontPlaceBucketButStillFall;
+        synchronized (this.propertiesMutex) {
+            return this.dontPlaceBucketButStillFall;
         }
     }
 
     public boolean shouldTreatSoulSandAsOrdinaryBlock() {
-        synchronized(this.propertiesMutex) {
-            return this .treatSoulSandAsOrdinaryBlock;
+        synchronized (this.propertiesMutex) {
+            return this.treatSoulSandAsOrdinaryBlock;
         }
     }
 
     public boolean isInteractionPaused() {
-        synchronized(this.propertiesMutex) {
-            return this .pauseInteractions;
+        synchronized (this.propertiesMutex) {
+            return this.pauseInteractions;
         }
     }
 
     public void setInteractionPaused(boolean paused) {
-        synchronized(this.propertiesMutex) {
-            this .pauseInteractions = paused;
+        synchronized (this.propertiesMutex) {
+            this.pauseInteractions = paused;
         }
     }
 
     public boolean isFlowingWaterPassAllowed() {
-        synchronized(this.propertiesMutex) {
-            return this .allowFlowingWaterPass;
+        synchronized (this.propertiesMutex) {
+            return this.allowFlowingWaterPass;
         }
     }
 
     public boolean canSwimThroughLava() {
-        synchronized(this.propertiesMutex) {
-            return this .allowSwimThroughLava;
+        synchronized (this.propertiesMutex) {
+            return this.allowSwimThroughLava;
         }
     }
 
     public void setFlowingWaterPass(boolean pass) {
-        synchronized(this.propertiesMutex) {
-            this .allowFlowingWaterPass = pass;
+        synchronized (this.propertiesMutex) {
+            this.allowFlowingWaterPass = pass;
         }
     }
 
     public void allowSwimThroughLava(boolean allow) {
-        synchronized(this.propertiesMutex) {
-            this .allowSwimThroughLava = allow;
+        synchronized (this.propertiesMutex) {
+            this.allowSwimThroughLava = allow;
         }
     }
 
@@ -187,51 +188,51 @@ public class AltoClefSettings {
     }
 
     public HashSet<BlockPos> getBlocksToAvoidBreaking() {
-        return this .blocksToAvoidBreaking;
+        return this.blocksToAvoidBreaking;
     }
 
     public List<Predicate<BlockPos>> getBreakAvoiders() {
-        return this .breakAvoiders;
+        return this.breakAvoiders;
     }
 
     public List<Predicate<BlockPos>> getPlaceAvoiders() {
-        return this .placeAvoiders;
+        return this.placeAvoiders;
     }
 
     public List<Predicate<BlockPos>> getForceWalkOnPredicates() {
-        return this .forceCanWalkOn;
+        return this.forceCanWalkOn;
     }
 
     public List<Predicate<BlockPos>> getForceAvoidWalkThroughPredicates() {
-        return this .forceAvoidWalkThrough;
+        return this.forceAvoidWalkThrough;
     }
 
     public List<BiPredicate<BlockState, ItemStack>> getForceSaveToolPredicates() {
-        return this .forceSaveTool;
+        return this.forceSaveTool;
     }
 
     public List<BiPredicate<BlockState, ItemStack>> getForceUseToolPredicates() {
-        return this .forceUseTool;
+        return this.forceUseTool;
     }
 
     public List<BiFunction<Double, BlockPos, Double>> getGlobalHeuristics() {
-        return this .globalHeuristics;
+        return this.globalHeuristics;
     }
 
     public boolean isItemProtected(Item item) {
-        return this .protectedItems.contains(item);
+        return this.protectedItems.contains(item);
     }
 
     public HashSet<Item> getProtectedItems() {
-        return this .protectedItems;
+        return this.protectedItems;
     }
 
     public void protectItem(Item item) {
-        this .protectedItems.add(item);
+        this.protectedItems.add(item);
     }
 
     public void stopProtectingItem(Item item) {
-        this .protectedItems.remove(item);
+        this.protectedItems.remove(item);
     }
 
     public Object getBreakMutex() {

@@ -19,7 +19,6 @@ package baritone.behavior;
 
 import baritone.Automatone;
 import baritone.Baritone;
-import baritone.api.IBaritone;
 import baritone.api.behavior.IPathingBehavior;
 import baritone.api.event.events.PathEvent;
 import baritone.api.pathing.calc.IPath;

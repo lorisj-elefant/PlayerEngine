@@ -139,7 +139,7 @@ public class MovementDescend extends Movement {
         BlockState below = context.get(destX, y - 2, destZ);
         if (!MovementHelper.canWalkOn(context.bsi, destX, y - 2, destZ, below, context.baritone.settings())) {
             dynamicFallCost(context, x, y, z, destX, destZ, frontBreak, below, res);
-            res.oxygenCost += context.oxygenCost(WALK_OFF_BLOCK_COST + frontBreak, context.get(x, y+context.height-1, z));
+            res.oxygenCost += context.oxygenCost(WALK_OFF_BLOCK_COST + frontBreak, context.get(x, y + context.height - 1, z));
             return;
         }
 
@@ -156,9 +156,9 @@ public class MovementDescend extends Movement {
         double fall = waterModifier * Math.max(FALL_N_BLOCKS_COST[1], CENTER_AFTER_FALL_COST);
         totalCost += walk + fall;
         res.cost = totalCost;
-        res.oxygenCost = context.oxygenCost(walk / 2 + frontBreak, context.get(x, y+context.height-1, z));
-        res.oxygenCost += context.oxygenCost(fall/2, context.get(destX, y+context.height-2, destZ));
-        res.oxygenCost += context.oxygenCost(walk/2+fall/2, context.get(destX, y+context.height-1, destZ));
+        res.oxygenCost = context.oxygenCost(walk / 2 + frontBreak, context.get(x, y + context.height - 1, z));
+        res.oxygenCost += context.oxygenCost(fall / 2, context.get(destX, y + context.height - 2, destZ));
+        res.oxygenCost += context.oxygenCost(walk / 2 + fall / 2, context.get(destX, y + context.height - 1, destZ));
     }
 
     /**

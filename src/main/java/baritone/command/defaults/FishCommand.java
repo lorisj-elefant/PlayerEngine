@@ -23,6 +23,7 @@ import baritone.api.command.Command;
 import baritone.api.command.argument.IArgConsumer;
 import baritone.api.command.exception.CommandException;
 import net.minecraft.server.command.ServerCommandSource;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
@@ -35,7 +36,7 @@ public class FishCommand extends Command {
     @Override
     public void execute(ServerCommandSource source, String label, IArgConsumer args, IBaritone baritone) throws CommandException {
         args.requireMax(0);
-        ((Baritone)baritone).getFishingProcess().fish();
+        ((Baritone) baritone).getFishingProcess().fish();
     }
 
     @Override

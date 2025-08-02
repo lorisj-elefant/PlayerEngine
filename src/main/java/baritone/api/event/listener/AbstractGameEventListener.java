@@ -17,7 +17,8 @@
 
 package baritone.api.event.listener;
 
-import baritone.api.event.events.*;
+import baritone.api.event.events.BlockInteractEvent;
+import baritone.api.event.events.PathEvent;
 
 /**
  * An implementation of {@link IGameEventListener} that has all methods
@@ -31,11 +32,14 @@ import baritone.api.event.events.*;
 public interface AbstractGameEventListener extends IGameEventListener {
 
     @Override
-    default void onTickServer() {}
+    default void onTickServer() {
+    }
 
     @Override
-    default void onBlockInteract(BlockInteractEvent event) {}
+    default void onBlockInteract(BlockInteractEvent event) {
+    }
 
     @Override
-    default void onPathEvent(PathEvent event) {}
+    default void onPathEvent(PathEvent event) {
+    }
 }

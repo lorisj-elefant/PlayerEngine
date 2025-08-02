@@ -82,7 +82,9 @@ public class CalculationContext {
     public final int worldBottom;
     public final int worldTop;
     public final int width;
-    /**The extra space required on each side of the entity for free movement; 0 in the case of a normal size player*/
+    /**
+     * The extra space required on each side of the entity for free movement; 0 in the case of a normal size player
+     */
     public final int requiredSideSpace;
     public final int height;
     private final IInventoryProvider player;

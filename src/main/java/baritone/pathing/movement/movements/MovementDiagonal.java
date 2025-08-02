@@ -92,24 +92,24 @@ public class MovementDiagonal extends Movement {
         double y = player.getY() - 1;
         double z = player.getZ();
         //standard
-        if (ctx.feetPos().equals(src)){
+        if (ctx.feetPos().equals(src)) {
             return true;
         }
         //both corners are walkable
         if (MovementHelper.canWalkOn(ctx, new BlockPos(src.x, src.y - 1, dest.z))
-            && MovementHelper.canWalkOn(ctx, new BlockPos(dest.x, src.y - 1, src.z))){
-                return true;
+                && MovementHelper.canWalkOn(ctx, new BlockPos(dest.x, src.y - 1, src.z))) {
+            return true;
         }
         //we are in a likely unwalkable corner, check for a supporting block
         if (ctx.feetPos().equals(new BetterBlockPos(src.x, src.y, dest.z))
-            || ctx.feetPos().equals(new BetterBlockPos(dest.x, src.y, src.z))){
-                return (MovementHelper.canWalkOn(ctx, new BetterBlockPos(x + offset, y, z + offset))
-                   || MovementHelper.canWalkOn(ctx, new BetterBlockPos(x + offset, y, z - offset))
-                   || MovementHelper.canWalkOn(ctx, new BetterBlockPos(x - offset, y, z + offset))
-                   || MovementHelper.canWalkOn(ctx, new BetterBlockPos(x - offset, y, z - offset)));
+                || ctx.feetPos().equals(new BetterBlockPos(dest.x, src.y, src.z))) {
+            return (MovementHelper.canWalkOn(ctx, new BetterBlockPos(x + offset, y, z + offset))
+                    || MovementHelper.canWalkOn(ctx, new BetterBlockPos(x + offset, y, z - offset))
+                    || MovementHelper.canWalkOn(ctx, new BetterBlockPos(x - offset, y, z + offset))
+                    || MovementHelper.canWalkOn(ctx, new BetterBlockPos(x - offset, y, z - offset)));
         }
         return true;
-   }
+    }
 
     @Override
     public double calculateCost(CalculationContext context) {
@@ -274,13 +274,13 @@ public class MovementDiagonal extends Movement {
             costPerBlock = res.cost / 3;
             res.oxygenCost += context.oxygenCost(costPerBlock, optionHeadBlock);
         }
-        res.oxygenCost += context.oxygenCost(costPerBlock, context.get(x, y+context.height-1, z));
+        res.oxygenCost += context.oxygenCost(costPerBlock, context.get(x, y + context.height - 1, z));
         if (descend) {
             res.cost += Math.max(FALL_N_BLOCKS_COST[1], CENTER_AFTER_FALL_COST);
-            res.oxygenCost += context.oxygenCost(costPerBlock, context.get(destX, y+context.height-2, destZ));
+            res.oxygenCost += context.oxygenCost(costPerBlock, context.get(destX, y + context.height - 2, destZ));
             res.y = y - 1;
         } else {
-            res.oxygenCost += context.oxygenCost(costPerBlock, context.get(destX, y+context.height-1, destZ));
+            res.oxygenCost += context.oxygenCost(costPerBlock, context.get(destX, y + context.height - 1, destZ));
             res.y = y;
         }
         res.x = destX;
@@ -313,7 +313,7 @@ public class MovementDiagonal extends Movement {
         if (MovementHelper.isLiquid(ctx, ctx.feetPos()) && !baritone.settings().sprintInWater.get()) {
             return false;
         }
-        for (int i = 0; i < Math.min(positionsToBreak.length,4); i++) {
+        for (int i = 0; i < Math.min(positionsToBreak.length, 4); i++) {
             if (!MovementHelper.canWalkThrough(ctx, positionsToBreak[i])) {
                 return false;
             }
@@ -332,7 +332,7 @@ public class MovementDiagonal extends Movement {
             return toBreakCached;
         }
         List<BlockPos> result = new ArrayList<>();
-        for (int i = 4; i < Math.min(positionsToBreak.length,6); i++) {
+        for (int i = 4; i < Math.min(positionsToBreak.length, 6); i++) {
             if (!MovementHelper.canWalkThrough(bsi, positionsToBreak[i].x, positionsToBreak[i].y, positionsToBreak[i].z, ctx.baritone().settings())) {
                 result.add(positionsToBreak[i]);
             }

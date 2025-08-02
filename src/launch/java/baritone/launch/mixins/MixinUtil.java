@@ -30,7 +30,8 @@ import java.util.concurrent.ExecutorService;
 @Mixin(Util.class)
 public abstract class MixinUtil {
     @Shadow
-    private static void attemptShutdown(ExecutorService service) {}
+    private static void attemptShutdown(ExecutorService service) {
+    }
 
     @Inject(method = "shutdownExecutors", at = @At("RETURN"))
     private static void shutdownBaritoneExecutor(CallbackInfo ci) {

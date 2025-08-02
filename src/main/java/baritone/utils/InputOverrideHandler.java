@@ -108,19 +108,19 @@ public final class InputOverrideHandler extends Behavior implements IInputOverri
         float speed = 0.3f;
 
         if (this.isInputForcedDown(Input.MOVE_FORWARD)) {
-            entity.forwardSpeed+=speed;
+            entity.forwardSpeed += speed;
         }
 
         if (this.isInputForcedDown(Input.MOVE_BACK)) {
-            entity.forwardSpeed-=speed;
+            entity.forwardSpeed -= speed;
         }
 
         if (this.isInputForcedDown(Input.MOVE_LEFT)) {
-            entity.sidewaysSpeed+=speed;
+            entity.sidewaysSpeed += speed;
         }
 
         if (this.isInputForcedDown(Input.MOVE_RIGHT)) {
-            entity.sidewaysSpeed-=speed;
+            entity.sidewaysSpeed -= speed;
         }
 
         if (this.isInputForcedDown(Input.SNEAK)) {

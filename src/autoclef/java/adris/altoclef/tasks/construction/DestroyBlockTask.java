@@ -13,60 +13,60 @@ import java.util.Objects;
  */
 public class DestroyBlockTask extends Task implements ITaskRequiresGrounded {
 
-  private final BlockPos pos;
-  private boolean isClear;
+    private final BlockPos pos;
+    private boolean isClear;
 
-  public DestroyBlockTask(BlockPos pos) {
-    this .pos = pos;
-  }
-
-  @Override
-  protected void onStart() {
-    isClear = false;
-    IBuilderProcess builder = controller.getBaritone().getBuilderProcess();
-    // Tell baritone to clear a 1x1x1 area at our target position.
-    builder.clearArea(pos, pos);
-  }
-
-  @Override
-  protected Task onTick() {
-    IBuilderProcess builder = controller.getBaritone().getBuilderProcess();
-
-    // If the builder process stops for any reason, assume we're done or something went wrong.
-    if (!builder.isActive()) {
-      isClear = true; // Let isFinished handle the final check.
-      return null;
+    public DestroyBlockTask(BlockPos pos) {
+        this.pos = pos;
     }
 
-    setDebugState("Automatone is breaking the block.");
-    return null; // Let Automatone do its thing.
-  }
-
-  @Override
-  protected void onStop(Task interruptTask) {
-    // If our task is interrupted, we must stop the builder process.
-    IBuilderProcess builder = controller.getBaritone().getBuilderProcess();
-    if (builder.isActive()) {
-      builder.onLostControl();
+    @Override
+    protected void onStart() {
+        isClear = false;
+        IBuilderProcess builder = controller.getBaritone().getBuilderProcess();
+        // Tell baritone to clear a 1x1x1 area at our target position.
+        builder.clearArea(pos, pos);
     }
-  }
 
-  @Override
-  public boolean isFinished() {
-    // The task is finished if the block is air.
-    return isClear || controller.getWorld().isAir(pos);
-  }
+    @Override
+    protected Task onTick() {
+        IBuilderProcess builder = controller.getBaritone().getBuilderProcess();
 
-  @Override
-  protected boolean isEqual(Task other) {
-    if (other instanceof DestroyBlockTask task) {
-      return Objects.equals(task .pos, this .pos);
+        // If the builder process stops for any reason, assume we're done or something went wrong.
+        if (!builder.isActive()) {
+            isClear = true; // Let isFinished handle the final check.
+            return null;
+        }
+
+        setDebugState("Automatone is breaking the block.");
+        return null; // Let Automatone do its thing.
     }
-    return false;
-  }
 
-  @Override
-  protected String toDebugString() {
-    return "Destroying block at " + pos.toShortString();
-  }
+    @Override
+    protected void onStop(Task interruptTask) {
+        // If our task is interrupted, we must stop the builder process.
+        IBuilderProcess builder = controller.getBaritone().getBuilderProcess();
+        if (builder.isActive()) {
+            builder.onLostControl();
+        }
+    }
+
+    @Override
+    public boolean isFinished() {
+        // The task is finished if the block is air.
+        return isClear || controller.getWorld().isAir(pos);
+    }
+
+    @Override
+    protected boolean isEqual(Task other) {
+        if (other instanceof DestroyBlockTask task) {
+            return Objects.equals(task.pos, this.pos);
+        }
+        return false;
+    }
+
+    @Override
+    protected String toDebugString() {
+        return "Destroying block at " + pos.toShortString();
+    }
 }

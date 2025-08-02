@@ -199,7 +199,7 @@ public final class InventoryBehavior extends Behavior {
     }
 
     public static int getSlotWithStack(LivingEntityInventory inv, TagKey<Item> tag) {
-        for(int i = 0; i < inv.main.size(); ++i) {
+        for (int i = 0; i < inv.main.size(); ++i) {
             if (!inv.main.get(i).isEmpty() && inv.main.get(i).isIn(tag)) {
                 return i;
             }

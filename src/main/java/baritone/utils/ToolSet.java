@@ -107,13 +107,13 @@ public class ToolSet {
 
     public int getBestSlot(Block b, boolean preferSilkTouch, boolean pathingCalculation) {
         if (b.getDefaultState().getBlock().getHardness() == 0.0F)
-            return ((IInventoryProvider)player).getLivingInventory().selectedSlot;
+            return ((IInventoryProvider) player).getLivingInventory().selectedSlot;
         /*
         If we actually want know what efficiency our held item has instead of the best one
         possible, this lets us make pathing depend on the actual tool to be used (if auto tool is disabled)
         */
         if (baritone.settings().disableAutoTool.get() && pathingCalculation) {
-            return ((IInventoryProvider)player).getLivingInventory().selectedSlot;
+            return ((IInventoryProvider) player).getLivingInventory().selectedSlot;
         }
 
         int best = 0;
@@ -122,7 +122,7 @@ public class ToolSet {
         boolean bestSilkTouch = false;
         BlockState blockState = b.getDefaultState();
         for (int i = 0; i < 9; i++) {
-            ItemStack itemStack = ((IInventoryProvider)player).getLivingInventory().getStack(i);
+            ItemStack itemStack = ((IInventoryProvider) player).getLivingInventory().getStack(i);
             if (!baritone.settings().useSwordToMine.get() && itemStack.getItem() instanceof SwordItem) {
                 continue;
             }
@@ -158,7 +158,7 @@ public class ToolSet {
      * @return A double containing the destruction ticks with the best tool
      */
     private double getBestDestructionTime(Block b) {
-        ItemStack stack = ((IInventoryProvider)player).getLivingInventory().getStack(getBestSlot(b, false, true));
+        ItemStack stack = ((IInventoryProvider) player).getLivingInventory().getStack(getBestSlot(b, false, true));
         return calculateSpeedVsBlock(stack, b.getDefaultState()) * avoidanceMultiplier(b);
     }
 
@@ -214,7 +214,8 @@ public class ToolSet {
             switch (fatigueEffect.getAmplifier()) {
                 case 0 -> speed *= 0.3;
                 case 1 -> speed *= 0.09;
-                case 2 -> speed *= 0.0027; // you might think that 0.09*0.3 = 0.027 so that should be next, that would make too much sense. it's 0.0027.
+                case 2 ->
+                        speed *= 0.0027; // you might think that 0.09*0.3 = 0.027 so that should be next, that would make too much sense. it's 0.0027.
                 default -> speed *= 0.00081;
             }
         }

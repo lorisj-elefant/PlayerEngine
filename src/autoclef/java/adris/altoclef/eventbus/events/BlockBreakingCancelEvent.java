@@ -1,3 +1,4 @@
 package adris.altoclef.eventbus.events;
 
-public class BlockBreakingCancelEvent {}
+public class BlockBreakingCancelEvent {
+}

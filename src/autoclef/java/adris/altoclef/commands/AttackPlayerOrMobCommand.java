@@ -1,9 +1,5 @@
 package adris.altoclef.commands;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.function.Predicate;
-
 import adris.altoclef.AltoClefController;
 import adris.altoclef.commandsystem.Arg;
 import adris.altoclef.commandsystem.ArgParser;
@@ -19,6 +15,10 @@ import adris.altoclef.util.ItemTarget;
 import adris.altoclef.util.time.TimerGame;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
+
+import java.util.HashSet;
+import java.util.Set;
+import java.util.function.Predicate;
 
 public class AttackPlayerOrMobCommand extends Command {
 
@@ -37,7 +37,7 @@ public class AttackPlayerOrMobCommand extends Command {
     private static class AttackAndGetDropsTask extends ResourceTask {
 
         private final String toKill;
-    
+
         private final Task killTask;
 
         private int mobsKilledCount;
@@ -53,26 +53,26 @@ public class AttackPlayerOrMobCommand extends Command {
         private Set<Entity> trackedDeadEntities = new HashSet<>();
 
         private static ItemTarget[] drops = new ItemTarget[]{
-            new ItemTarget("rotten_flesh", 9999),
-            new ItemTarget("bone", 9999),
-            new ItemTarget("string", 9999),
-            new ItemTarget("spider_eye", 9999),
-            new ItemTarget("gunpowder", 9999),
-            new ItemTarget("slime_ball", 9999),
-            new ItemTarget("ender_pearl", 9999),
-            new ItemTarget("blaze_powder", 9999),
-            new ItemTarget("ghast_tear", 9999),
-            new ItemTarget("magma_cream", 9999),
-            new ItemTarget("ender_eye", 9999),
-            new ItemTarget("speckled_melon", 9999),
-            new ItemTarget("gold_nugget", 9999),
-            new ItemTarget("iron_nugget", 9999),
-            new ItemTarget("porkchop", 9999),
-            new ItemTarget("beef", 9999),
-            new ItemTarget("chicken", 9999),
-            new ItemTarget("mutton", 9999),
-            new ItemTarget("rabbit", 9999),
-    };
+                new ItemTarget("rotten_flesh", 9999),
+                new ItemTarget("bone", 9999),
+                new ItemTarget("string", 9999),
+                new ItemTarget("spider_eye", 9999),
+                new ItemTarget("gunpowder", 9999),
+                new ItemTarget("slime_ball", 9999),
+                new ItemTarget("ender_pearl", 9999),
+                new ItemTarget("blaze_powder", 9999),
+                new ItemTarget("ghast_tear", 9999),
+                new ItemTarget("magma_cream", 9999),
+                new ItemTarget("ender_eye", 9999),
+                new ItemTarget("speckled_melon", 9999),
+                new ItemTarget("gold_nugget", 9999),
+                new ItemTarget("iron_nugget", 9999),
+                new ItemTarget("porkchop", 9999),
+                new ItemTarget("beef", 9999),
+                new ItemTarget("chicken", 9999),
+                new ItemTarget("mutton", 9999),
+                new ItemTarget("rabbit", 9999),
+        };
 
         public AttackAndGetDropsTask(String toKill, int killCount) {
             super(drops);
@@ -169,19 +169,19 @@ public class AttackPlayerOrMobCommand extends Command {
             EventBus.unsubscribe(onMobDied);
             trackedDeadEntities.clear();
         }
-    
+
         @Override
         protected boolean isEqualResource(ResourceTask other) {
             if (other instanceof AttackAndGetDropsTask task) {
-                return task .toKill.equals(toKill) && task .mobKillTargetCount == mobKillTargetCount;
+                return task.toKill.equals(toKill) && task.mobKillTargetCount == mobKillTargetCount;
             }
             return false;
         }
-    
+
         @Override
         protected String toDebugStringName() {
             return "Attacking and collect items from " + toKill + " x " + mobKillTargetCount;
         }
     }
-    
+
 }

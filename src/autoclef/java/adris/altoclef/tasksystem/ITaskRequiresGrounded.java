@@ -8,12 +8,12 @@ import net.minecraft.entity.LivingEntity;
  * the player will fall to whatever is below them, perhaps their death.
  */
 public interface ITaskRequiresGrounded extends ITaskCanForce {
-  @Override
-  default boolean shouldForce(Task interruptingCandidate) {
-    if (interruptingCandidate instanceof ITaskOverridesGrounded)
-      return false;
+    @Override
+    default boolean shouldForce(Task interruptingCandidate) {
+        if (interruptingCandidate instanceof ITaskOverridesGrounded)
+            return false;
 
-    LivingEntity player = ((Task)this).controller.getPlayer();
-    return !(player.isOnGround() || player.isSwimming() || player.isTouchingWater() || player.isClimbing());
-  }
+        LivingEntity player = ((Task) this).controller.getPlayer();
+        return !(player.isOnGround() || player.isSwimming() || player.isTouchingWater() || player.isClimbing());
+    }
 }

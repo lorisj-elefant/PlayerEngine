@@ -19,9 +19,9 @@ package baritone.command.defaults;
 
 import baritone.api.IBaritone;
 import baritone.api.command.Command;
+import baritone.api.command.argument.IArgConsumer;
 import baritone.api.command.datatypes.BlockById;
 import baritone.api.command.exception.CommandException;
-import baritone.api.command.argument.IArgConsumer;
 import net.minecraft.server.command.ServerCommandSource;
 
 import java.util.Arrays;

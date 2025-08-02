@@ -175,7 +175,7 @@ public class MovementAscend extends Movement {
             }
         }
         // we can jump from soul sand, but not from a bottom slab
-        boolean jumpingFromBottomSlab =!inLiquid && MovementHelper.isBottomSlab(srcDown);
+        boolean jumpingFromBottomSlab = !inLiquid && MovementHelper.isBottomSlab(srcDown);
         boolean jumpingToBottomSlab = !inLiquid && MovementHelper.isBottomSlab(toPlace);
         if (jumpingFromBottomSlab && !jumpingToBottomSlab) {
             return;// the only thing we can ascend onto from a bottom slab is another bottom slab
@@ -220,9 +220,9 @@ public class MovementAscend extends Movement {
                 }
             }
         }
-        result.oxygenCost = context.oxygenCost(walk/3., context.get(x, y+context.height-1, z));
-        result.oxygenCost += context.oxygenCost(walk/3., context.get(x, y+context.height, z));
-        result.oxygenCost += context.oxygenCost(walk/3., context.get(destX, y+context.height-1, destZ));
+        result.oxygenCost = context.oxygenCost(walk / 3., context.get(x, y + context.height - 1, z));
+        result.oxygenCost += context.oxygenCost(walk / 3., context.get(x, y + context.height, z));
+        result.oxygenCost += context.oxygenCost(walk / 3., context.get(destX, y + context.height - 1, destZ));
         result.cost = totalCost;
     }
 

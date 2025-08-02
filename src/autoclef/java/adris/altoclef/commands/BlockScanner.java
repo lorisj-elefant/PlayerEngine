@@ -19,7 +19,17 @@ import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.WorldChunk;
 
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.PriorityQueue;
+import java.util.Queue;
 import java.util.function.Predicate;
 
 public class BlockScanner {
@@ -112,7 +122,8 @@ public class BlockScanner {
     public Optional<BlockPos> getNearestWithinRange(Vec3d pos, double range, Block... blocks) {
         Optional<BlockPos> nearest = getNearestBlock(pos, blocks);
 
-        if (nearest.isEmpty() || nearest.get().isWithinDistance(new Vec3i((int) pos.x, (int) pos.y, (int) pos.z), range)) return nearest;
+        if (nearest.isEmpty() || nearest.get().isWithinDistance(new Vec3i((int) pos.x, (int) pos.y, (int) pos.z), range))
+            return nearest;
 
         return Optional.empty();
     }
@@ -215,7 +226,7 @@ public class BlockScanner {
 
     public double distanceToClosest(Vec3d pos, Block... blocks) {
         Optional<BlockPos> blockPos = getNearestBlock(blocks);
-        return blockPos.map(value ->  Math.sqrt(BlockPosVer.getSquaredDistance(value, pos))).orElse(Double.POSITIVE_INFINITY);
+        return blockPos.map(value -> Math.sqrt(BlockPosVer.getSquaredDistance(value, pos))).orElse(Double.POSITIVE_INFINITY);
     }
 
     // Checks if 'pos' one of 'blocks' block
@@ -334,7 +345,7 @@ public class BlockScanner {
         }
 
         for (Map.Entry<Block, HashSet<BlockPos>> entry : map.entrySet()) {
-            getFirstFewPositions(entry.getValue(),mod.getPlayer().getPos());
+            getFirstFewPositions(entry.getValue(), mod.getPlayer().getPos());
 
             if (!trackedBlocks.containsKey(entry.getKey())) {
                 trackedBlocks.put(entry.getKey(), new HashSet<>());

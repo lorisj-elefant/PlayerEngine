@@ -12,34 +12,34 @@ import net.minecraft.item.Item;
 import net.minecraft.item.Items;
 
 public class ShearAndCollectBlockTask extends MineAndCollectTask {
-  public ShearAndCollectBlockTask(ItemTarget[] itemTargets, Block... blocksToMine) {
-    super(itemTargets, blocksToMine, MiningRequirement.HAND);
-  }
-  
-  public ShearAndCollectBlockTask(Item[] items, int count, Block... blocksToMine) {
-    this(new ItemTarget[] { new ItemTarget(items, count) },blocksToMine);
-  }
-  
-  public ShearAndCollectBlockTask(Item item, int count, Block... blocksToMine) {
-    this(new Item[] { item }, count, blocksToMine);
-  }
-  
-  protected void onStart() {
-    BotBehaviour botBehaviour = controller.getBehaviour();
-    botBehaviour.push();
-    botBehaviour.forceUseTool((blockState, itemStack) -> 
-        (itemStack.getItem() == Items.SHEARS && ItemHelper.areShearsEffective(blockState.getBlock())));
-    super.onStart();
-  }
-  
-  protected void onStop(Task interruptTask) {
-    controller.getBehaviour().pop();
-    super.onStop(interruptTask);
-  }
-  
-  protected Task onResourceTick(AltoClefController mod) {
-    if (!mod.getItemStorage().hasItem(new Item[] { Items.SHEARS }))
-      return (Task)TaskCatalogue.getItemTask(Items.SHEARS, 1); 
-    return super.onResourceTick(mod);
-  }
+    public ShearAndCollectBlockTask(ItemTarget[] itemTargets, Block... blocksToMine) {
+        super(itemTargets, blocksToMine, MiningRequirement.HAND);
+    }
+
+    public ShearAndCollectBlockTask(Item[] items, int count, Block... blocksToMine) {
+        this(new ItemTarget[]{new ItemTarget(items, count)}, blocksToMine);
+    }
+
+    public ShearAndCollectBlockTask(Item item, int count, Block... blocksToMine) {
+        this(new Item[]{item}, count, blocksToMine);
+    }
+
+    protected void onStart() {
+        BotBehaviour botBehaviour = controller.getBehaviour();
+        botBehaviour.push();
+        botBehaviour.forceUseTool((blockState, itemStack) ->
+                (itemStack.getItem() == Items.SHEARS && ItemHelper.areShearsEffective(blockState.getBlock())));
+        super.onStart();
+    }
+
+    protected void onStop(Task interruptTask) {
+        controller.getBehaviour().pop();
+        super.onStop(interruptTask);
+    }
+
+    protected Task onResourceTick(AltoClefController mod) {
+        if (!mod.getItemStorage().hasItem(new Item[]{Items.SHEARS}))
+            return (Task) TaskCatalogue.getItemTask(Items.SHEARS, 1);
+        return super.onResourceTick(mod);
+    }
 }

@@ -1,7 +1,11 @@
 package adris.altoclef.commands;
 
 import adris.altoclef.AltoClefController;
-import adris.altoclef.commandsystem.*;
+import adris.altoclef.commandsystem.Arg;
+import adris.altoclef.commandsystem.ArgParser;
+import adris.altoclef.commandsystem.Command;
+import adris.altoclef.commandsystem.CommandException;
+import adris.altoclef.commandsystem.ItemList;
 import adris.altoclef.tasks.misc.EquipArmorTask;
 import adris.altoclef.util.ItemTarget;
 import adris.altoclef.util.helpers.ItemHelper;
@@ -23,7 +27,8 @@ public class EquipCommand extends Command {
                 case "gold" -> items = ItemTarget.of(ItemHelper.GOLDEN_ARMORS);
                 case "diamond" -> items = ItemTarget.of(ItemHelper.DIAMOND_ARMORS);
                 case "netherite" -> items = ItemTarget.of(ItemHelper.NETHERITE_ARMORS);
-                default -> items = parser.get(ItemList.class).items; // if only one thing was provided, and it isn't an armor set, try to work it out.
+                default ->
+                        items = parser.get(ItemList.class).items; // if only one thing was provided, and it isn't an armor set, try to work it out.
             }
         } else {
             items = parser.get(ItemList.class).items; // a list of items was provided
@@ -32,7 +37,7 @@ public class EquipCommand extends Command {
         for (ItemTarget target : items) {
             for (Item item : target.getMatches()) {
                 if (!(item instanceof ArmorItem)) {
-                    throw new CommandException("'"+item.toString().toUpperCase() + "' cannot be equipped!");
+                    throw new CommandException("'" + item.toString().toUpperCase() + "' cannot be equipped!");
                 }
             }
         }

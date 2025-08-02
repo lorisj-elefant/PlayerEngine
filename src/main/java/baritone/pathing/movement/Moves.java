@@ -18,7 +18,14 @@
 package baritone.pathing.movement;
 
 import baritone.api.utils.BetterBlockPos;
-import baritone.pathing.movement.movements.*;
+import baritone.pathing.movement.movements.MovementAscend;
+import baritone.pathing.movement.movements.MovementDescend;
+import baritone.pathing.movement.movements.MovementDiagonal;
+import baritone.pathing.movement.movements.MovementDownward;
+import baritone.pathing.movement.movements.MovementFall;
+import baritone.pathing.movement.movements.MovementParkour;
+import baritone.pathing.movement.movements.MovementPillar;
+import baritone.pathing.movement.movements.MovementTraverse;
 import baritone.utils.pathing.MutableMoveResult;
 import net.minecraft.util.math.Direction;
 

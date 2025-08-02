@@ -37,7 +37,7 @@ public class LivingEntityHungerManager {
 
     public void add(int food, float saturationModifier) {
         this.foodLevel = Math.min(food + this.foodLevel, 20);
-        this.foodSaturationLevel = Math.min(this.foodSaturationLevel + (float)food * saturationModifier * 2.0F, (float)this.foodLevel);
+        this.foodSaturationLevel = Math.min(this.foodSaturationLevel + (float) food * saturationModifier * 2.0F, (float) this.foodLevel);
     }
 
     public void eat(Item item, ItemStack stack) {

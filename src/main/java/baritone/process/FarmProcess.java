@@ -34,7 +34,15 @@ import baritone.cache.WorldScanner;
 import baritone.pathing.movement.MovementHelper;
 import baritone.utils.BaritoneProcessHelper;
 import baritone.utils.NotificationHelper;
-import net.minecraft.block.*;
+import net.minecraft.block.AirBlock;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.CactusBlock;
+import net.minecraft.block.CropBlock;
+import net.minecraft.block.Fertilizable;
+import net.minecraft.block.NetherWartBlock;
+import net.minecraft.block.SugarCaneBlock;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.item.Item;
@@ -301,7 +309,7 @@ public final class FarmProcess extends BaritoneProcessHelper implements IFarmPro
                 goalz.add(new GoalBlock(BlockPos.create(item.getX(), item.getY() + 0.1, item.getZ())));
             }
         }
-        if(goalz.isEmpty()){
+        if (goalz.isEmpty()) {
             return new PathingCommand(null, PathingCommandType.REQUEST_PAUSE);
         }
         return new PathingCommand(new GoalComposite(goalz.toArray(new Goal[0])), PathingCommandType.SET_GOAL_AND_PATH);

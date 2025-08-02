@@ -5,9 +5,10 @@
 
 package adris.altoclef.util.serialization;
 
+import net.minecraft.util.math.ChunkPos;
+
 import java.util.Arrays;
 import java.util.Collection;
-import net.minecraft.util.math.ChunkPos;
 
 public class ChunkPosSerializer extends AbstractVectorSerializer<ChunkPos> {
     public ChunkPosSerializer() {

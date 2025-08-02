@@ -20,135 +20,135 @@ import java.util.Optional;
 @SuppressWarnings("ConstantConditions")
 public class FastTravelTask extends Task {
 
-  // Consider ourselves "mostly close enough" when we're in this range of our ideal portal building location in the nether.
-  private static final double IN_NETHER_CLOSE_ENOUGH_THRESHOLD = 15;
+    // Consider ourselves "mostly close enough" when we're in this range of our ideal portal building location in the nether.
+    private static final double IN_NETHER_CLOSE_ENOUGH_THRESHOLD = 15;
 
-  // Collect flint+steel and diamond pickaxe before entering. Or just walk.
-  private final boolean collectPortalMaterialsIfAbsent;
-  private final BlockPos target;
-  private final Integer threshold;
-  // If we fail to move to the precise center after we're "close enough" to our threshold, just call it quits and place the portal.
-  private final TimerGame attemptToMoveToIdealNetherCoordinateTimeout = new TimerGame(15);
-  private boolean forceOverworldWalking;
-  private Task goToOverworldTask;
+    // Collect flint+steel and diamond pickaxe before entering. Or just walk.
+    private final boolean collectPortalMaterialsIfAbsent;
+    private final BlockPos target;
+    private final Integer threshold;
+    // If we fail to move to the precise center after we're "close enough" to our threshold, just call it quits and place the portal.
+    private final TimerGame attemptToMoveToIdealNetherCoordinateTimeout = new TimerGame(15);
+    private boolean forceOverworldWalking;
+    private Task goToOverworldTask;
 
-  /**
-   * Creates fast travel task instance.
-   *
-   * @param overworldTarget                target location in overworld after post travel
-   * @param threshold                      Threshold for when to fast travel vs when to walk
-   * @param collectPortalMaterialsIfAbsent if we don't have (10 obsidian or a diamond pickaxe) and (a flint and steel or fire charge), collect these items. Otherwise just walk the whole way.
-   */
-  public FastTravelTask(BlockPos overworldTarget, Integer threshold, boolean collectPortalMaterialsIfAbsent) {
-    target = overworldTarget;
-    this.threshold = null;
-    this.collectPortalMaterialsIfAbsent = collectPortalMaterialsIfAbsent;
-  }
-
-  /**
-   * Creates fast travel task instance
-   *
-   * @param overworldTarget                target location in overworld after post travel
-   *                                       Bot will use nether travel based on the threshold value in settings.
-   * @param collectPortalMaterialsIfAbsent if we don't have (10 obsidian or a diamond pickaxe) and (a flint and steel or fire charge), collect these items. Otherwise just walk the whole way.
-   */
-  public FastTravelTask(BlockPos overworldTarget, boolean collectPortalMaterialsIfAbsent) {
-    this(overworldTarget, null, collectPortalMaterialsIfAbsent);
-  }
-
-  @Override
-  protected void onStart() {
-    BlockPos netherTarget = new BlockPos(target.getX() / 8, target.getY(), target.getZ() / 8);
-
-    goToOverworldTask = new EnterNetherPortalTask(new ConstructNetherPortalObsidianTask(), Dimension.OVERWORLD,
-            checkPos -> WorldHelper.inRangeXZ(checkPos,netherTarget,7));
-  }
-
-  @Override
-  protected Task onTick() {
-    AltoClefController mod = controller;
-
-    BlockPos netherTarget = new BlockPos(target.getX() / 8, target.getY(), target.getZ() / 8);
-
-    boolean canBuildPortal = mod.getItemStorage().hasItem(Items.DIAMOND_PICKAXE) || mod.getItemStorage().getItemCount(Items.OBSIDIAN) >= 10;
-    boolean canLightPortal = mod.getItemStorage().hasItem(Items.FLINT_AND_STEEL, Items.FIRE_CHARGE);
-
-
-    switch (WorldHelper.getCurrentDimension(controller)) {
-      case OVERWORLD -> {
-        attemptToMoveToIdealNetherCoordinateTimeout.reset();
-        // WALK
-        if (forceOverworldWalking || WorldHelper.inRangeXZ(mod.getPlayer(), target, getOverworldThreshold(mod))) {
-          forceOverworldWalking = true;
-          setDebugState("Walking: We're close enough to our target");
-
-          if (mod.getBlockScanner().anyFound(Blocks.END_PORTAL_FRAME)) {
-            setDebugState("Walking to portal");
-            return new GetToBlockTask(mod.getBlockScanner().getNearestBlock(Blocks.END_PORTAL_FRAME).get());
-          }
-          return new GetToBlockTask(target);
-        }
-        // SUPPLIES
-        if (!canBuildPortal || !canLightPortal) {
-          if (collectPortalMaterialsIfAbsent) {
-            setDebugState("Collecting portal building materials");
-            if (!canBuildPortal)
-              return TaskCatalogue.getItemTask(Items.DIAMOND_PICKAXE, 1);
-            if (!canLightPortal)
-              return TaskCatalogue.getItemTask(Items.FLINT_AND_STEEL, 1);
-          } else {
-            setDebugState("Walking: We don't have portal building materials");
-            return new GetToBlockTask(target);
-          }
-        }
-        // GO TO NETHER
-        return new DefaultGoToDimensionTask(Dimension.NETHER);
-      }
-      case NETHER -> {
-
-        if (!forceOverworldWalking) {
-          // After walking a bit, the moment we go back into the overworld, walk again.
-          Optional<BlockPos> portalEntrance = mod.getMiscBlockTracker().getLastUsedNetherPortal(Dimension.NETHER);
-          if (portalEntrance.isPresent() && !portalEntrance.get().isWithinDistance(new Vec3i((int) mod.getPlayer().getPos().x, (int) mod.getPlayer().getPos().y, (int) mod.getPlayer().getPos().z), 3)) {
-            forceOverworldWalking = true;
-          }
-        }
-
-        // If we're going to the overworld, keep going.
-        if (goToOverworldTask.isActive() && !goToOverworldTask.isFinished()) {
-          setDebugState("Going back to overworld");
-
-          return goToOverworldTask;
-        }
-
-        // PICKUP DROPPED STUFF if we need it
-        if (mod.getItemStorage().getItemCount(Items.OBSIDIAN) < 10) {
-          setDebugState("Making sure we can build our portal");
-          return TaskCatalogue.getItemTask(Items.OBSIDIAN, 10);
-        }
-        if (!canLightPortal && mod.getEntityTracker().itemDropped(Items.FLINT_AND_STEEL, Items.FIRE_CHARGE)) {
-          setDebugState("Making sure we can light our portal");
-          return new PickupDroppedItemTask(new ItemTarget(Items.FLINT_AND_STEEL, Items.FIRE_CHARGE), true);
-        }
-
-        if (WorldHelper.inRangeXZ(mod.getPlayer(), netherTarget, IN_NETHER_CLOSE_ENOUGH_THRESHOLD) &&
-                mod.getBaritone().getPathingBehavior().isSafeToCancel()) {
-          // If we're precisely at our target XZ or if we've tried long enough
-          if ((mod.getPlayer().getBlockX() == netherTarget.getX() && mod.getPlayer().getBlockZ() == netherTarget.getZ()) || attemptToMoveToIdealNetherCoordinateTimeout.elapsed()) {
-            return goToOverworldTask;
-          }
-        }
-
-        attemptToMoveToIdealNetherCoordinateTimeout.reset();
-        setDebugState("Traveling to ideal coordinates");
-        return new GetToXZTask(netherTarget.getX(), netherTarget.getZ());
-      }
-      case END -> {
-        setDebugState("Why are you running this here?");
-        return new DefaultGoToDimensionTask(Dimension.OVERWORLD);
-      }
+    /**
+     * Creates fast travel task instance.
+     *
+     * @param overworldTarget                target location in overworld after post travel
+     * @param threshold                      Threshold for when to fast travel vs when to walk
+     * @param collectPortalMaterialsIfAbsent if we don't have (10 obsidian or a diamond pickaxe) and (a flint and steel or fire charge), collect these items. Otherwise just walk the whole way.
+     */
+    public FastTravelTask(BlockPos overworldTarget, Integer threshold, boolean collectPortalMaterialsIfAbsent) {
+        target = overworldTarget;
+        this.threshold = null;
+        this.collectPortalMaterialsIfAbsent = collectPortalMaterialsIfAbsent;
     }
-    throw new NotImplementedException("Unimplemented dimension: " + WorldHelper.getCurrentDimension(controller));
+
+    /**
+     * Creates fast travel task instance
+     *
+     * @param overworldTarget                target location in overworld after post travel
+     *                                       Bot will use nether travel based on the threshold value in settings.
+     * @param collectPortalMaterialsIfAbsent if we don't have (10 obsidian or a diamond pickaxe) and (a flint and steel or fire charge), collect these items. Otherwise just walk the whole way.
+     */
+    public FastTravelTask(BlockPos overworldTarget, boolean collectPortalMaterialsIfAbsent) {
+        this(overworldTarget, null, collectPortalMaterialsIfAbsent);
+    }
+
+    @Override
+    protected void onStart() {
+        BlockPos netherTarget = new BlockPos(target.getX() / 8, target.getY(), target.getZ() / 8);
+
+        goToOverworldTask = new EnterNetherPortalTask(new ConstructNetherPortalObsidianTask(), Dimension.OVERWORLD,
+                checkPos -> WorldHelper.inRangeXZ(checkPos, netherTarget, 7));
+    }
+
+    @Override
+    protected Task onTick() {
+        AltoClefController mod = controller;
+
+        BlockPos netherTarget = new BlockPos(target.getX() / 8, target.getY(), target.getZ() / 8);
+
+        boolean canBuildPortal = mod.getItemStorage().hasItem(Items.DIAMOND_PICKAXE) || mod.getItemStorage().getItemCount(Items.OBSIDIAN) >= 10;
+        boolean canLightPortal = mod.getItemStorage().hasItem(Items.FLINT_AND_STEEL, Items.FIRE_CHARGE);
+
+
+        switch (WorldHelper.getCurrentDimension(controller)) {
+            case OVERWORLD -> {
+                attemptToMoveToIdealNetherCoordinateTimeout.reset();
+                // WALK
+                if (forceOverworldWalking || WorldHelper.inRangeXZ(mod.getPlayer(), target, getOverworldThreshold(mod))) {
+                    forceOverworldWalking = true;
+                    setDebugState("Walking: We're close enough to our target");
+
+                    if (mod.getBlockScanner().anyFound(Blocks.END_PORTAL_FRAME)) {
+                        setDebugState("Walking to portal");
+                        return new GetToBlockTask(mod.getBlockScanner().getNearestBlock(Blocks.END_PORTAL_FRAME).get());
+                    }
+                    return new GetToBlockTask(target);
+                }
+                // SUPPLIES
+                if (!canBuildPortal || !canLightPortal) {
+                    if (collectPortalMaterialsIfAbsent) {
+                        setDebugState("Collecting portal building materials");
+                        if (!canBuildPortal)
+                            return TaskCatalogue.getItemTask(Items.DIAMOND_PICKAXE, 1);
+                        if (!canLightPortal)
+                            return TaskCatalogue.getItemTask(Items.FLINT_AND_STEEL, 1);
+                    } else {
+                        setDebugState("Walking: We don't have portal building materials");
+                        return new GetToBlockTask(target);
+                    }
+                }
+                // GO TO NETHER
+                return new DefaultGoToDimensionTask(Dimension.NETHER);
+            }
+            case NETHER -> {
+
+                if (!forceOverworldWalking) {
+                    // After walking a bit, the moment we go back into the overworld, walk again.
+                    Optional<BlockPos> portalEntrance = mod.getMiscBlockTracker().getLastUsedNetherPortal(Dimension.NETHER);
+                    if (portalEntrance.isPresent() && !portalEntrance.get().isWithinDistance(new Vec3i((int) mod.getPlayer().getPos().x, (int) mod.getPlayer().getPos().y, (int) mod.getPlayer().getPos().z), 3)) {
+                        forceOverworldWalking = true;
+                    }
+                }
+
+                // If we're going to the overworld, keep going.
+                if (goToOverworldTask.isActive() && !goToOverworldTask.isFinished()) {
+                    setDebugState("Going back to overworld");
+
+                    return goToOverworldTask;
+                }
+
+                // PICKUP DROPPED STUFF if we need it
+                if (mod.getItemStorage().getItemCount(Items.OBSIDIAN) < 10) {
+                    setDebugState("Making sure we can build our portal");
+                    return TaskCatalogue.getItemTask(Items.OBSIDIAN, 10);
+                }
+                if (!canLightPortal && mod.getEntityTracker().itemDropped(Items.FLINT_AND_STEEL, Items.FIRE_CHARGE)) {
+                    setDebugState("Making sure we can light our portal");
+                    return new PickupDroppedItemTask(new ItemTarget(Items.FLINT_AND_STEEL, Items.FIRE_CHARGE), true);
+                }
+
+                if (WorldHelper.inRangeXZ(mod.getPlayer(), netherTarget, IN_NETHER_CLOSE_ENOUGH_THRESHOLD) &&
+                        mod.getBaritone().getPathingBehavior().isSafeToCancel()) {
+                    // If we're precisely at our target XZ or if we've tried long enough
+                    if ((mod.getPlayer().getBlockX() == netherTarget.getX() && mod.getPlayer().getBlockZ() == netherTarget.getZ()) || attemptToMoveToIdealNetherCoordinateTimeout.elapsed()) {
+                        return goToOverworldTask;
+                    }
+                }
+
+                attemptToMoveToIdealNetherCoordinateTimeout.reset();
+                setDebugState("Traveling to ideal coordinates");
+                return new GetToXZTask(netherTarget.getX(), netherTarget.getZ());
+            }
+            case END -> {
+                setDebugState("Why are you running this here?");
+                return new DefaultGoToDimensionTask(Dimension.OVERWORLD);
+            }
+        }
+        throw new NotImplementedException("Unimplemented dimension: " + WorldHelper.getCurrentDimension(controller));
         /*
             if we're in the overworld:
                 if we're outside of TRAVEL_THRESHHOLD and NOT forcefully walking:
@@ -177,38 +177,38 @@ public class FastTravelTask extends Task {
                 go to overworld
          */
 
-  }
-
-  private int getOverworldThreshold(AltoClefController mod) {
-    int threshold;
-    //noinspection ReplaceNullCheck
-    if (this.threshold == null) {
-      threshold = mod.getModSettings().getNetherFastTravelWalkingRange();
-    } else {
-      threshold = this.threshold;
     }
-    // We should never leave the nether and STILL be outside our walk zone.
-    threshold = Math.max((int) (IN_NETHER_CLOSE_ENOUGH_THRESHOLD * 8) + 32, threshold);
-    // Nether portals less than 16 blocks point to the same portal (128 overworld), so make sure we don't redo work. Just a redundancy check
-    threshold = Math.max(16 * 8, threshold);
-    return threshold;
-  }
 
-  @Override
-  protected void onStop(Task interruptTask) {
-
-  }
-
-  @Override
-  protected boolean isEqual(Task other) {
-    if (other instanceof FastTravelTask task) {
-      return task.target.equals(target) && task.collectPortalMaterialsIfAbsent == collectPortalMaterialsIfAbsent && Objects.equals(task.threshold, threshold);
+    private int getOverworldThreshold(AltoClefController mod) {
+        int threshold;
+        //noinspection ReplaceNullCheck
+        if (this.threshold == null) {
+            threshold = mod.getModSettings().getNetherFastTravelWalkingRange();
+        } else {
+            threshold = this.threshold;
+        }
+        // We should never leave the nether and STILL be outside our walk zone.
+        threshold = Math.max((int) (IN_NETHER_CLOSE_ENOUGH_THRESHOLD * 8) + 32, threshold);
+        // Nether portals less than 16 blocks point to the same portal (128 overworld), so make sure we don't redo work. Just a redundancy check
+        threshold = Math.max(16 * 8, threshold);
+        return threshold;
     }
-    return false;
-  }
 
-  @Override
-  protected String toDebugString() {
-    return "Fast travelling to " + target.toShortString();
-  }
+    @Override
+    protected void onStop(Task interruptTask) {
+
+    }
+
+    @Override
+    protected boolean isEqual(Task other) {
+        if (other instanceof FastTravelTask task) {
+            return task.target.equals(target) && task.collectPortalMaterialsIfAbsent == collectPortalMaterialsIfAbsent && Objects.equals(task.threshold, threshold);
+        }
+        return false;
+    }
+
+    @Override
+    protected String toDebugString() {
+        return "Fast travelling to " + target.toShortString();
+    }
 }

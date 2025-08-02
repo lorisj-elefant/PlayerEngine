@@ -43,7 +43,6 @@ import baritone.pathing.movement.Movement;
 import baritone.pathing.movement.MovementHelper;
 import baritone.utils.BaritoneProcessHelper;
 import baritone.utils.BlockStateInterface;
-import baritone.utils.NotificationHelper;
 import baritone.utils.PathingCommandContext;
 import baritone.utils.schematic.MapArtSchematic;
 import baritone.utils.schematic.SchematicSystem;
@@ -661,7 +660,7 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
             BlockState state = bcc.bsi.get0(pos);
             if (state.getBlock() instanceof AirBlock) {
                 BlockState desired = bcc.getSchematic(pos.x, pos.y, pos.z, state);
-                if (desired!=null && approxPlaceable.stream().anyMatch(placeableState -> placeableState.getBlock() == desired.getBlock())) {
+                if (desired != null && approxPlaceable.stream().anyMatch(placeableState -> placeableState.getBlock() == desired.getBlock())) {
                     placeable.add(pos);
                 } else {
                     missing.put(desired, 1 + missing.getOrDefault(desired, 0));
@@ -851,7 +850,7 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
     private List<BlockState> approxPlaceable(int size) {
         List<BlockState> result = new ArrayList<>();
         for (int i = 0; i < size; i++) {
-            ItemStack stack = ((IInventoryProvider)ctx.entity()).getLivingInventory().main.get(i);
+            ItemStack stack = ((IInventoryProvider) ctx.entity()).getLivingInventory().main.get(i);
             if (stack.isEmpty() || !(stack.getItem() instanceof BlockItem)) {
                 result.add(Blocks.AIR.getDefaultState());
                 continue;
@@ -906,7 +905,7 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
             return true;
         }
         //if (itemVerify) {
-            return current.getBlock() == desired.getBlock();
+        return current.getBlock() == desired.getBlock();
 //        }else {
 //            return current.equals(desired);
 //        }

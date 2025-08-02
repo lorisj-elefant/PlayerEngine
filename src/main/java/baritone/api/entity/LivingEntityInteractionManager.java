@@ -19,9 +19,6 @@ package baritone.api.entity;
 
 import baritone.api.utils.IBucketAccessor;
 import com.mojang.logging.LogUtils;
-
-import java.util.Objects;
-
 import net.minecraft.advancement.criterion.Criteria;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -34,12 +31,9 @@ import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffectUtil;
 import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.item.BucketItem;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.ItemUsage;
 import net.minecraft.item.ItemUsageContext;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
@@ -48,7 +42,6 @@ import net.minecraft.registry.tag.FluidTags;
 import net.minecraft.server.network.ServerPlayNetworkHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.stat.Stats;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
@@ -66,7 +59,7 @@ import net.minecraft.world.event.GameEvent;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
-import static net.minecraft.item.BucketItem.getEmptiedStack;
+import java.util.Objects;
 
 public class LivingEntityInteractionManager {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -475,7 +468,7 @@ public class LivingEntityInteractionManager {
         if (inputStack.isEmpty()) {
             return outputStack;
         } else {
-            if (!((IInventoryProvider)player).getLivingInventory().insertStack(outputStack)) {
+            if (!((IInventoryProvider) player).getLivingInventory().insertStack(outputStack)) {
                 player.dropStack(outputStack);
             }
 

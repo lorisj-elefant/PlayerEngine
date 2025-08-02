@@ -33,7 +33,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(Entity.class)
 public abstract class MixinEntity implements IEntityAccessor {
-    @Shadow public abstract World getWorld();
+    @Shadow
+    public abstract World getWorld();
 
     @Override
     @Invoker("getEyeHeight")

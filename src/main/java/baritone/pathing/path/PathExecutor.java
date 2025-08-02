@@ -35,7 +35,11 @@ import baritone.pathing.calc.AbstractNodeCostSearch;
 import baritone.pathing.movement.CalculationContext;
 import baritone.pathing.movement.Movement;
 import baritone.pathing.movement.MovementHelper;
-import baritone.pathing.movement.movements.*;
+import baritone.pathing.movement.movements.MovementAscend;
+import baritone.pathing.movement.movements.MovementDescend;
+import baritone.pathing.movement.movements.MovementDiagonal;
+import baritone.pathing.movement.movements.MovementFall;
+import baritone.pathing.movement.movements.MovementTraverse;
 import baritone.utils.BlockStateInterface;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.util.Pair;
@@ -43,7 +47,12 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * Behavior to execute a precomputed path

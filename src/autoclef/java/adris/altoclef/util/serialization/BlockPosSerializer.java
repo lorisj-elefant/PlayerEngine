@@ -5,9 +5,10 @@
 
 package adris.altoclef.util.serialization;
 
+import net.minecraft.util.math.BlockPos;
+
 import java.util.Arrays;
 import java.util.Collection;
-import net.minecraft.util.math.BlockPos;
 
 public class BlockPosSerializer extends AbstractVectorSerializer<BlockPos> {
     public BlockPosSerializer() {

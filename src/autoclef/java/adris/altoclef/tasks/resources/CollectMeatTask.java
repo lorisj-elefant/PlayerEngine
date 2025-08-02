@@ -1,20 +1,21 @@
 package adris.altoclef.tasks.resources;
 
 import adris.altoclef.AltoClefController;
-import adris.altoclef.TaskCatalogue;
-import adris.altoclef.multiversion.item.ItemVer;
 import adris.altoclef.tasks.container.SmeltInSmokerTask;
 import adris.altoclef.tasks.movement.PickupDroppedItemTask;
 import adris.altoclef.tasks.movement.TimeoutWanderTask;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.ItemTarget;
 import adris.altoclef.util.SmeltTarget;
-import adris.altoclef.util.helpers.StorageHelper;
 import adris.altoclef.util.time.TimerGame;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.passive.*;
+import net.minecraft.entity.passive.ChickenEntity;
+import net.minecraft.entity.passive.CowEntity;
+import net.minecraft.entity.passive.PigEntity;
+import net.minecraft.entity.passive.RabbitEntity;
+import net.minecraft.entity.passive.SheepEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 
@@ -25,61 +26,61 @@ import java.util.stream.Stream;
 
 public class CollectMeatTask extends Task {
 
-  public static final CollectFoodTask.CookableFoodTarget[] COOKABLE_MEATS = {
-          new CollectFoodTask.CookableFoodTarget("beef", CowEntity.class),
-          new CollectFoodTask.CookableFoodTarget("porkchop", PigEntity.class),
-          new CollectFoodTask.CookableFoodTarget("chicken", ChickenEntity.class),
-          new CollectFoodTask.CookableFoodTarget("mutton", SheepEntity.class),
-          new CollectFoodTask.CookableFoodTarget("rabbit", RabbitEntity.class)
-  };
-  private static final double NEARBY_PICKUP_RADIUS = 15.0;
+    public static final CollectFoodTask.CookableFoodTarget[] COOKABLE_MEATS = {
+            new CollectFoodTask.CookableFoodTarget("beef", CowEntity.class),
+            new CollectFoodTask.CookableFoodTarget("porkchop", PigEntity.class),
+            new CollectFoodTask.CookableFoodTarget("chicken", ChickenEntity.class),
+            new CollectFoodTask.CookableFoodTarget("mutton", SheepEntity.class),
+            new CollectFoodTask.CookableFoodTarget("rabbit", RabbitEntity.class)
+    };
+    private static final double NEARBY_PICKUP_RADIUS = 15.0;
 
 
-  private final double unitsNeeded;
-  private final TimerGame checkNewOptionsTimer = new TimerGame(10);
-  private Task currentResourceTask = null;
+    private final double unitsNeeded;
+    private final TimerGame checkNewOptionsTimer = new TimerGame(10);
+    private Task currentResourceTask = null;
 
-  public CollectMeatTask(double unitsNeeded) {
-    this .unitsNeeded = unitsNeeded;
-  }
-
-  @Override
-  protected void onStart() {
-    controller.getBehaviour().push();
-    // Protect all cookable meats, both raw and cooked.
-    for (CollectFoodTask.CookableFoodTarget meat : COOKABLE_MEATS) {
-      controller.getBehaviour().addProtectedItems(meat.getRaw(), meat.getCooked());
-    }
-  }
-
-  @Override
-  protected Task onTick() {
-    CollectFoodTask.blackListChickenJockeys(controller);
-
-    double potentialFood = calculateFoodPotential(controller);
-
-    // If we have enough potential food from raw meat, cook it.
-    if (potentialFood >= unitsNeeded) {
-      SmeltTarget toSmelt = getBestSmeltTarget(controller);
-      if (toSmelt != null) {
-        setDebugState("Cooking meat");
-        return new SmeltInSmokerTask(toSmelt);
-      }
+    public CollectMeatTask(double unitsNeeded) {
+        this.unitsNeeded = unitsNeeded;
     }
 
-    // Re-evaluate our strategy periodically.
-    if (checkNewOptionsTimer.elapsed()) {
-      checkNewOptionsTimer.reset();
-      currentResourceTask = null;
+    @Override
+    protected void onStart() {
+        controller.getBehaviour().push();
+        // Protect all cookable meats, both raw and cooked.
+        for (CollectFoodTask.CookableFoodTarget meat : COOKABLE_MEATS) {
+            controller.getBehaviour().addProtectedItems(meat.getRaw(), meat.getCooked());
+        }
     }
 
-    // If we have a cached task, run it.
-    if (currentResourceTask != null && currentResourceTask.isActive() && !currentResourceTask.isFinished() && !currentResourceTask.thisOrChildAreTimedOut()) {
-      return currentResourceTask;
-    }
+    @Override
+    protected Task onTick() {
+        CollectFoodTask.blackListChickenJockeys(controller);
 
-    // Strategy: Find the best meat source.
-    // 1. Pick up any dropped raw/cooked meat.
+        double potentialFood = calculateFoodPotential(controller);
+
+        // If we have enough potential food from raw meat, cook it.
+        if (potentialFood >= unitsNeeded) {
+            SmeltTarget toSmelt = getBestSmeltTarget(controller);
+            if (toSmelt != null) {
+                setDebugState("Cooking meat");
+                return new SmeltInSmokerTask(toSmelt);
+            }
+        }
+
+        // Re-evaluate our strategy periodically.
+        if (checkNewOptionsTimer.elapsed()) {
+            checkNewOptionsTimer.reset();
+            currentResourceTask = null;
+        }
+
+        // If we have a cached task, run it.
+        if (currentResourceTask != null && currentResourceTask.isActive() && !currentResourceTask.isFinished() && !currentResourceTask.thisOrChildAreTimedOut()) {
+            return currentResourceTask;
+        }
+
+        // Strategy: Find the best meat source.
+        // 1. Pick up any dropped raw/cooked meat.
 //    for (CollectFoodTask.CookableFoodTarget cookable : COOKABLE_MEATS) {
 //      if (controller.getEntityTracker().itemDropped(cookable.getRaw(), cookable.getCooked())) {
 //        setDebugState("Picking up dropped meat");
@@ -87,115 +88,115 @@ public class CollectMeatTask extends Task {
 //        return currentResourceTask;
 //      }
 //    }
-    Item[] allMeats = Arrays.stream(COOKABLE_MEATS).flatMap(meat -> Stream.of(meat.getRaw(), meat.getCooked())).toArray(Item[]::new);
-    Optional<ItemEntity> closestDrop = controller.getEntityTracker().getClosestItemDrop(controller.getPlayer().getPos(), allMeats);
+        Item[] allMeats = Arrays.stream(COOKABLE_MEATS).flatMap(meat -> Stream.of(meat.getRaw(), meat.getCooked())).toArray(Item[]::new);
+        Optional<ItemEntity> closestDrop = controller.getEntityTracker().getClosestItemDrop(controller.getPlayer().getPos(), allMeats);
 
-    if (closestDrop.isPresent() && closestDrop.get().distanceTo(controller.getPlayer()) < NEARBY_PICKUP_RADIUS) {
-      setDebugState("Picking up nearby dropped meat");
-      currentResourceTask = new PickupDroppedItemTask(new ItemTarget(allMeats, 9999), true);
-      return currentResourceTask;
-    }
-
-    // 2. Kill animals for meat (pick the best one).
-    Entity bestEntityToKill = getBestAnimalToKill(controller);
-    if (bestEntityToKill != null) {
-      setDebugState("Hunting " + bestEntityToKill.getType().getName().getString());
-      Item rawFood = Arrays.stream(COOKABLE_MEATS)
-              .filter(c -> c.mobToKill == bestEntityToKill.getClass())
-              .findFirst()
-              .get()
-              .getRaw();
-      currentResourceTask = new KillAndLootTask(bestEntityToKill.getClass(), new ItemTarget(rawFood, 1));
-      return currentResourceTask;
-    }
-
-    // 3. If nothing is found, wander.
-    setDebugState("Searching for animals...");
-    return new TimeoutWanderTask();
-  }
-
-  @Override
-  protected void onStop(Task interruptTask) {
-    controller.getBehaviour().pop();
-  }
-
-  @Override
-  public boolean isFinished() {
-    // The goal is met if we have enough COOKED meat.
-    // We don't care about potential food from raw meat here.
-    double currentFoodScore = 0;
-    for (CollectFoodTask.CookableFoodTarget meat : COOKABLE_MEATS) {
-      currentFoodScore += controller.getItemStorage().getItemCount(meat.getCooked()) * meat.getCookedUnits();
-    }
-    return currentFoodScore >= unitsNeeded;
-  }
-
-  @Override
-  protected boolean isEqual(Task other) {
-    if (other instanceof CollectMeatTask task) {
-      return task .unitsNeeded == this .unitsNeeded;
-    }
-    return false;
-  }
-
-  @Override
-  protected String toDebugString() {
-    return "Collecting " + unitsNeeded + " units of meat.";
-  }
-
-  private SmeltTarget getBestSmeltTarget(AltoClefController controller) {
-    for (CollectFoodTask.CookableFoodTarget cookable : COOKABLE_MEATS) {
-      int rawCount = controller.getItemStorage().getItemCount(cookable.getRaw());
-      if (rawCount > 0) {
-        return new SmeltTarget(new ItemTarget(cookable.getCooked(), rawCount), new ItemTarget(cookable.getRaw(), rawCount));
-      }
-    }
-    return null;
-  }
-
-  private Entity getBestAnimalToKill(AltoClefController controller) {
-    double bestScore = -1;
-    Entity bestEntity = null;
-    Predicate<Entity> notBaby = entity -> entity instanceof LivingEntity && !((LivingEntity) entity).isBaby();
-
-    for (CollectFoodTask.CookableFoodTarget cookable : COOKABLE_MEATS) {
-      if (!controller.getEntityTracker().entityFound(cookable.mobToKill)) continue;
-
-      Optional<Entity> nearest = controller.getEntityTracker().getClosestEntity(controller.getEntity().getPos(), notBaby, cookable.mobToKill);
-
-      if (nearest.isPresent()) {
-        double distanceSq = nearest.get().getPos().squaredDistanceTo(controller.getEntity().getPos());
-        if (distanceSq == 0) continue;
-        double score = (double) cookable.getCookedUnits() / distanceSq;
-        if (score > bestScore) {
-          bestScore = score;
-          bestEntity = nearest.get();
+        if (closestDrop.isPresent() && closestDrop.get().distanceTo(controller.getPlayer()) < NEARBY_PICKUP_RADIUS) {
+            setDebugState("Picking up nearby dropped meat");
+            currentResourceTask = new PickupDroppedItemTask(new ItemTarget(allMeats, 9999), true);
+            return currentResourceTask;
         }
-      }
-    }
-    return bestEntity;
-  }
 
-  private static double calculateFoodPotential(AltoClefController controller) {
-    double potentialFood = 0;
-    for (ItemStack stack : controller.getItemStorage().getItemStacksPlayerInventory(true)) {
-      potentialFood += getFoodPotential(stack);
-    }
-    return potentialFood;
-  }
+        // 2. Kill animals for meat (pick the best one).
+        Entity bestEntityToKill = getBestAnimalToKill(controller);
+        if (bestEntityToKill != null) {
+            setDebugState("Hunting " + bestEntityToKill.getType().getName().getString());
+            Item rawFood = Arrays.stream(COOKABLE_MEATS)
+                    .filter(c -> c.mobToKill == bestEntityToKill.getClass())
+                    .findFirst()
+                    .get()
+                    .getRaw();
+            currentResourceTask = new KillAndLootTask(bestEntityToKill.getClass(), new ItemTarget(rawFood, 1));
+            return currentResourceTask;
+        }
 
-  public static double getFoodPotential(ItemStack food) {
-    if (food == null || food.isEmpty()) return 0;
-    int count = food.getCount();
-
-    for (CollectFoodTask.CookableFoodTarget cookable : COOKABLE_MEATS) {
-      if (food.getItem() == cookable.getRaw()) {
-        return (double) count * cookable.getCookedUnits();
-      }
-      if(food.getItem() == cookable.getCooked()){
-        return (double) count * cookable.getCookedUnits();
-      }
+        // 3. If nothing is found, wander.
+        setDebugState("Searching for animals...");
+        return new TimeoutWanderTask();
     }
-    return 0;
-  }
+
+    @Override
+    protected void onStop(Task interruptTask) {
+        controller.getBehaviour().pop();
+    }
+
+    @Override
+    public boolean isFinished() {
+        // The goal is met if we have enough COOKED meat.
+        // We don't care about potential food from raw meat here.
+        double currentFoodScore = 0;
+        for (CollectFoodTask.CookableFoodTarget meat : COOKABLE_MEATS) {
+            currentFoodScore += controller.getItemStorage().getItemCount(meat.getCooked()) * meat.getCookedUnits();
+        }
+        return currentFoodScore >= unitsNeeded;
+    }
+
+    @Override
+    protected boolean isEqual(Task other) {
+        if (other instanceof CollectMeatTask task) {
+            return task.unitsNeeded == this.unitsNeeded;
+        }
+        return false;
+    }
+
+    @Override
+    protected String toDebugString() {
+        return "Collecting " + unitsNeeded + " units of meat.";
+    }
+
+    private SmeltTarget getBestSmeltTarget(AltoClefController controller) {
+        for (CollectFoodTask.CookableFoodTarget cookable : COOKABLE_MEATS) {
+            int rawCount = controller.getItemStorage().getItemCount(cookable.getRaw());
+            if (rawCount > 0) {
+                return new SmeltTarget(new ItemTarget(cookable.getCooked(), rawCount), new ItemTarget(cookable.getRaw(), rawCount));
+            }
+        }
+        return null;
+    }
+
+    private Entity getBestAnimalToKill(AltoClefController controller) {
+        double bestScore = -1;
+        Entity bestEntity = null;
+        Predicate<Entity> notBaby = entity -> entity instanceof LivingEntity && !((LivingEntity) entity).isBaby();
+
+        for (CollectFoodTask.CookableFoodTarget cookable : COOKABLE_MEATS) {
+            if (!controller.getEntityTracker().entityFound(cookable.mobToKill)) continue;
+
+            Optional<Entity> nearest = controller.getEntityTracker().getClosestEntity(controller.getEntity().getPos(), notBaby, cookable.mobToKill);
+
+            if (nearest.isPresent()) {
+                double distanceSq = nearest.get().getPos().squaredDistanceTo(controller.getEntity().getPos());
+                if (distanceSq == 0) continue;
+                double score = (double) cookable.getCookedUnits() / distanceSq;
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestEntity = nearest.get();
+                }
+            }
+        }
+        return bestEntity;
+    }
+
+    private static double calculateFoodPotential(AltoClefController controller) {
+        double potentialFood = 0;
+        for (ItemStack stack : controller.getItemStorage().getItemStacksPlayerInventory(true)) {
+            potentialFood += getFoodPotential(stack);
+        }
+        return potentialFood;
+    }
+
+    public static double getFoodPotential(ItemStack food) {
+        if (food == null || food.isEmpty()) return 0;
+        int count = food.getCount();
+
+        for (CollectFoodTask.CookableFoodTarget cookable : COOKABLE_MEATS) {
+            if (food.getItem() == cookable.getRaw()) {
+                return (double) count * cookable.getCookedUnits();
+            }
+            if (food.getItem() == cookable.getCooked()) {
+                return (double) count * cookable.getCookedUnits();
+            }
+        }
+        return 0;
+    }
 }

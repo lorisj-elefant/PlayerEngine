@@ -8,13 +8,14 @@ package adris.altoclef.tasks.entity;
 import adris.altoclef.AltoClefController;
 import adris.altoclef.tasks.AbstractDoToClosestObjectTask;
 import adris.altoclef.tasksystem.Task;
+import net.minecraft.entity.Entity;
+import net.minecraft.util.math.Vec3d;
+
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import net.minecraft.entity.Entity;
-import net.minecraft.util.math.Vec3d;
 
 public class DoToClosestEntityTask extends AbstractDoToClosestObjectTask<Entity> {
     private final Class[] targetEntities;
@@ -34,11 +35,11 @@ public class DoToClosestEntityTask extends AbstractDoToClosestObjectTask<Entity>
     }
 
     public DoToClosestEntityTask(Function<Entity, Task> getTargetTask, Predicate<Entity> shouldInteractWith, Class... entities) {
-        this((Supplier)null, getTargetTask, shouldInteractWith, entities);
+        this((Supplier) null, getTargetTask, shouldInteractWith, entities);
     }
 
     public DoToClosestEntityTask(Function<Entity, Task> getTargetTask, Class... entities) {
-        this((Supplier)null, getTargetTask, (entity) -> true, entities);
+        this((Supplier) null, getTargetTask, (entity) -> true, entities);
     }
 
     protected Vec3d getPos(AltoClefController mod, Entity obj) {
@@ -50,15 +51,15 @@ public class DoToClosestEntityTask extends AbstractDoToClosestObjectTask<Entity>
     }
 
     protected Vec3d getOriginPos(AltoClefController mod) {
-        return this.getOriginPos != null ? (Vec3d)this.getOriginPos.get() : mod.getPlayer().getPos();
+        return this.getOriginPos != null ? (Vec3d) this.getOriginPos.get() : mod.getPlayer().getPos();
     }
 
     protected Task getGoalTask(Entity obj) {
-        return (Task)this.getTargetTask.apply(obj);
+        return (Task) this.getTargetTask.apply(obj);
     }
 
     protected boolean isValid(AltoClefController mod, Entity obj) {
-        return obj.isAlive() && mod.getEntityTracker().isEntityReachable(obj) && obj!=mod.getEntity();
+        return obj.isAlive() && mod.getEntityTracker().isEntityReachable(obj) && obj != mod.getEntity();
     }
 
     protected void onStart() {

@@ -43,7 +43,7 @@ public class BlockPlaceHelper {
         }
         HitResult mouseOver = ctx.objectMouseOver();
         boolean isRowingBoat = ctx.entity().getVehicle() != null && ctx.entity().getVehicle() instanceof BoatEntity;
-        if (!rightClickRequested  || !(ctx.entity() instanceof IInventoryProvider) || isRowingBoat || mouseOver == null || mouseOver.getType() != HitResult.Type.BLOCK) {
+        if (!rightClickRequested || !(ctx.entity() instanceof IInventoryProvider) || isRowingBoat || mouseOver == null || mouseOver.getType() != HitResult.Type.BLOCK) {
             return;
         }
 

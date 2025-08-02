@@ -26,17 +26,14 @@ import baritone.api.process.PathingCommand;
 import baritone.api.process.PathingCommandType;
 import baritone.api.utils.Rotation;
 import baritone.api.utils.RotationUtils;
-import baritone.api.utils.input.Input;
 import baritone.entity.CustomFishingBobberEntity;
 import baritone.pathing.movement.MovementHelper;
 import baritone.utils.BaritoneProcessHelper;
 import net.minecraft.block.Blocks;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.projectile.FishingBobberEntity;
 import net.minecraft.item.FishingRodItem;
 import net.minecraft.item.ItemStack;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.Hand;
@@ -195,9 +192,9 @@ public final class FishingProcess extends BaritoneProcessHelper implements IBari
     }
 
     private void handleWaitingForBiteState() {
-        if (this.bobber == null || !this.bobber.isAlive() || timeoutTicks<60) {
+        if (this.bobber == null || !this.bobber.isAlive() || timeoutTicks < 60) {
             this.bobber = findOurBobber();
-            if (this.bobber == null || timeoutTicks<60) {
+            if (this.bobber == null || timeoutTicks < 60) {
                 timeoutTicks++;
                 if (timeoutTicks > 70) {
                     //logDirect("Bobber not found, recasting.");

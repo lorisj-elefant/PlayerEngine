@@ -191,9 +191,9 @@ public final class DefaultCommands {
     private static int runCommand(ServerCommandSource source, Entity target, String command) throws CommandSyntaxException {
         if (!(target instanceof LivingEntity)) throw EntityArgumentType.ENTITY_NOT_FOUND_EXCEPTION.create();
         try {
-            List<LivingEntity> automatoneEntities = target.getWorld().getEntitiesByClass(LivingEntity.class, target.getBoundingBox().expand(100, 100, 100), (e)->true);
-            for(LivingEntity entity: automatoneEntities){
-                if(entity instanceof IAutomatone) {
+            List<LivingEntity> automatoneEntities = target.getWorld().getEntitiesByClass(LivingEntity.class, target.getBoundingBox().expand(100, 100, 100), (e) -> true);
+            for (LivingEntity entity : automatoneEntities) {
+                if (entity instanceof IAutomatone) {
                     runCommand(source, command, BaritoneAPI.getProvider().getBaritone(entity));
                 }
             }

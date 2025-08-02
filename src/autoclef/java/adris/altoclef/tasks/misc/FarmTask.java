@@ -34,8 +34,8 @@ public class FarmTask extends Task {
     private final BlockPos center;
 
     public FarmTask(Integer range, BlockPos center) {
-        this .range = range;
-        this .center = center;
+        this.range = range;
+        this.center = center;
     }
 
     public FarmTask() {
@@ -82,7 +82,7 @@ public class FarmTask extends Task {
     @Override
     protected boolean isEqual(Task other) {
         if (other instanceof FarmTask task) {
-            return Objects.equals(task .range, range) && Objects.equals(task .center, center);
+            return Objects.equals(task.range, range) && Objects.equals(task.center, center);
         }
         return false;
     }

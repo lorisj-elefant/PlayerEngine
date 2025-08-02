@@ -29,7 +29,9 @@ import org.spongepowered.asm.mixin.Shadow;
 @Mixin(ServerChunkManager.class)
 public abstract class MixinServerChunkManager implements ServerChunkManagerAccessor {
 
-    @Shadow @Nullable protected abstract ChunkHolder getChunkHolder(long pos);
+    @Shadow
+    @Nullable
+    protected abstract ChunkHolder getChunkHolder(long pos);
 
     @Override
     public @Nullable WorldChunk automatone$getChunkNow(int chunkX, int chunkZ) {

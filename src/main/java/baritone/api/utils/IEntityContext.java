@@ -115,7 +115,8 @@ public interface IEntityContext {
             return;
         }
         LivingEntity entity = entity();
-        if (entity instanceof PlayerEntity) ((PlayerEntity) entity).sendMessage(Text.literal(message).formatted(Formatting.GRAY), false);
+        if (entity instanceof PlayerEntity)
+            ((PlayerEntity) entity).sendMessage(Text.literal(message).formatted(Formatting.GRAY), false);
 
         if (!BaritoneAPI.getGlobalSettings().syncWithOps.get()) return;
 

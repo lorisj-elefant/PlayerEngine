@@ -3,13 +3,11 @@ package adris.altoclef.control;
 import adris.altoclef.AltoClefController;
 import adris.altoclef.Debug;
 import adris.altoclef.util.ItemTarget;
-import adris.altoclef.util.helpers.ItemHelper;
 import adris.altoclef.util.slots.PlayerSlot;
 import adris.altoclef.util.slots.Slot;
 import baritone.api.entity.IInventoryProvider;
 import baritone.api.entity.LivingEntityInventory;
 import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ArmorItem;
 import net.minecraft.item.BucketItem;
 import net.minecraft.item.EmptyMapItem;
@@ -27,7 +25,6 @@ import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.util.collection.DefaultedList;
 
 import java.util.Arrays;
-import java.util.Optional;
 import java.util.function.Predicate;
 
 public class SlotHandler {
@@ -35,7 +32,7 @@ public class SlotHandler {
     private ItemStack cursorStack = ItemStack.EMPTY;
 
     public SlotHandler(AltoClefController controller) {
-        this .controller = controller;
+        this.controller = controller;
     }
 
     public ItemStack getCursorStack() {

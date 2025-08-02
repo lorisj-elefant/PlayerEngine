@@ -187,7 +187,7 @@ public class MovementPillar extends Movement {
         } else {
             result.cost = JUMP_ONE_BLOCK_COST + placeCost + context.jumpPenalty + totalHardness;
             // Not swimmable so no water
-            result.oxygenCost = context.oxygenCost(JUMP_ONE_BLOCK_COST+placeCost+totalHardness, Blocks.AIR.getDefaultState());
+            result.oxygenCost = context.oxygenCost(JUMP_ONE_BLOCK_COST + placeCost + totalHardness, Blocks.AIR.getDefaultState());
         }
     }
 

@@ -58,7 +58,7 @@ public class WorldData implements IWorldData {
 
     @Override
     public ICachedWorld getCachedWorld() {
-        return new ICachedWorld(){
+        return new ICachedWorld() {
 
             @Override
             public boolean isCached(int blockX, int blockZ) {

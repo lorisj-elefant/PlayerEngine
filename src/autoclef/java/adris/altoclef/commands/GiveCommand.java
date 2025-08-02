@@ -1,8 +1,5 @@
 package adris.altoclef.commands;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import adris.altoclef.AltoClefController;
 import adris.altoclef.Debug;
 import adris.altoclef.TaskCatalogue;
@@ -16,6 +13,9 @@ import adris.altoclef.util.helpers.FuzzySearchHelper;
 import adris.altoclef.util.helpers.ItemHelper;
 import net.minecraft.item.ItemStack;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class GiveCommand extends Command {
     public GiveCommand() throws CommandException {
         super("give", "Give or drop an item to a player. Examples: `give Ellie diamond 3` to give player with username Ellie 3 diamonds.", new Arg(String.class, "username", null, 2), new Arg(String.class, "item"), new Arg(Integer.class, "count", 1, 1));
@@ -25,7 +25,7 @@ public class GiveCommand extends Command {
     protected void call(AltoClefController mod, ArgParser parser) throws CommandException {
         String username = parser.get(String.class);
         if (username == null) {
-            if (mod.getOwner()!=null) {
+            if (mod.getOwner() != null) {
                 username = mod.getOwner().getName().getString();
             } else {
                 mod.logWarning("No butler user currently present. Running this command with no user argument can ONLY be done via butler.");

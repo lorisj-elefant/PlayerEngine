@@ -50,7 +50,7 @@ public enum ArgParserManager implements IArgParserManager {
     public <T, S> IArgParser.Stated<T, S> getParserStated(Class<T> type, Class<S> stateKlass) {
         return this.registry.descendingStream()
                 .filter(IArgParser.Stated.class::isInstance)
-                .map(obj -> (IArgParser.Stated<?, ?>)obj)
+                .map(obj -> (IArgParser.Stated<?, ?>) obj)
                 .filter(parser -> parser.getTarget().isAssignableFrom(type))
                 .filter(parser -> parser.getStateType().isAssignableFrom(stateKlass))
                 .map(p -> {

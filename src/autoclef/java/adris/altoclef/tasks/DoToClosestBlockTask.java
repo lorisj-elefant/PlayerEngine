@@ -8,14 +8,15 @@ package adris.altoclef.tasks;
 import adris.altoclef.AltoClefController;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.helpers.WorldHelper;
+import net.minecraft.block.Block;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
+
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import net.minecraft.block.Block;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
 
 public class DoToClosestBlockTask extends AbstractDoToClosestObjectTask<BlockPos> {
     private final Block[] targetBlocks;
@@ -33,15 +34,15 @@ public class DoToClosestBlockTask extends AbstractDoToClosestObjectTask<BlockPos
     }
 
     public DoToClosestBlockTask(Function<BlockPos, Task> getTargetTask, Function<Vec3d, Optional<BlockPos>> getClosestBlock, Predicate<BlockPos> isValid, Block... blocks) {
-        this((Supplier)null, getTargetTask, getClosestBlock, isValid, blocks);
+        this((Supplier) null, getTargetTask, getClosestBlock, isValid, blocks);
     }
 
     public DoToClosestBlockTask(Function<BlockPos, Task> getTargetTask, Predicate<BlockPos> isValid, Block... blocks) {
-        this((Supplier)null, getTargetTask, (Function)null, isValid, blocks);
+        this((Supplier) null, getTargetTask, (Function) null, isValid, blocks);
     }
 
     public DoToClosestBlockTask(Function<BlockPos, Task> getTargetTask, Block... blocks) {
-        this(getTargetTask, (Function)null, (blockPos) -> true, blocks);
+        this(getTargetTask, (Function) null, (blockPos) -> true, blocks);
     }
 
     protected Vec3d getPos(AltoClefController mod, BlockPos obj) {
@@ -49,15 +50,15 @@ public class DoToClosestBlockTask extends AbstractDoToClosestObjectTask<BlockPos
     }
 
     protected Optional<BlockPos> getClosestTo(AltoClefController mod, Vec3d pos) {
-        return this.getClosest != null ? (Optional)this.getClosest.apply(pos) : mod.getBlockScanner().getNearestBlock(pos, this.isValid, this.targetBlocks);
+        return this.getClosest != null ? (Optional) this.getClosest.apply(pos) : mod.getBlockScanner().getNearestBlock(pos, this.isValid, this.targetBlocks);
     }
 
     protected Vec3d getOriginPos(AltoClefController mod) {
-        return this.getOriginPos != null ? (Vec3d)this.getOriginPos.get() : mod.getPlayer().getPos();
+        return this.getOriginPos != null ? (Vec3d) this.getOriginPos.get() : mod.getPlayer().getPos();
     }
 
     protected Task getGoalTask(BlockPos obj) {
-        return (Task)this.getTargetTask.apply(obj);
+        return (Task) this.getTargetTask.apply(obj);
     }
 
     protected boolean isValid(AltoClefController mod, BlockPos obj) {

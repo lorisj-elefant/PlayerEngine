@@ -37,7 +37,7 @@ public class DistanceProgressChecker implements IProgressChecker<Vec3d> {
         } else {
             double delta = position.distanceTo(this.start);
             if (this.reduceDistance) {
-                delta *= (double)-1.0F;
+                delta *= (double) -1.0F;
             }
 
             this.prevPos = position;
@@ -51,7 +51,7 @@ public class DistanceProgressChecker implements IProgressChecker<Vec3d> {
 
     public void reset() {
         this.start = null;
-        this.distanceChecker.setProgress((double)0.0F);
+        this.distanceChecker.setProgress((double) 0.0F);
         this.distanceChecker.reset();
     }
 }

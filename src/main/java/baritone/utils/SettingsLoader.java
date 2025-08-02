@@ -55,7 +55,8 @@ public class SettingsLoader {
             Automatone.LOGGER.info("Automatone settings file not found, resetting.");
             try {
                 Files.createFile(SETTINGS_PATH);
-            } catch (IOException ignored) { }
+            } catch (IOException ignored) {
+            }
         } catch (Exception ex) {
             Automatone.LOGGER.error("Exception while reading Automatone settings, some settings may be reset to default values!", ex);
         }

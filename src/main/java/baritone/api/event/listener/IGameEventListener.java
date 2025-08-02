@@ -18,7 +18,8 @@
 package baritone.api.event.listener;
 
 import baritone.api.IBaritone;
-import baritone.api.event.events.*;
+import baritone.api.event.events.BlockInteractEvent;
+import baritone.api.event.events.PathEvent;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 
 /**

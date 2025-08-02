@@ -20,12 +20,12 @@ public enum MiningRequirement implements Comparable<MiningRequirement> {
     private final Item minPickaxe;
 
     private MiningRequirement(Item minPickaxe) {
-        this .minPickaxe = minPickaxe;
+        this.minPickaxe = minPickaxe;
     }
 
     public static MiningRequirement getMinimumRequirementForBlock(Block block) {
         if (block.getDefaultState().isToolRequired()) {
-            for(MiningRequirement req : values()) {
+            for (MiningRequirement req : values()) {
                 if (req != HAND) {
                     Item pick = req.getMinimumPickaxe();
                     if (pick.isSuitableFor(block.getDefaultState())) {
@@ -42,6 +42,6 @@ public enum MiningRequirement implements Comparable<MiningRequirement> {
     }
 
     public Item getMinimumPickaxe() {
-        return this .minPickaxe;
+        return this.minPickaxe;
     }
 }

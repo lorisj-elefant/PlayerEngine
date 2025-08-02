@@ -16,7 +16,15 @@
  */
 package adris.altoclef;
 
-import adris.altoclef.chains.*;
+import adris.altoclef.chains.FoodChain;
+import adris.altoclef.chains.MLGBucketFallChain;
+import adris.altoclef.chains.MobDefenseChain;
+import adris.altoclef.chains.PlayerDefenseChain;
+import adris.altoclef.chains.PlayerInteractionFixChain;
+import adris.altoclef.chains.PreEquipItemChain;
+import adris.altoclef.chains.UnstuckChain;
+import adris.altoclef.chains.UserTaskChain;
+import adris.altoclef.chains.WorldSurvivalChain;
 import adris.altoclef.commands.BlockScanner;
 import adris.altoclef.commandsystem.CommandExecutor;
 import adris.altoclef.control.InputControls;
@@ -25,7 +33,13 @@ import adris.altoclef.control.SlotHandler;
 import adris.altoclef.player2api.AICommandBridge;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.tasksystem.TaskRunner;
-import adris.altoclef.trackers.*;
+import adris.altoclef.trackers.CraftingRecipeTracker;
+import adris.altoclef.trackers.EntityStuckTracker;
+import adris.altoclef.trackers.EntityTracker;
+import adris.altoclef.trackers.MiscBlockTracker;
+import adris.altoclef.trackers.SimpleChunkTracker;
+import adris.altoclef.trackers.TrackerManager;
+import adris.altoclef.trackers.UserBlockRangeTracker;
 import adris.altoclef.trackers.storage.ContainerSubTracker;
 import adris.altoclef.trackers.storage.ItemStorageTracker;
 import baritone.Baritone;
@@ -83,8 +97,8 @@ public class AltoClefController {
     private PlayerEntity owner;
 
     public AltoClefController(IBaritone baritone) {
-        this .baritone = baritone;
-        this .ctx = baritone.getEntityContext();
+        this.baritone = baritone;
+        this.ctx = baritone.getEntityContext();
         commandExecutor = new CommandExecutor(this);
         taskRunner = new TaskRunner(this);
         trackerManager = new TrackerManager(this);
@@ -98,7 +112,7 @@ public class AltoClefController {
         foodChain = new FoodChain(taskRunner);
         new PlayerDefenseChain(taskRunner);
 
-        storageTracker = new ItemStorageTracker(this, trackerManager, container -> this .containerSubTracker = container);
+        storageTracker = new ItemStorageTracker(this, trackerManager, container -> this.containerSubTracker = container);
         entityTracker = new EntityTracker(trackerManager);
         blockScanner = new BlockScanner(this);
         chunkTracker = new SimpleChunkTracker(this);
@@ -116,8 +130,8 @@ public class AltoClefController {
         initializeCommands();
 
         Settings.load(newSettings -> {
-            this .settings = newSettings;
-            List<Item> baritoneCanPlace = Arrays.stream(this .settings.getThrowawayItems(this,true)).toList();
+            this.settings = newSettings;
+            List<Item> baritoneCanPlace = Arrays.stream(this.settings.getThrowawayItems(this, true)).toList();
             (getBaritoneSettings().acceptableThrowawayItems.get()).addAll(baritoneCanPlace);
 
             if ((!getUserTaskChain().isActive() || getUserTaskChain().isRunningIdleTask()) && getModSettings().shouldRunIdleCommandWhenNotActive()) {
@@ -201,7 +215,8 @@ public class AltoClefController {
     }
 
     public void runUserTask(Task task) {
-        runUserTask(task, () -> {});
+        runUserTask(task, () -> {
+        });
     }
 
     public void cancelUserTask() {
@@ -234,7 +249,7 @@ public class AltoClefController {
     }
 
     public AltoClefSettings getExtraBaritoneSettings() {
-        return ((Baritone)baritone).getExtraBaritoneSettings();
+        return ((Baritone) baritone).getExtraBaritoneSettings();
     }
 
     public TaskRunner getTaskRunner() {
@@ -254,7 +269,7 @@ public class AltoClefController {
     }
 
     public void setPaused(boolean pausing) {
-        this .paused = pausing;
+        this.paused = pausing;
     }
 
     public Task getStoredTask() {
@@ -262,7 +277,7 @@ public class AltoClefController {
     }
 
     public void setStoredTask(Task currentTask) {
-        this .storedTask = currentTask;
+        this.storedTask = currentTask;
     }
 
     public ItemStorageTracker getItemStorage() {
@@ -313,11 +328,11 @@ public class AltoClefController {
         Debug.logWarning(message);
     }
 
-    public static boolean inGame(){
+    public static boolean inGame() {
         return true;
     }
 
-    public LivingEntity getPlayer(){
+    public LivingEntity getPlayer() {
         return ctx.entity();
     }
 
@@ -329,11 +344,11 @@ public class AltoClefController {
         return slotHandler;
     }
 
-    public LivingEntityInventory getInventory(){
+    public LivingEntityInventory getInventory() {
         return getBaritone().getEntityContext().inventory();
     }
 
-    public PlayerExtraController getControllerExtras(){
+    public PlayerExtraController getControllerExtras() {
         return extraController;
     }
 

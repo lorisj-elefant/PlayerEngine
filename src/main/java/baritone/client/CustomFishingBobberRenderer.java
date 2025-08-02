@@ -40,7 +40,7 @@ import org.joml.Matrix4f;
 public class CustomFishingBobberRenderer extends EntityRenderer<CustomFishingBobberEntity> {
     private static final Identifier TEXTURE = new Identifier("textures/entity/fishing_hook.png");
     private static final RenderLayer LAYER;
-    private static final double BOBBING_VIEW_SCALE = (double)960.0F;
+    private static final double BOBBING_VIEW_SCALE = (double) 960.0F;
 
     public CustomFishingBobberRenderer(EntityRendererFactory.Context context) {
         super(context);
@@ -70,44 +70,44 @@ public class CustomFishingBobberRenderer extends EntityRenderer<CustomFishingBob
             }
 
             float h = playerEntity.getHandSwingProgress(g);
-            float k = MathHelper.sin(MathHelper.sqrt(h) * (float)Math.PI);
-            float l = MathHelper.lerp(g, playerEntity.prevBodyYaw, playerEntity.bodyYaw) * ((float)Math.PI / 180F);
-            double d = (double)MathHelper.sin(l);
-            double e = (double)MathHelper.cos(l);
-            double m = (double)j * 0.35;
+            float k = MathHelper.sin(MathHelper.sqrt(h) * (float) Math.PI);
+            float l = MathHelper.lerp(g, playerEntity.prevBodyYaw, playerEntity.bodyYaw) * ((float) Math.PI / 180F);
+            double d = (double) MathHelper.sin(l);
+            double e = (double) MathHelper.cos(l);
+            double m = (double) j * 0.35;
             double n = 0.8;
             double o;
             double p;
             double q;
             float r;
             if ((this.dispatcher.gameOptions == null || this.dispatcher.gameOptions.getPerspective().isFirstPerson()) && playerEntity == MinecraftClient.getInstance().player) {
-                double s = (double)960.0F / (double)(Integer)this.dispatcher.gameOptions.getFov().get();
-                Vec3d vec3d = this.dispatcher.camera.getProjection().getPosition((float)j * 0.525F, -0.1F);
+                double s = (double) 960.0F / (double) (Integer) this.dispatcher.gameOptions.getFov().get();
+                Vec3d vec3d = this.dispatcher.camera.getProjection().getPosition((float) j * 0.525F, -0.1F);
                 vec3d = vec3d.multiply(s);
                 vec3d = vec3d.rotateY(k * 0.5F);
                 vec3d = vec3d.rotateX(-k * 0.7F);
-                o = MathHelper.lerp((double)g, playerEntity.prevX, playerEntity.getX()) + vec3d.x;
-                p = MathHelper.lerp((double)g, playerEntity.prevY, playerEntity.getY()) + vec3d.y;
-                q = MathHelper.lerp((double)g, playerEntity.prevZ, playerEntity.getZ()) + vec3d.z;
+                o = MathHelper.lerp((double) g, playerEntity.prevX, playerEntity.getX()) + vec3d.x;
+                p = MathHelper.lerp((double) g, playerEntity.prevY, playerEntity.getY()) + vec3d.y;
+                q = MathHelper.lerp((double) g, playerEntity.prevZ, playerEntity.getZ()) + vec3d.z;
                 r = playerEntity.getStandingEyeHeight();
             } else {
-                o = MathHelper.lerp((double)g, playerEntity.prevX, playerEntity.getX()) - e * m - d * 0.8;
-                p = playerEntity.prevY + (double)playerEntity.getStandingEyeHeight() + (playerEntity.getY() - playerEntity.prevY) * (double)g - 0.45;
-                q = MathHelper.lerp((double)g, playerEntity.prevZ, playerEntity.getZ()) - d * m + e * 0.8;
+                o = MathHelper.lerp((double) g, playerEntity.prevX, playerEntity.getX()) - e * m - d * 0.8;
+                p = playerEntity.prevY + (double) playerEntity.getStandingEyeHeight() + (playerEntity.getY() - playerEntity.prevY) * (double) g - 0.45;
+                q = MathHelper.lerp((double) g, playerEntity.prevZ, playerEntity.getZ()) - d * m + e * 0.8;
                 r = playerEntity.isInSneakingPose() ? -0.1875F : 0.0F;
             }
 
-            double s = MathHelper.lerp((double)g, fishingBobberEntity.prevX, fishingBobberEntity.getX());
-            double t = MathHelper.lerp((double)g, fishingBobberEntity.prevY, fishingBobberEntity.getY()) + (double)0.25F;
-            double u = MathHelper.lerp((double)g, fishingBobberEntity.prevZ, fishingBobberEntity.getZ());
-            float v = (float)(o - s);
-            float w = (float)(p - t) + r;
-            float x = (float)(q - u);
+            double s = MathHelper.lerp((double) g, fishingBobberEntity.prevX, fishingBobberEntity.getX());
+            double t = MathHelper.lerp((double) g, fishingBobberEntity.prevY, fishingBobberEntity.getY()) + (double) 0.25F;
+            double u = MathHelper.lerp((double) g, fishingBobberEntity.prevZ, fishingBobberEntity.getZ());
+            float v = (float) (o - s);
+            float w = (float) (p - t) + r;
+            float x = (float) (q - u);
             VertexConsumer vertexConsumer2 = vertexConsumerProvider.getBuffer(RenderLayer.getLineStrip());
             MatrixStack.Entry entry2 = matrixStack.peek();
             int y = 16;
 
-            for(int z = 0; z <= 16; ++z) {
+            for (int z = 0; z <= 16; ++z) {
                 drawArcSection(v, w, x, vertexConsumer2, entry2, percentage(z, 16), percentage(z + 1, 16));
             }
 
@@ -117,11 +117,11 @@ public class CustomFishingBobberRenderer extends EntityRenderer<CustomFishingBob
     }
 
     private static float percentage(int value, int max) {
-        return (float)value / (float)max;
+        return (float) value / (float) max;
     }
 
     private static void vertex(VertexConsumer buffer, Matrix4f matrix, Matrix3f normalMatrix, int light, float x, int y, int u, int v) {
-        buffer.vertex(matrix, x - 0.5F, (float)y - 0.5F, 0.0F).color(255, 255, 255, 255).uv((float)u, (float)v).overlay(OverlayTexture.DEFAULT_UV).light(light).normal(normalMatrix, 0.0F, 1.0F, 0.0F).next();
+        buffer.vertex(matrix, x - 0.5F, (float) y - 0.5F, 0.0F).color(255, 255, 255, 255).uv((float) u, (float) v).overlay(OverlayTexture.DEFAULT_UV).light(light).normal(normalMatrix, 0.0F, 1.0F, 0.0F).next();
     }
 
     private static void drawArcSection(float x, float y, float z, VertexConsumer buffer, MatrixStack.Entry normal, float startPercent, float endPercent) {

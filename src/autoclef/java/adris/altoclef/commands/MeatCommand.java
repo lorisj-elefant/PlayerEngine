@@ -6,7 +6,6 @@ import adris.altoclef.commandsystem.ArgParser;
 import adris.altoclef.commandsystem.Command;
 import adris.altoclef.commandsystem.CommandException;
 import adris.altoclef.tasks.resources.CollectMeatTask;
-
 import adris.altoclef.util.helpers.StorageHelper;
 
 public class MeatCommand extends Command {

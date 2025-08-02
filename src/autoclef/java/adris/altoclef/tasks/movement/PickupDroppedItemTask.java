@@ -18,10 +18,6 @@ import adris.altoclef.util.helpers.StlHelper;
 import adris.altoclef.util.helpers.StorageHelper;
 import adris.altoclef.util.helpers.WorldHelper;
 import adris.altoclef.util.progresscheck.MovementProgressChecker;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.DoorBlock;
@@ -32,6 +28,11 @@ import net.minecraft.entity.ItemEntity;
 import net.minecraft.item.Item;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
 
 public class PickupDroppedItemTask extends AbstractDoToClosestObjectTask<ItemEntity> implements ITaskRequiresGrounded {
     private static final Task getPickaxeFirstTask;
@@ -52,13 +53,13 @@ public class PickupDroppedItemTask extends AbstractDoToClosestObjectTask<ItemEnt
         this.wanderTask = new TimeoutWanderTask(5.0F, true);
         this.stuckCheck = new MovementProgressChecker();
         this.progressChecker = new MovementProgressChecker();
-        this .blacklist = new HashSet();
+        this.blacklist = new HashSet();
         this.annoyingBlocks = new Block[]{Blocks.VINE, Blocks.NETHER_SPROUTS, Blocks.CAVE_VINES, Blocks.CAVE_VINES_PLANT, Blocks.TWISTING_VINES, Blocks.TWISTING_VINES_PLANT, Blocks.WEEPING_VINES_PLANT, Blocks.LADDER, Blocks.BIG_DRIPLEAF, Blocks.BIG_DRIPLEAF_STEM, Blocks.SMALL_DRIPLEAF, Blocks.TALL_GRASS, Blocks.GRASS};
         this.unstuckTask = null;
-        this .collectingPickaxeForThisResource = false;
-        this .currentDrop = null;
+        this.collectingPickaxeForThisResource = false;
+        this.currentDrop = null;
         this.itemTargets = itemTargets;
-        this .freeInventoryIfFull = freeInventoryIfFull;
+        this.freeInventoryIfFull = freeInventoryIfFull;
     }
 
     public PickupDroppedItemTask(ItemTarget target, boolean freeInventoryIfFull) {
@@ -104,7 +105,7 @@ public class PickupDroppedItemTask extends AbstractDoToClosestObjectTask<ItemEnt
         } else {
             BlockPos[] toCheck = generateSides(p);
 
-            for(BlockPos check : toCheck) {
+            for (BlockPos check : toCheck) {
                 if (this.isAnnoying(mod, check)) {
                     return check;
                 }
@@ -112,7 +113,7 @@ public class PickupDroppedItemTask extends AbstractDoToClosestObjectTask<ItemEnt
 
             BlockPos[] toCheckHigh = generateSides(p.up());
 
-            for(BlockPos check : toCheckHigh) {
+            for (BlockPos check : toCheckHigh) {
                 if (this.isAnnoying(mod, check)) {
                     return check;
                 }
@@ -127,7 +128,7 @@ public class PickupDroppedItemTask extends AbstractDoToClosestObjectTask<ItemEnt
     }
 
     public boolean isCollectingPickaxeForThis() {
-        return this .collectingPickaxeForThisResource;
+        return this.collectingPickaxeForThisResource;
     }
 
     protected void onStart() {
@@ -166,8 +167,8 @@ public class PickupDroppedItemTask extends AbstractDoToClosestObjectTask<ItemEnt
                     this.stuckCheck.reset();
                 }
 
-                this .mod = mod;
-                if (isIsGettingPickaxeFirst(mod) && this .collectingPickaxeForThisResource && !StorageHelper.miningRequirementMetInventory(controller, MiningRequirement.STONE)) {
+                this.mod = mod;
+                if (isIsGettingPickaxeFirst(mod) && this.collectingPickaxeForThisResource && !StorageHelper.miningRequirementMetInventory(controller, MiningRequirement.STONE)) {
                     this.progressChecker.reset();
                     this.setDebugState("Collecting pickaxe first");
                     return getPickaxeFirstTask;
@@ -176,21 +177,21 @@ public class PickupDroppedItemTask extends AbstractDoToClosestObjectTask<ItemEnt
                         isGettingPickaxeFirstFlag = false;
                     }
 
-                    this .collectingPickaxeForThisResource = false;
+                    this.collectingPickaxeForThisResource = false;
                     if (!this.progressChecker.check(mod)) {
                         mod.getBaritone().getPathingBehavior().forceCancel();
-                        if (this .currentDrop != null && !this .currentDrop.getStack().isEmpty()) {
+                        if (this.currentDrop != null && !this.currentDrop.getStack().isEmpty()) {
                             if (!isGettingPickaxeFirstFlag && mod.getModSettings().shouldCollectPickaxeFirst() && !StorageHelper.miningRequirementMetInventory(controller, MiningRequirement.STONE)) {
                                 Debug.logMessage("Failed to pick up drop, will try to collect a stone pickaxe first and try again!");
-                                this .collectingPickaxeForThisResource = true;
+                                this.collectingPickaxeForThisResource = true;
                                 isGettingPickaxeFirstFlag = true;
                                 return getPickaxeFirstTask;
                             }
 
-                            Debug.logMessage(StlHelper.toString(this .blacklist, (element) -> element == null ? "(null)" : element.getStack().getItem().getTranslationKey()));
+                            Debug.logMessage(StlHelper.toString(this.blacklist, (element) -> element == null ? "(null)" : element.getStack().getItem().getTranslationKey()));
                             Debug.logMessage("Failed to pick up drop, suggesting it's unreachable.");
-                            this .blacklist.add(this .currentDrop);
-                            mod.getEntityTracker().requestEntityUnreachable(this .currentDrop);
+                            this.blacklist.add(this.currentDrop);
+                            mod.getEntityTracker().requestEntityUnreachable(this.currentDrop);
                             return this.wanderTask;
                         }
                     }
@@ -205,7 +206,7 @@ public class PickupDroppedItemTask extends AbstractDoToClosestObjectTask<ItemEnt
         if (!(other instanceof PickupDroppedItemTask task)) {
             return false;
         } else {
-            return Arrays.equals(task.itemTargets, this.itemTargets) && task .freeInventoryIfFull == this .freeInventoryIfFull;
+            return Arrays.equals(task.itemTargets, this.itemTargets) && task.freeInventoryIfFull == this.freeInventoryIfFull;
         }
     }
 
@@ -214,7 +215,7 @@ public class PickupDroppedItemTask extends AbstractDoToClosestObjectTask<ItemEnt
         result.append("Pickup Dropped Items: [");
         int c = 0;
 
-        for(ItemTarget target : this.itemTargets) {
+        for (ItemTarget target : this.itemTargets) {
             result.append(target.toString());
             ++c;
             if (c != this.itemTargets.length) {
@@ -229,7 +230,7 @@ public class PickupDroppedItemTask extends AbstractDoToClosestObjectTask<ItemEnt
     protected Vec3d getPos(AltoClefController mod, ItemEntity obj) {
         if (!obj.isOnGround() && !obj.isTouchingWater()) {
             BlockPos p = obj.getBlockPos();
-            return !WorldHelper.isSolidBlock(controller, p.down(3)) ? obj.getPos().subtract((double)0.0F, (double)2.0F, (double)0.0F) : obj.getPos().subtract((double)0.0F, (double)1.0F, (double)0.0F);
+            return !WorldHelper.isSolidBlock(controller, p.down(3)) ? obj.getPos().subtract((double) 0.0F, (double) 2.0F, (double) 0.0F) : obj.getPos().subtract((double) 0.0F, (double) 1.0F, (double) 0.0F);
         } else {
             return obj.getPos();
         }
@@ -244,22 +245,22 @@ public class PickupDroppedItemTask extends AbstractDoToClosestObjectTask<ItemEnt
     }
 
     protected Task getGoalTask(ItemEntity itemEntity) {
-        if (!itemEntity.equals(this .currentDrop)) {
-            this .currentDrop = itemEntity;
+        if (!itemEntity.equals(this.currentDrop)) {
+            this.currentDrop = itemEntity;
             this.progressChecker.reset();
-            if (isGettingPickaxeFirstFlag && this .collectingPickaxeForThisResource) {
+            if (isGettingPickaxeFirstFlag && this.collectingPickaxeForThisResource) {
                 Debug.logMessage("New goal, no longer collecting a pickaxe.");
-                this .collectingPickaxeForThisResource = false;
+                this.collectingPickaxeForThisResource = false;
                 isGettingPickaxeFirstFlag = false;
             }
         }
 
-        boolean touching = this .mod.getEntityTracker().isCollidingWithPlayer(itemEntity);
-        return (Task)(touching && this .freeInventoryIfFull && this .mod.getItemStorage().getSlotsThatCanFitInPlayerInventory(itemEntity.getStack(), false).isEmpty() ? new EnsureFreeInventorySlotTask() : new GetToEntityTask(itemEntity));
+        boolean touching = this.mod.getEntityTracker().isCollidingWithPlayer(itemEntity);
+        return (Task) (touching && this.freeInventoryIfFull && this.mod.getItemStorage().getSlotsThatCanFitInPlayerInventory(itemEntity.getStack(), false).isEmpty() ? new EnsureFreeInventorySlotTask() : new GetToEntityTask(itemEntity));
     }
 
     protected boolean isValid(AltoClefController mod, ItemEntity obj) {
-        return obj.isAlive() && !this .blacklist.contains(obj);
+        return obj.isAlive() && !this.blacklist.contains(obj);
     }
 
     static {

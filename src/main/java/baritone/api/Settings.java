@@ -30,7 +30,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3i;
 import org.jetbrains.annotations.Nullable;
 
-import java.awt.*;
+import java.awt.Color;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -221,7 +221,7 @@ public final class Settings {
      * If a schematic asks for a block on this list, only air will be accepted at that location (and nothing on buildIgnoreBlocks)
      */
     public final Setting<TagKey<Block>> okIfAir = new Setting<>(TagKey.of(RegistryKeys.BLOCK,
-        new Identifier("automatone", "build/ok_if_air")
+            new Identifier("automatone", "build/ok_if_air")
     ));
 
     /**

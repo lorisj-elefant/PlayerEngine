@@ -16,7 +16,7 @@ public class FollowCommand extends Command {
     protected void call(AltoClefController mod, ArgParser parser) throws CommandException {
         String username = parser.get(String.class);
         if (username == null) {
-            if (mod.getOwner()!=null) {
+            if (mod.getOwner() != null) {
                 username = mod.getOwner().getName().getString();
             } else {
                 mod.logWarning("No butler user currently present. Running this command with no user argument can ONLY be done via butler.");
