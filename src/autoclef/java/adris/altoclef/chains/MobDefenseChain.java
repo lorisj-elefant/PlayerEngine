@@ -214,7 +214,7 @@ public class MobDefenseChain extends SingleTaskChain {
         Slot offhandSlot = PlayerSlot.getOffhandSlot(mod.getInventory());
         Item offhandItem = StorageHelper.getItemStackInSlot(offhandSlot).getItem();
         CreeperEntity blowingUp = getClosestFusingCreeper(mod);
-        if (blowingUp != null)
+        if (blowingUp != null && blowingUp.distanceTo(mod.getEntity())<=16)
             if ((!mod.getFoodChain().needsToEat() || mod.getPlayer().getHealth() < 9.0F) &&
                     hasShield(mod) &&
                     !mod.getEntityTracker().entityFound(new Class[]{PotionEntity.class}) && //!mod.getPlayer().getItemCooldownManager().isCoolingDown(offhandItem) &&
@@ -422,7 +422,7 @@ public class MobDefenseChain extends SingleTaskChain {
             List<CreeperEntity> creepers = mod.getEntityTracker().getTrackedEntities(CreeperEntity.class);
             for (CreeperEntity creeper : creepers) {
                 if (creeper == null ||
-                        creeper.getClientFuseTime(1.0F) < 0.001D)
+                        creeper.getClientFuseTime(1.0F) < 0.04D)
                     continue;
                 double safety = getCreeperSafety(mod.getPlayer().getPos(), creeper);
                 if (safety < worstSafety)
