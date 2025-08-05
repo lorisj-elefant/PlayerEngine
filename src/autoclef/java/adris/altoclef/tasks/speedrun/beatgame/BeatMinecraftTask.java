@@ -1021,7 +1021,7 @@ public class BeatMinecraftTask extends Task {
         if (itemStorage.hasItem(new Item[]{Items.DIAMOND_BOOTS}))
             return (Task) new EquipArmorTask(new Item[]{Items.DIAMOND_BOOTS});
         if (itemStorage.getItemCount(new Item[]{Items.FURNACE}) > 1)
-            return (Task) new PlaceBlockNearbyTask(new Block[]{Blocks.FURNACE});
+            return (Task) new PlaceBlockNearbyTask(p->controller.getWorld().getBlockState(p).getBlock()!=Blocks.CRAFTING_TABLE,  new Block[]{Blocks.FURNACE});
         if (itemStorage.getItemCount(new Item[]{Items.CRAFTING_TABLE}) > 1)
             return (Task) new PlaceBlockNearbyTask(new Block[]{Blocks.CRAFTING_TABLE});
         throwAwayItems(this.mod, new Item[]{Items.SAND, Items.RED_SAND});
