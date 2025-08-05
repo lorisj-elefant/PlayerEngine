@@ -5,6 +5,7 @@ import adris.altoclef.Debug;
 import adris.altoclef.TaskCatalogue;
 import adris.altoclef.tasks.ResourceTask;
 import adris.altoclef.tasks.construction.PlaceBlockNearbyTask;
+import adris.altoclef.tasks.movement.GetCloseToBlockTask;
 import adris.altoclef.tasks.movement.GetToBlockTask;
 import adris.altoclef.tasks.resources.CollectRecipeCataloguedResourcesTask;
 import adris.altoclef.tasksystem.Task;
@@ -54,6 +55,7 @@ public class CraftInTableTask extends ResourceTask {
     @Override
     protected void onResourceStart(AltoClefController controller) {
         // Protect items to avoid accidentally throwing them away
+        controller.getBehaviour().push();
         for (RecipeTarget target : targets) {
             for (ItemTarget ingredient : target.getRecipe().getSlots()) {
                 if (ingredient != null && !ingredient.isEmpty()) {
@@ -104,7 +106,7 @@ public class CraftInTableTask extends ResourceTask {
         // 5. Go to the crafting table
         if (!craftingTablePos.isWithinDistance(new Vec3i((int) controller.getEntity().getPos().x, (int) controller.getEntity().getPos().y, (int) controller.getEntity().getPos().z), 3.5)) {
             setDebugState("Going to crafting table at: " + craftingTablePos.toShortString());
-            return new GetToBlockTask(craftingTablePos);
+            return new GetCloseToBlockTask(craftingTablePos);
         }
 
         // 6. Perform the craft
