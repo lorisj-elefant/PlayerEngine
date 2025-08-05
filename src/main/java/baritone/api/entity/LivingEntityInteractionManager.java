@@ -414,10 +414,6 @@ public class LivingEntityInteractionManager {
                         fluidDrainable.getBucketFillSound().ifPresent((sound) -> user.playSound(sound, 1.0F, 1.0F));
                         world.emitGameEvent(user, GameEvent.FLUID_PICKUP, blockPos);
                         ItemStack itemStack3 = exchangeStack(itemStack, user, itemStack2);
-                        if (!world.isClient) {
-                            Criteria.FILLED_BUCKET.trigger((ServerPlayerEntity) user, itemStack2);
-                        }
-
                         return TypedActionResult.success(itemStack3, world.isClient());
                     }
                 }
@@ -428,9 +424,6 @@ public class LivingEntityInteractionManager {
                 BlockPos blockPos3 = blockState.getBlock() instanceof FluidFillable && ((IBucketAccessor) bucket).getFluid() == Fluids.WATER ? blockPos : blockPos2;
                 if (bucket.placeFluid(null, world, blockPos3, blockHitResult)) {
                     bucket.onEmptied(null, world, itemStack, blockPos3);
-                    if (user instanceof ServerPlayerEntity) {
-                        Criteria.PLACED_BLOCK.trigger((ServerPlayerEntity) user, blockPos3, itemStack);
-                    }
                     return TypedActionResult.success(new ItemStack(Items.BUCKET), world.isClient());
                 } else {
                     return TypedActionResult.fail(itemStack);

@@ -29,6 +29,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUsageContext;
+import net.minecraft.item.Items;
 import net.minecraft.item.PickaxeItem;
 import net.minecraft.item.ToolItem;
 import net.minecraft.registry.tag.TagKey;
@@ -62,7 +63,12 @@ public final class InventoryBehavior extends Behavior {
         }
         int pick = bestToolAgainst(Blocks.STONE, PickaxeItem.class);
         if (pick >= 9) {
-            swapWithHotBar(pick, 0, player.getLivingInventory());
+            for(int i=0;i<9;i++){
+                if(player.getLivingInventory().getStack(i).getItem()!= Items.BUCKET){
+                    swapWithHotBar(pick, i, player.getLivingInventory());
+                    break;
+                }
+            }
         }
     }
 
