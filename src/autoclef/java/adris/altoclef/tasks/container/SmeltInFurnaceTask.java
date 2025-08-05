@@ -6,7 +6,7 @@ import adris.altoclef.TaskCatalogue;
 import adris.altoclef.mixins.MixinAbstractFurnaceBlockEntity;
 import adris.altoclef.tasks.ResourceTask;
 import adris.altoclef.tasks.construction.PlaceBlockNearbyTask;
-import adris.altoclef.tasks.movement.GetToBlockTask;
+import adris.altoclef.tasks.movement.GetCloseToBlockTask;
 import adris.altoclef.tasks.movement.TimeoutWanderTask;
 import adris.altoclef.tasks.resources.CollectFuelTask;
 import adris.altoclef.tasksystem.Task;
@@ -63,6 +63,7 @@ public class SmeltInFurnaceTask extends ResourceTask {
 
     @Override
     protected void onResourceStart(AltoClefController controller) {
+        controller.getBehaviour().push();
         controller.getBehaviour().addProtectedItems(Items.FURNACE);
         for (SmeltTarget target : targets) {
             controller.getBehaviour().addProtectedItems(target.getMaterial().getMatches());
@@ -71,7 +72,6 @@ public class SmeltInFurnaceTask extends ResourceTask {
 
     @Override
     protected Task onResourceTick(AltoClefController controller) {
-        // Check if all smelting is done.
         boolean allDone = Arrays.stream(targets).allMatch(target ->
                 controller.getItemStorage().getItemCount(target.getItem()) >= target.getItem().getTargetCount()
         );
@@ -80,7 +80,6 @@ public class SmeltInFurnaceTask extends ResourceTask {
             return null;
         }
 
-        // 3. Find a target to smelt
         SmeltTarget currentTarget = null;
         for (SmeltTarget target : targets) {
             if (controller.getItemStorage().getItemCount(target.getItem()) < target.getItem().getTargetCount()) {
@@ -93,20 +92,19 @@ public class SmeltInFurnaceTask extends ResourceTask {
             return null;
         }
 
-        // 4. Ensure we have materials
-        if (!controller.getItemStorage().hasItem(currentTarget.getMaterial())) {
-            setDebugState("Collecting materials for smelting: " + currentTarget.getMaterial());
-            return TaskCatalogue.getItemTask(currentTarget.getMaterial());
-        }
+        smeltTimer.setInterval(10 * currentTarget.getItem().getTargetCount());
+        int fuelNeeded = (int) Math.ceil((double) currentTarget.getItem().getTargetCount() / 8d);
+        if (!isSmelting) {
+            if (controller.getItemStorage().getItemCount(currentTarget.getMaterial()) < currentTarget.getMaterial().getTargetCount()) {
+                setDebugState("Collecting materials for smelting: " + currentTarget.getMaterial());
+                return TaskCatalogue.getItemTask(currentTarget.getMaterial());
+            }
 
-        // 5. Ensure we have fuel
-        double fuelNeeded = 1; // Simplification: 1 fuel per operation
-        if (StorageHelper.calculateInventoryFuelCount(controller) < fuelNeeded) {
-            setDebugState("Collecting fuel.");
-            return new CollectFuelTask(fuelNeeded);
+            if (StorageHelper.calculateInventoryFuelCount(controller) < fuelNeeded) {
+                setDebugState("Collecting fuel.");
+                return new CollectFuelTask(fuelNeeded);
+            }
         }
-
-        // Find or place a furnace.
         if (furnacePos == null || !controller.getWorld().getBlockState(furnacePos).isOf(Blocks.FURNACE)) {
             Optional<BlockPos> nearestFurnace = controller.getBlockScanner().getNearestBlock(Blocks.FURNACE);
             if (nearestFurnace.isPresent()) {
@@ -121,13 +119,11 @@ public class SmeltInFurnaceTask extends ResourceTask {
             }
         }
 
-        // Go to the furnace.
         if (!furnacePos.isWithinDistance(new Vec3i((int) controller.getEntity().getPos().x, (int) controller.getEntity().getPos().y, (int) controller.getEntity().getPos().z), 4.5)) {
             setDebugState("Going to furnace.");
-            return new GetToBlockTask(furnacePos);
+            return new GetCloseToBlockTask(furnacePos);
         }
 
-        // Interact with furnace (server-side simulation)
         BlockEntity be = controller.getWorld().getBlockEntity(furnacePos);
         if (!(be instanceof AbstractFurnaceBlockEntity furnace)) {
             Debug.logWarning("Block at furnace position is not a furnace BE. Resetting.");
@@ -137,7 +133,6 @@ public class SmeltInFurnaceTask extends ResourceTask {
 
         Inventory furnaceInventory = furnace;
 
-        // 1. Take out results if any
         ItemStack outputStack = furnaceInventory.getStack(FurnaceSlot.OUTPUT_SLOT);
         if (!outputStack.isEmpty()) {
             setDebugState("Taking smelted items.");
@@ -147,11 +142,10 @@ public class SmeltInFurnaceTask extends ResourceTask {
                 furnace.markDirty();
             } else {
                 setDebugState("Inventory is full, cannot take smelted items.");
-                return null; // Or a task to clear inventory
+                return null;
             }
         }
 
-        // 2. We are smelting something, wait.
         if (isSmelting) {
             setDebugState("Waiting for items to smelt...");
             if (smeltTimer.elapsed()) {
@@ -160,31 +154,27 @@ public class SmeltInFurnaceTask extends ResourceTask {
             return null;
         }
 
-
-        // 6. Put items into furnace
         ItemStack materialSlot = furnaceInventory.getStack(FurnaceSlot.INPUT_SLOT_MATERIALS);
         ItemStack fuelSlot = furnaceInventory.getStack(FurnaceSlot.INPUT_SLOT_FUEL);
         LivingEntityInventory playerInv = ((IInventoryProvider) controller.getEntity()).getLivingInventory();
 
-        // Put in fuel
-        if (((MixinAbstractFurnaceBlockEntity) furnace).getPropertyDelegate().get(0) <= 1 && fuelSlot.isEmpty()) { // burnTime is property 0
+        if (((MixinAbstractFurnaceBlockEntity) furnace).getPropertyDelegate().get(0) <= 1 && fuelSlot.isEmpty()) {
             setDebugState("Adding fuel.");
-            Item fuelItem = controller.getModSettings().getSupportedFuelItems()[0]; // Just grab first available
+            Item fuelItem = controller.getModSettings().getSupportedFuelItems()[0];
             int fuelSlotIndex = playerInv.getSlotWithStack(new ItemStack(fuelItem));
             if (fuelSlotIndex != -1) {
-                furnaceInventory.setStack(FurnaceSlot.INPUT_SLOT_FUEL, playerInv.removeStack(fuelSlotIndex, 1));
+                furnaceInventory.setStack(FurnaceSlot.INPUT_SLOT_FUEL, playerInv.removeStack(fuelSlotIndex, fuelNeeded));
                 furnace.markDirty();
                 return null;
             }
         }
 
-        // Put in material
         if (materialSlot.isEmpty()) {
             setDebugState("Adding material.");
             Item materialItem = currentTarget.getMaterial().getMatches()[0];
             int materialSlotIndex = playerInv.getSlotWithStack(new ItemStack(materialItem));
             if (materialSlotIndex != -1) {
-                furnaceInventory.setStack(FurnaceSlot.INPUT_SLOT_MATERIALS, playerInv.removeStack(materialSlotIndex, 1));
+                furnaceInventory.setStack(FurnaceSlot.INPUT_SLOT_MATERIALS, playerInv.removeStack(materialSlotIndex, currentTarget.getMaterial().getTargetCount()));
                 isSmelting = true;
                 smeltTimer.reset();
                 furnace.markDirty();
@@ -192,7 +182,6 @@ public class SmeltInFurnaceTask extends ResourceTask {
             }
         }
 
-        // If we are here, it means we are waiting for something to happen inside the furnace.
         isSmelting = true;
         smeltTimer.reset();
         setDebugState("Waiting for furnace...");

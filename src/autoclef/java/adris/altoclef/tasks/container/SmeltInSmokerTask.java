@@ -6,6 +6,7 @@ import adris.altoclef.TaskCatalogue;
 import adris.altoclef.mixins.MixinAbstractFurnaceBlockEntity;
 import adris.altoclef.tasks.ResourceTask;
 import adris.altoclef.tasks.construction.PlaceBlockNearbyTask;
+import adris.altoclef.tasks.movement.GetCloseToBlockTask;
 import adris.altoclef.tasks.movement.GetToBlockTask;
 import adris.altoclef.tasks.movement.TimeoutWanderTask;
 import adris.altoclef.tasks.resources.CollectFuelTask;
@@ -64,6 +65,7 @@ public class SmeltInSmokerTask extends ResourceTask {
 
     @Override
     protected void onResourceStart(AltoClefController controller) {
+        controller.getBehaviour().push();
         controller.getBehaviour().addProtectedItems(Items.SMOKER);
         for (SmeltTarget target : targets) {
             controller.getBehaviour().addProtectedItems(target.getMaterial().getMatches());
@@ -83,14 +85,18 @@ public class SmeltInSmokerTask extends ResourceTask {
         SmeltTarget currentTarget = Arrays.stream(targets).filter(t -> controller.getItemStorage().getItemCount(t.getItem()) < t.getItem().getTargetCount()).findFirst().orElse(null);
         if (currentTarget == null) return null;
 
-        if (!controller.getItemStorage().hasItem(currentTarget.getMaterial())) {
-            setDebugState("Collecting raw food: " + currentTarget.getMaterial());
-            return TaskCatalogue.getItemTask(currentTarget.getMaterial());
-        }
+        smeltTimer.setInterval(10 * currentTarget.getItem().getTargetCount());
+        int fuelNeeded = (int) Math.ceil((double) currentTarget.getItem().getTargetCount() / 8d);
+        if (!isSmelting) {
+            if (!controller.getItemStorage().hasItem(currentTarget.getMaterial())) {
+                setDebugState("Collecting raw food: " + currentTarget.getMaterial());
+                return TaskCatalogue.getItemTask(currentTarget.getMaterial());
+            }
 
-        if (StorageHelper.calculateInventoryFuelCount(controller) < 1) {
-            setDebugState("Collecting fuel.");
-            return new CollectFuelTask(1.0);
+            if (StorageHelper.calculateInventoryFuelCount(controller) < fuelNeeded) {
+                setDebugState("Collecting fuel.");
+                return new CollectFuelTask(fuelNeeded);
+            }
         }
 
         if (smokerPos == null || !controller.getWorld().getBlockState(smokerPos).isOf(Blocks.SMOKER)) {
@@ -109,7 +115,7 @@ public class SmeltInSmokerTask extends ResourceTask {
 
         if (!smokerPos.isWithinDistance(new Vec3i((int) controller.getEntity().getPos().x, (int) controller.getEntity().getPos().y, (int) controller.getEntity().getPos().z), 4.5)) {
             setDebugState("Going to smoker.");
-            return new GetToBlockTask(smokerPos);
+            return new GetCloseToBlockTask(smokerPos);
         }
 
         BlockEntity be = controller.getWorld().getBlockEntity(smokerPos);
@@ -149,7 +155,7 @@ public class SmeltInSmokerTask extends ResourceTask {
             Item fuelItem = controller.getModSettings().getSupportedFuelItems()[0];
             int fuelSlotIndex = playerInv.getSlotWithStack(new ItemStack(fuelItem));
             if (fuelSlotIndex != -1) {
-                smokerInventory.setStack(SmokerSlot.INPUT_SLOT_FUEL, playerInv.removeStack(fuelSlotIndex, 1));
+                smokerInventory.setStack(SmokerSlot.INPUT_SLOT_FUEL, playerInv.removeStack(fuelSlotIndex, fuelNeeded));
                 smoker.markDirty();
                 return null;
             }
@@ -160,7 +166,7 @@ public class SmeltInSmokerTask extends ResourceTask {
             Item materialItem = currentTarget.getMaterial().getMatches()[0];
             int materialSlotIndex = playerInv.getSlotWithStack(new ItemStack(materialItem));
             if (materialSlotIndex != -1) {
-                smokerInventory.setStack(SmokerSlot.INPUT_SLOT_MATERIALS, playerInv.removeStack(materialSlotIndex, 1));
+                smokerInventory.setStack(SmokerSlot.INPUT_SLOT_MATERIALS, playerInv.removeStack(materialSlotIndex, currentTarget.getMaterial().getTargetCount()));
                 isSmelting = true;
                 smeltTimer.reset();
                 smoker.markDirty();
