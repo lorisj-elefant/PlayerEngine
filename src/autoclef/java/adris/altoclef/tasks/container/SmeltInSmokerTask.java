@@ -157,7 +157,6 @@ public class SmeltInSmokerTask extends ResourceTask {
             if (fuelSlotIndex != -1) {
                 smokerInventory.setStack(SmokerSlot.INPUT_SLOT_FUEL, playerInv.removeStack(fuelSlotIndex, fuelNeeded));
                 smoker.markDirty();
-                return null;
             }
         }
 

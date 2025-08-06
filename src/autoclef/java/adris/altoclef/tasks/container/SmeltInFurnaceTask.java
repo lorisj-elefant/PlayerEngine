@@ -107,6 +107,9 @@ public class SmeltInFurnaceTask extends ResourceTask {
         }
         if (furnacePos == null || !controller.getWorld().getBlockState(furnacePos).isOf(Blocks.FURNACE)) {
             Optional<BlockPos> nearestFurnace = controller.getBlockScanner().getNearestBlock(Blocks.FURNACE);
+            if(nearestFurnace.isPresent() && !nearestFurnace.get().isWithinDistance(new Vec3i((int) controller.getEntity().getPos().x, (int) controller.getEntity().getPos().y, (int) controller.getEntity().getPos().z), 100)){
+                nearestFurnace = Optional.empty();
+            }
             if (nearestFurnace.isPresent()) {
                 furnacePos = nearestFurnace.get();
             } else {
@@ -165,7 +168,6 @@ public class SmeltInFurnaceTask extends ResourceTask {
             if (fuelSlotIndex != -1) {
                 furnaceInventory.setStack(FurnaceSlot.INPUT_SLOT_FUEL, playerInv.removeStack(fuelSlotIndex, fuelNeeded));
                 furnace.markDirty();
-                return null;
             }
         }
 
