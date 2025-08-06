@@ -12,7 +12,7 @@ import static adris.altoclef.player2api.utils.HTTPUtils.sendRequest;
 
 public class Player2APIService {
 
-    public static JsonObject completeConversation(ConversationHistory conversationHistory) throws Exception {
+    public static JsonObject completeConversation(String player2GameId, ConversationHistory conversationHistory) throws Exception {
         JsonObject requestBody = new JsonObject();
         JsonArray messagesArray = new JsonArray();
         for (JsonObject msg : conversationHistory.getListJSON())
@@ -32,7 +32,7 @@ public class Player2APIService {
         throw new Exception("Invalid response format: " + responseMap.toString());
     }
 
-    public static String completeConversationToString(ConversationHistory conversationHistory) throws Exception {
+    public static String completeConversationToString(String player2GameId, ConversationHistory conversationHistory) throws Exception {
         JsonObject requestBody = new JsonObject();
         JsonArray messagesArray = new JsonArray();
         for (JsonObject msg : conversationHistory.getListJSON())
@@ -52,7 +52,7 @@ public class Player2APIService {
         throw new Exception("Invalid response format: " + responseMap.toString());
     }
 
-    public static Character getSelectedCharacter() {
+    public static Character getSelectedCharacter(String player2GameId) {
         try {
             Map<String, JsonElement> responseMap = sendRequest("/v1/selected_characters", false, null);
             return CharacterUtils.parseFirstCharacter(responseMap);
@@ -61,7 +61,7 @@ public class Player2APIService {
         }
     }
 
-    public static void textToSpeech(String message, Character character) {
+    public static void textToSpeech(String player2GameId, String message, Character character) {
         try {
             JsonObject requestBody = new JsonObject();
             requestBody.addProperty("play_in_app", Boolean.valueOf(true));
@@ -77,7 +77,7 @@ public class Player2APIService {
         }
     }
 
-    public static void startSTT() {
+    public static void startSTT(String player2GameId) {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("timeout", Integer.valueOf(30));
         try {
@@ -87,7 +87,7 @@ public class Player2APIService {
         }
     }
 
-    public static String stopSTT() {
+    public static String stopSTT(String player2GameId) {
         try {
             Map<String, JsonElement> responseMap = sendRequest("/v1/stt/stop", true, null);
             if (!responseMap.containsKey("text"))
@@ -98,7 +98,7 @@ public class Player2APIService {
         }
     }
 
-    public static void sendHeartbeat() {
+    public static void sendHeartbeat(String player2GameId) {
         try {
             System.out.println("Sending Heartbeat");
             Map<String, JsonElement> responseMap = sendRequest("/v1/health", false, null);

@@ -85,6 +85,8 @@ public class AICommandBridge {
 
     private final Queue<String> messageQueue = new ConcurrentLinkedQueue<>();
 
+    private String player2GameId = "player2-ai-npc-minecraft";
+
     public AICommandBridge(CommandExecutor cmdExecutor, AltoClefController mod) {
         this.mod = mod;
         this.cmdExecutor = cmdExecutor;
@@ -124,7 +126,7 @@ public class AICommandBridge {
                 Map.of("characterDescription", this.character.description, "characterName", this.character.name, "validCommands", validCommandsFormatted));
         System.out.println("New prompt: " + newPrompt);
         if (this.conversationHistory == null) {
-            this.conversationHistory = new ConversationHistory(newPrompt, this.character.name, this.character.shortName);
+            this.conversationHistory = new ConversationHistory(player2GameId, newPrompt, this.character.name, this.character.shortName);
         } else {
             this.conversationHistory.setBaseSystemPrompt(newPrompt);
         }
@@ -156,7 +158,7 @@ public class AICommandBridge {
                 String altoClefDebugMsgs = this.altoClefMsgBuffer.dumpAndGetString();
                 ConversationHistory historyWithStatus = this.conversationHistory.copyThenWrapLatestWithStatus(worldStatus, agentStatus, altoClefDebugMsgs);
                 System.out.printf("[AICommandBridge/processChatWithAPI]: History: %s", new Object[]{historyWithStatus.toString()});
-                JsonObject response = Player2APIService.completeConversation(historyWithStatus);
+                JsonObject response = Player2APIService.completeConversation(player2GameId, historyWithStatus);
                 String responseAsString = response.toString();
                 System.out.println("[AICommandBridge/processChatWithAPI]: LLM Response: " + responseAsString);
                 this.conversationHistory.addAssistantMessage(responseAsString);
@@ -164,7 +166,7 @@ public class AICommandBridge {
                 if (llmMessage != null && !llmMessage.isEmpty()) {
                     mod.getWorld().getServer().getPlayerManager().broadcastSystemMessage(Text.of("<" + character.shortName + "> " + llmMessage), false);
                     this.mod.logCharacterMessage(llmMessage, this.character, true);
-                    Player2APIService.textToSpeech(llmMessage, this.character);
+                    Player2APIService.textToSpeech(player2GameId, llmMessage, this.character);
                 }
                 String commandResponse = Utils.getStringJsonSafely(response, "command");
                 if (commandResponse != null && !commandResponse.isEmpty()) {
@@ -217,7 +219,7 @@ public class AICommandBridge {
     }
 
     public void sendHeartbeat() {
-        llmThread.submit(() -> Player2APIService.sendHeartbeat());
+        llmThread.submit(() -> Player2APIService.sendHeartbeat(player2GameId));
     }
 
     public void onTick() {
@@ -257,6 +259,14 @@ public class AICommandBridge {
 
     public boolean getPlayerMode() {
         return this.playermode;
+    }
+
+    public String getPlayer2GameId() {
+        return player2GameId;
+    }
+
+    public void setPlayer2GameId(String player2GameId) {
+        this.player2GameId = player2GameId;
     }
 
 //  public void startSTT() {
