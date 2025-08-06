@@ -139,6 +139,11 @@ public interface MovementHelper extends ActionCosts {
                 || block instanceof SlabBlock
                 || block instanceof TrapdoorBlock
                 || block == Blocks.HONEY_BLOCK
+                || block == Blocks.AZALEA
+                || block == Blocks.FLOWERING_AZALEA
+                || block == Blocks.GLOW_LICHEN
+                || block == Blocks.CAVE_VINES
+                || block == Blocks.CAVE_VINES_PLANT
                 || block == Blocks.END_ROD) {
             return false;
         }
