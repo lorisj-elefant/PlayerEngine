@@ -82,7 +82,7 @@ public class CollectPlanksTask extends ResourceTask {
                 }
             }
         ArrayList<ItemTarget> blocksTomine = new ArrayList<>(2);
-        blocksTomine.add(new ItemTarget(this.logs));
+        blocksTomine.add(new ItemTarget(this.logs, mod.getItemStorage().getItemCount(this.logs)+1));
         if (!mod.getBehaviour().exclusivelyMineLogs()) ;
         MineAndCollectTask mineAndCollectTask = new MineAndCollectTask((ItemTarget[]) blocksTomine.toArray(x$0 -> new ItemTarget[x$0]), MiningRequirement.HAND);
         if (this.logsInNether)
