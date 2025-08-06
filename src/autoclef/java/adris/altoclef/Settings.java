@@ -50,7 +50,7 @@ public class Settings implements IFailableConfigFile {
 
     private boolean useCraftingBookToCraft = true;
 
-    private float resourcePickupDropRange = -1.0F;
+    private float resourcePickupDropRange = 16.0F;
 
     private int minimumFoodAllowed = 0;
 
