@@ -18,7 +18,7 @@ public class Player2APIService {
         for (JsonObject msg : conversationHistory.getListJSON())
             messagesArray.add((JsonElement) msg);
         requestBody.add("messages", (JsonElement) messagesArray);
-        Map<String, JsonElement> responseMap = sendRequest("/v1/chat/completions", true, requestBody);
+        Map<String, JsonElement> responseMap = sendRequest(player2GameId, "/v1/chat/completions", true, requestBody);
         if (responseMap.containsKey("choices")) {
             JsonArray choices = ((JsonElement) responseMap.get("choices")).getAsJsonArray();
             if (choices.size() != 0) {
@@ -38,7 +38,7 @@ public class Player2APIService {
         for (JsonObject msg : conversationHistory.getListJSON())
             messagesArray.add((JsonElement) msg);
         requestBody.add("messages", (JsonElement) messagesArray);
-        Map<String, JsonElement> responseMap = sendRequest("/v1/chat/completions", true, requestBody);
+        Map<String, JsonElement> responseMap = sendRequest(player2GameId, "/v1/chat/completions", true, requestBody);
         if (responseMap.containsKey("choices")) {
             JsonArray choices = ((JsonElement) responseMap.get("choices")).getAsJsonArray();
             if (choices.size() != 0) {
@@ -54,7 +54,7 @@ public class Player2APIService {
 
     public static Character getSelectedCharacter(String player2GameId) {
         try {
-            Map<String, JsonElement> responseMap = sendRequest("/v1/selected_characters", false, null);
+            Map<String, JsonElement> responseMap = sendRequest(player2GameId, "/v1/selected_characters", false, null);
             return CharacterUtils.parseFirstCharacter(responseMap);
         } catch (Exception e) {
             return CharacterUtils.DEFAULT_CHARACTER;
@@ -72,7 +72,7 @@ public class Player2APIService {
                 voiceIdsArray.add(voiceId);
             requestBody.add("voice_ids", (JsonElement) voiceIdsArray);
             System.out.println("Sending TTS request: " + message);
-            sendRequest("/v1/tts/speak", true, requestBody);
+            sendRequest(player2GameId, "/v1/tts/speak", true, requestBody);
         } catch (Exception exception) {
         }
     }
@@ -81,7 +81,7 @@ public class Player2APIService {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("timeout", Integer.valueOf(30));
         try {
-            sendRequest("/v1/stt/start", true, requestBody);
+            sendRequest(player2GameId, "/v1/stt/start", true, requestBody);
         } catch (Exception e) {
             System.err.println("[Player2APIService/startSTT]: Error" + e.getMessage());
         }
@@ -89,7 +89,7 @@ public class Player2APIService {
 
     public static String stopSTT(String player2GameId) {
         try {
-            Map<String, JsonElement> responseMap = sendRequest("/v1/stt/stop", true, null);
+            Map<String, JsonElement> responseMap = sendRequest(player2GameId, "/v1/stt/stop", true, null);
             if (!responseMap.containsKey("text"))
                 throw new Exception("Could not find key 'text' in response");
             return ((JsonElement) responseMap.get("text")).getAsString();
@@ -101,7 +101,7 @@ public class Player2APIService {
     public static void sendHeartbeat(String player2GameId) {
         try {
             System.out.println("Sending Heartbeat");
-            Map<String, JsonElement> responseMap = sendRequest("/v1/health", false, null);
+            Map<String, JsonElement> responseMap = sendRequest(player2GameId, "/v1/health", false, null);
             if (responseMap.containsKey("client_version"))
                 System.out.println("Heartbeat Successful");
         } catch (Exception e) {

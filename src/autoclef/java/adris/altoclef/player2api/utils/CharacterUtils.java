@@ -73,18 +73,18 @@ public class CharacterUtils {
         return new Character[0];
     }
 
-    public static Character[] requestCharacters() {
+    public static Character[] requestCharacters(String player2GameId) {
         try {
-            Map<String, JsonElement> responseMap = sendRequest("/v1/selected_characters", false, null);
+            Map<String, JsonElement> responseMap = sendRequest(player2GameId, "/v1/selected_characters", false, null);
             return CharacterUtils.parseCharacters(responseMap);
         } catch (Exception e) {
             return new Character[0];
         }
     }
 
-    public static Character requestFirstCharacter() {
+    public static Character requestFirstCharacter(String player2GameId) {
         try {
-            Map<String, JsonElement> responseMap = sendRequest("/v1/selected_characters", false, null);
+            Map<String, JsonElement> responseMap = sendRequest(player2GameId, "/v1/selected_characters", false, null);
             return CharacterUtils.parseFirstCharacter(responseMap);
         } catch (Exception e) {
             return DEFAULT_CHARACTER;

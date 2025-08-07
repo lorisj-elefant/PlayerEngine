@@ -36,13 +36,13 @@ public class HTTPUtils {
 
     private static final String BASE_URL = "http://127.0.0.1:4315";
 
-    public static Map<String, JsonElement> sendRequest(String endpoint, boolean postRequest, JsonObject requestBody) throws Exception {
+    public static Map<String, JsonElement> sendRequest(String player2GameId, String endpoint, boolean postRequest, JsonObject requestBody) throws Exception {
         URL url = (new URI(BASE_URL + endpoint)).toURL();
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod(postRequest ? "POST" : "GET");
         connection.setRequestProperty("Content-Type", "application/json; charset=utf-8");
         connection.setRequestProperty("Accept", "application/json; charset=utf-8");
-        connection.setRequestProperty("player2-game-key", "cnpc-ai-addon");
+        connection.setRequestProperty("player2-game-key", player2GameId);
         if (postRequest && requestBody != null) {
             connection.setDoOutput(true);
             try (OutputStream os = connection.getOutputStream()) {
