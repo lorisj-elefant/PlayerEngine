@@ -218,7 +218,7 @@ public class AICommandBridge {
         });
     }
 
-    public void sendHeartbeat() {
+    public static void sendHeartbeat(String player2GameId) {
         llmThread.submit(() -> Player2APIService.sendHeartbeat(player2GameId));
     }
 

@@ -91,7 +91,6 @@ public class AltoClefController {
     private boolean paused = false;
     private Task storedTask;
     private AICommandBridge aiBridge;
-    private static long lastHeartbeatTime = System.nanoTime();
     public boolean isStopping = false;
 
     private PlayerEntity owner;
@@ -155,12 +154,6 @@ public class AltoClefController {
         taskRunner.tick();
         inputControls.onTickPost();
         baritone.serverTick();
-
-        long now = System.nanoTime();
-        if (now - lastHeartbeatTime > 60_000_000_000L) {
-            aiBridge.sendHeartbeat();
-            lastHeartbeatTime = now;
-        }
 
         if (aiBridge.getEnabled()) {
             aiBridge.onTick();
