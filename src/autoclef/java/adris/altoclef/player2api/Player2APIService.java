@@ -100,7 +100,7 @@ public class Player2APIService {
 
     public static void sendHeartbeat(String player2GameId) {
         try {
-            System.out.println("Sending Heartbeat");
+            System.out.println("Sending Heartbeat "+player2GameId);
             Map<String, JsonElement> responseMap = sendRequest(player2GameId, "/v1/health", false, null);
             if (responseMap.containsKey("client_version"))
                 System.out.println("Heartbeat Successful");
