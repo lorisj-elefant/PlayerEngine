@@ -27,8 +27,9 @@ import baritone.cache.WorldScanner;
 import baritone.command.CommandSystem;
 import baritone.utils.SettingsLoader;
 import baritone.utils.schematic.SchematicSystem;
-import dev.onyxstudios.cca.api.v3.component.ComponentFactory;
 import net.minecraft.entity.LivingEntity;
+
+import java.util.function.Function;
 
 /**
  * @author Brady
@@ -77,7 +78,7 @@ public final class BaritoneProvider implements IBaritoneProvider {
     }
 
     @Override
-    public <E extends LivingEntity> ComponentFactory<E, IBaritone> componentFactory() {
+    public <E extends LivingEntity> Function<E, IBaritone> componentFactory() {
         return Baritone::new;
     }
 }

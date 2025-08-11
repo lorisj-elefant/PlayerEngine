@@ -24,11 +24,6 @@ repositories {
     mavenCentral()
 
     maven {
-        name = 'Ladysnake Mods'
-        url = 'https://maven.ladysnake.org/releases'
-    }
-
-    maven {
         name = 'Quilt Snapshots'
         url = 'https://maven.quiltmc.org/repository/snapshot'
     }
@@ -50,15 +45,6 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:0.15.6"
     modImplementation "net.fabricmc.fabric-api:fabric-api:0.92.1+1.20.1"
     implementation 'com.google.code.findbugs:jsr305:3.0.2'
-    modImplementation("dev.onyxstudios.cardinal-components-api:cardinal-components-base:${cca_version}") {
-        transitive = false
-    }
-    modImplementation("dev.onyxstudios.cardinal-components-api:cardinal-components-entity:${cca_version}") {
-        transitive = false
-    }
-    modImplementation("dev.onyxstudios.cardinal-components-api:cardinal-components-world:${cca_version}") {
-        transitive = false
-    }
 
     implementation 'com.fasterxml.jackson.core:jackson-core:2.16.0'
     implementation 'com.fasterxml.jackson.core:jackson-annotations:2.16.0'

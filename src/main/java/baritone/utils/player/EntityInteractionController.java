@@ -22,6 +22,7 @@ import baritone.api.entity.LivingEntityInteractionManager;
 import baritone.api.utils.IInteractionController;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;

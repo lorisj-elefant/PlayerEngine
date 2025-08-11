@@ -17,13 +17,12 @@
 
 package baritone.api.utils;
 
-import dev.onyxstudios.cca.api.v3.component.ComponentKey;
-import dev.onyxstudios.cca.api.v3.component.ComponentRegistry;
-import dev.onyxstudios.cca.api.v3.component.TransientComponent;
+import baritone.api.component.EntityComponentKey;
+import baritone.api.entity.LivingEntityInteractionManager;
+import baritone.utils.player.EntityInteractionController;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -34,8 +33,8 @@ import net.minecraft.world.World;
  * @author Brady
  * @since 12/14/2018
  */
-public interface IInteractionController extends TransientComponent {
-    ComponentKey<IInteractionController> KEY = ComponentRegistry.getOrCreate(new Identifier("automatone", "controller"), IInteractionController.class);
+public interface IInteractionController {
+    EntityComponentKey<IInteractionController> KEY = new EntityComponentKey<>(EntityInteractionController::new);
 
     boolean hasBrokenBlock();
 

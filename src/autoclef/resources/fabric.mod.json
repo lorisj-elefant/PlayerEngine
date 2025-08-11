@@ -29,9 +29,6 @@
     "mixins.altoclef.json"
   ],
   "depends": {
-    "cardinal-components-base": "^5.0.0-",
-    "cardinal-components-entity": "^5.0.0-",
-    "cardinal-components-world": "^5.0.0-",
     "fabricloader": ">=0.14.0",
     "fabric": "*"
   }

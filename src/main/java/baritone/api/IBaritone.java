@@ -17,10 +17,12 @@
 
 package baritone.api;
 
+import baritone.Baritone;
 import baritone.api.behavior.ILookBehavior;
 import baritone.api.behavior.IPathingBehavior;
 import baritone.api.cache.IWorldProvider;
 import baritone.api.command.manager.ICommandManager;
+import baritone.api.component.EntityComponentKey;
 import baritone.api.event.listener.IEventBus;
 import baritone.api.pathing.calc.IPathingControlManager;
 import baritone.api.process.IBaritoneProcess;
@@ -33,16 +35,12 @@ import baritone.api.process.IGetToBlockProcess;
 import baritone.api.process.IMineProcess;
 import baritone.api.utils.IEntityContext;
 import baritone.api.utils.IInputOverrideHandler;
-import dev.onyxstudios.cca.api.v3.component.ComponentKey;
-import dev.onyxstudios.cca.api.v3.component.ComponentRegistry;
-import dev.onyxstudios.cca.api.v3.component.tick.ServerTickingComponent;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.Identifier;
 
 import java.util.Arrays;
 import java.util.stream.Stream;
@@ -51,8 +49,8 @@ import java.util.stream.Stream;
  * @author Brady
  * @since 9/29/2018
  */
-public interface IBaritone extends ServerTickingComponent {
-    ComponentKey<IBaritone> KEY = ComponentRegistry.getOrCreate(new Identifier("automatone", "core"), IBaritone.class);
+public interface IBaritone {
+    EntityComponentKey<IBaritone> KEY = new EntityComponentKey<>(Baritone::new);
 
     /**
      * @return The {@link IPathingBehavior} instance
@@ -213,4 +211,6 @@ public interface IBaritone extends ServerTickingComponent {
     boolean isActive();
 
     Settings settings();
+
+    void serverTick();
 }

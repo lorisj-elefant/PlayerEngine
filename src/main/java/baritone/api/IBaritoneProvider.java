@@ -21,8 +21,9 @@ import baritone.api.cache.IWorldScanner;
 import baritone.api.command.ICommand;
 import baritone.api.command.ICommandSystem;
 import baritone.api.schematic.ISchematicSystem;
-import dev.onyxstudios.cca.api.v3.component.ComponentFactory;
 import net.minecraft.entity.LivingEntity;
+
+import java.util.function.Function;
 
 /**
  * Provides the present {@link IBaritone} instances, as well as non-baritone instance related APIs.
@@ -62,5 +63,5 @@ public interface IBaritoneProvider {
 
     Settings getGlobalSettings();
 
-    <E extends LivingEntity> ComponentFactory<E, IBaritone> componentFactory();
+    <E extends LivingEntity> Function<E, IBaritone> componentFactory();
 }

@@ -14,15 +14,26 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
  */
-pluginManagement {
-    repositories {
-        maven {
-            name = 'Fabric'
-            url = 'https://maven.fabricmc.net/'
-        }
-        gradlePluginPortal()
-        mavenLocal()
+
+package baritone.api.component;
+
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.world.World;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Function;
+
+public class WorldComponentKey<C> {
+    private final Map<RegistryKey<World>, C> storage = new HashMap<>();
+
+    private final Function<World, C> factory;
+
+    public WorldComponentKey(Function<World, C> factory){
+        this.factory = factory;
+    }
+
+    public final C get(World provider) {
+        return storage.computeIfAbsent(provider.getRegistryKey(), (u)->factory.apply(provider));
     }
 }
-
-rootProject.name = mod_name.toLowerCase(Locale.ROOT).replace(' ', '-')

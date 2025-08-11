@@ -37,13 +37,13 @@ public class WorldProvider implements IWorldProvider {
         return this.currentWorld;
     }
 
-    @Override
-    public void readFromNbt(NbtCompound tag) {
-        this.currentWorld.readFromNbt(tag);
-    }
-
-    @Override
-    public void writeToNbt(NbtCompound tag) {
-        this.currentWorld.writeToNbt(tag);
-    }
+//    @Override
+//    public void readFromNbt(NbtCompound tag) {
+//        this.currentWorld.readFromNbt(tag);
+//    }
+//
+//    @Override
+//    public void writeToNbt(NbtCompound tag) {
+//        this.currentWorld.writeToNbt(tag);
+//    }
 }

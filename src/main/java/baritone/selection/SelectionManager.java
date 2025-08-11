@@ -4,7 +4,6 @@ import baritone.api.selection.ISelection;
 import baritone.api.selection.ISelectionManager;
 import baritone.api.utils.BetterBlockPos;
 import net.minecraft.entity.Entity;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.math.Direction;
 
 import java.util.LinkedList;
@@ -22,7 +21,6 @@ public class SelectionManager implements ISelectionManager {
 
     private void resetSelectionsArr() {
         selectionsArr = selections.toArray(new ISelection[0]);
-        KEY.sync(this.holder);
     }
 
     @Override
@@ -117,15 +115,5 @@ public class SelectionManager implements ISelectionManager {
         }
 
         return null;
-    }
-
-    @Override
-    public void readFromNbt(NbtCompound tag) {
-        // NO-OP
-    }
-
-    @Override
-    public void writeToNbt(NbtCompound tag) {
-        // NO-OP
     }
 }

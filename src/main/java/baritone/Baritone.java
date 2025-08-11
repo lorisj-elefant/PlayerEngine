@@ -225,16 +225,6 @@ public class Baritone implements IBaritone {
     }
 
     @Override
-    public void readFromNbt(NbtCompound tag) {
-        // NO-OP
-    }
-
-    @Override
-    public void writeToNbt(NbtCompound tag) {
-        // NO-OP
-    }
-
-    @Override
     public void serverTick() {
         this.getGameEventHandler().onTickServer();
     }
