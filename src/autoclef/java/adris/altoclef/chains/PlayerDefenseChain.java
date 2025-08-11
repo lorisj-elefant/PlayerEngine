@@ -55,12 +55,12 @@ public class PlayerDefenseChain extends SingleTaskChain {
         this.recentlyDamagedUnknown = null;
         LivingEntity player = mod.getPlayer();
         for (Entity entity : mod.getWorld().iterateEntities()) {
+            if(entity==mod.getOwner())
+                continue;
             if (entity == null || (this.recentlySwung.containsKey(Integer.valueOf(entity.getId())) && ((TimerGame) this.recentlySwung.get(Integer.valueOf(entity.getId()))).elapsed())) {
                 this.recentlySwung.remove(Integer.valueOf(entity.getId()));
                 continue;
             }
-            if (entity == null)
-                continue;
             if (entity.distanceTo((Entity) player) > 5.0F)
                 continue;
             Vec3d playerCenter = player.getPos().add(new Vec3d(0.0D, player.getStandingEyeHeight(), 0.0D));
