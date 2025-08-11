@@ -6,38 +6,43 @@ import adris.altoclef.tasks.container.SmeltInFurnaceTask;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.ItemTarget;
 import adris.altoclef.util.SmeltTarget;
-import net.minecraft.item.Items;
+import net.minecraft.world.item.Items;
 
 public class CollectIronIngotTask extends ResourceTask {
-    private final int count;
+   private final int count;
 
-    public CollectIronIngotTask(int count) {
-        super(Items.IRON_INGOT, count);
-        this.count = count;
-    }
+   public CollectIronIngotTask(int count) {
+      super(Items.IRON_INGOT, count);
+      this.count = count;
+   }
 
-    protected boolean shouldAvoidPickingUp(AltoClefController mod) {
-        return false;
-    }
+   @Override
+   protected boolean shouldAvoidPickingUp(AltoClefController mod) {
+      return false;
+   }
 
-    protected void onResourceStart(AltoClefController mod) {
-        mod.getBehaviour().push();
-    }
+   @Override
+   protected void onResourceStart(AltoClefController mod) {
+      mod.getBehaviour().push();
+   }
 
-    protected Task onResourceTick(AltoClefController mod) {
-        return (Task) new SmeltInFurnaceTask(new SmeltTarget(new ItemTarget(Items.IRON_INGOT, this.count), new ItemTarget(Items.RAW_IRON, this.count), new net.minecraft.item.Item[0]));
-    }
+   @Override
+   protected Task onResourceTick(AltoClefController mod) {
+      return new SmeltInFurnaceTask(new SmeltTarget(new ItemTarget(Items.IRON_INGOT, this.count), new ItemTarget(Items.RAW_IRON, this.count)));
+   }
 
-    protected void onResourceStop(AltoClefController mod, Task interruptTask) {
-        mod.getBehaviour().pop();
-    }
+   @Override
+   protected void onResourceStop(AltoClefController mod, Task interruptTask) {
+      mod.getBehaviour().pop();
+   }
 
-    @Override
-    protected boolean isEqualResource(ResourceTask other) {
-        return other instanceof CollectIronIngotTask same && same.count == count;
-    }
+   @Override
+   protected boolean isEqualResource(ResourceTask other) {
+      return other instanceof CollectIronIngotTask same && same.count == this.count;
+   }
 
-    protected String toDebugStringName() {
-        return "Collecting " + this.count + " iron.";
-    }
+   @Override
+   protected String toDebugStringName() {
+      return "Collecting " + this.count + " iron.";
+   }
 }

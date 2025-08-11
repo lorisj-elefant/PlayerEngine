@@ -5,56 +5,67 @@ import adris.altoclef.TaskCatalogue;
 import adris.altoclef.tasks.speedrun.beatgame.prioritytask.prioritycalculators.ItemPriorityCalculator;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.ItemTarget;
-
 import java.util.Arrays;
 import java.util.function.Function;
 
 public class ResourcePriorityTask extends PriorityTask {
-    private final ItemPriorityCalculator priorityCalculator;
+   private final ItemPriorityCalculator priorityCalculator;
+   private final ItemTarget[] collect;
+   private boolean collected = false;
+   private Task task = null;
 
-    private final ItemTarget[] collect;
+   public ResourcePriorityTask(ItemPriorityCalculator priorityCalculator, Function<AltoClefController, Boolean> canCall, Task task, ItemTarget... collect) {
+      this(priorityCalculator, canCall, false, true, false, collect);
+      this.task = task;
+   }
 
-    private boolean collected = false;
+   public ResourcePriorityTask(ItemPriorityCalculator priorityCalculator, Function<AltoClefController, Boolean> canCall, ItemTarget... collect) {
+      this(priorityCalculator, canCall, false, true, false, collect);
+   }
 
-    private Task task = null;
+   public ResourcePriorityTask(
+      ItemPriorityCalculator priorityCalculator,
+      Function<AltoClefController, Boolean> canCall,
+      boolean shouldForce,
+      boolean canCache,
+      boolean bypassForceCooldown,
+      ItemTarget... collect
+   ) {
+      super(canCall, shouldForce, canCache, bypassForceCooldown);
+      this.collect = collect;
+      this.priorityCalculator = priorityCalculator;
+   }
 
-    public ResourcePriorityTask(ItemPriorityCalculator priorityCalculator, Function<AltoClefController, Boolean> canCall, Task task, ItemTarget... collect) {
-        this(priorityCalculator, canCall, false, true, false, collect);
-        this.task = task;
-    }
+   @Override
+   public Task getTask(AltoClefController mod) {
+      return (Task)(this.task != null ? this.task : TaskCatalogue.getSquashedItemTask(this.collect));
+   }
 
-    public ResourcePriorityTask(ItemPriorityCalculator priorityCalculator, Function<AltoClefController, Boolean> canCall, ItemTarget... collect) {
-        this(priorityCalculator, canCall, false, true, false, collect);
-    }
+   @Override
+   public String getDebugString() {
+      return "Collecting resource: " + Arrays.toString((Object[])this.collect);
+   }
 
-    public ResourcePriorityTask(ItemPriorityCalculator priorityCalculator, Function<AltoClefController, Boolean> canCall, boolean shouldForce, boolean canCache, boolean bypassForceCooldown, ItemTarget... collect) {
-        super(canCall, shouldForce, canCache, bypassForceCooldown);
-        this.collect = collect;
-        this.priorityCalculator = priorityCalculator;
-    }
+   @Override
+   public double getPriority(AltoClefController mod) {
+      if (this.collected) {
+         return Double.NEGATIVE_INFINITY;
+      } else {
+         int count = 0;
 
-    public Task getTask(AltoClefController mod) {
-        if (this.task != null)
-            return this.task;
-        return (Task) TaskCatalogue.getSquashedItemTask(this.collect);
-    }
-
-    public String getDebugString() {
-        return "Collecting resource: " + Arrays.toString(this.collect);
-    }
-
-    public double getPriority(AltoClefController mod) {
-        if (this.collected)
-            return Double.NEGATIVE_INFINITY;
-        int count = 0;
-        for (ItemTarget target : this.collect)
+         for (ItemTarget target : this.collect) {
             count += mod.getItemStorage().getItemCount(target.getMatches());
-        if (count >= this.priorityCalculator.maxCount)
-            this.collected = true;
-        return this.priorityCalculator.getPriority(count);
-    }
+         }
 
-    public boolean isCollected() {
-        return this.collected;
-    }
+         if (count >= this.priorityCalculator.maxCount) {
+            this.collected = true;
+         }
+
+         return this.priorityCalculator.getPriority(count);
+      }
+   }
+
+   public boolean isCollected() {
+      return this.collected;
+   }
 }

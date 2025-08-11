@@ -13,125 +13,130 @@ import adris.altoclef.util.helpers.StorageHelper;
 import adris.altoclef.util.helpers.WorldHelper;
 import adris.altoclef.util.progresscheck.MovementProgressChecker;
 import adris.altoclef.util.time.TimerGame;
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
-import net.minecraft.item.Item;
-import net.minecraft.item.Items;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Position;
-import net.minecraft.world.RaycastContext;
-
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Predicate;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.ClipContext.Fluid;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 
 public class CollectObsidianTask extends ResourceTask {
-    private final TimerGame placeWaterTimeout = new TimerGame(6.0D);
+   private final TimerGame placeWaterTimeout = new TimerGame(6.0);
+   private final MovementProgressChecker lavaTimeout = new MovementProgressChecker();
+   private final Set<BlockPos> lavaBlacklist = new HashSet<>();
+   private final int count;
+   private Task forceCompleteTask = null;
+   private BlockPos lavaWaitCurrentPos;
+   private PlaceObsidianBucketTask placeObsidianTask;
 
-    private final MovementProgressChecker lavaTimeout = new MovementProgressChecker();
+   public CollectObsidianTask(int count) {
+      super(Items.OBSIDIAN, count);
+      this.count = count;
+   }
 
-    private final Set<BlockPos> lavaBlacklist = new HashSet<>();
+   private static BlockPos getLavaStructurePos(BlockPos lavaPos) {
+      return lavaPos.offset(1, 1, 0);
+   }
 
-    private final int count;
+   private static BlockPos getLavaWaterPos(BlockPos lavaPos) {
+      return lavaPos.above();
+   }
 
-    private Task forceCompleteTask = null;
+   private static BlockPos getGoodObsidianPosition(AltoClefController mod) {
+      BlockPos start = mod.getPlayer().blockPosition().offset(-3, -3, -3);
+      BlockPos end = mod.getPlayer().blockPosition().offset(3, 3, 3);
 
-    private BlockPos lavaWaitCurrentPos;
+      for (BlockPos pos : WorldHelper.scanRegion(start, end)) {
+         if (!WorldHelper.canBreak(mod, pos) || !WorldHelper.canPlace(mod, pos)) {
+            return null;
+         }
+      }
 
-    private PlaceObsidianBucketTask placeObsidianTask;
+      return mod.getPlayer().blockPosition();
+   }
 
-    public CollectObsidianTask(int count) {
-        super(Items.OBSIDIAN, count);
-        this.count = count;
-    }
+   @Override
+   protected boolean shouldAvoidPickingUp(AltoClefController mod) {
+      return false;
+   }
 
-    private static BlockPos getLavaStructurePos(BlockPos lavaPos) {
-        return lavaPos.add(1, 1, 0);
-    }
+   @Override
+   protected void onResourceStart(AltoClefController mod) {
+      mod.getBehaviour().push();
+      mod.getBehaviour().setRayTracingFluidHandling(Fluid.SOURCE_ONLY);
+      mod.getBehaviour()
+         .avoidBlockPlacing(
+            pos -> this.lavaWaitCurrentPos != null ? pos.equals(this.lavaWaitCurrentPos) || pos.equals(getLavaWaterPos(this.lavaWaitCurrentPos)) : false
+         );
+      mod.getBehaviour()
+         .avoidBlockBreaking((Predicate<BlockPos>)(pos -> this.lavaWaitCurrentPos != null ? pos.equals(getLavaStructurePos(this.lavaWaitCurrentPos)) : false));
+   }
 
-    private static BlockPos getLavaWaterPos(BlockPos lavaPos) {
-        return lavaPos.up();
-    }
+   @Override
+   protected Task onResourceTick(AltoClefController mod) {
+      if (this.lavaWaitCurrentPos != null
+         && mod.getChunkTracker().isChunkLoaded(this.lavaWaitCurrentPos)
+         && mod.getWorld().getBlockState(this.lavaWaitCurrentPos).getBlock() != Blocks.LAVA) {
+         this.lavaWaitCurrentPos = null;
+      }
 
-    private static BlockPos getGoodObsidianPosition(AltoClefController mod) {
-        BlockPos start = mod.getPlayer().getBlockPos().add(-3, -3, -3);
-        BlockPos end = mod.getPlayer().getBlockPos().add(3, 3, 3);
-        for (BlockPos pos : WorldHelper.scanRegion(start, end)) {
-            if (!WorldHelper.canBreak(mod, pos) || !WorldHelper.canPlace(mod, pos))
-                return null;
-        }
-        return mod.getPlayer().getBlockPos();
-    }
-
-    protected boolean shouldAvoidPickingUp(AltoClefController mod) {
-        return false;
-    }
-
-    protected void onResourceStart(AltoClefController mod) {
-        mod.getBehaviour().push();
-        mod.getBehaviour().setRayTracingFluidHandling(RaycastContext.FluidHandling.SOURCE_ONLY);
-        mod.getBehaviour().avoidBlockPlacing(pos -> (this.lavaWaitCurrentPos != null) ? (
-
-                (pos.equals(this.lavaWaitCurrentPos) || pos.equals(getLavaWaterPos(this.lavaWaitCurrentPos)))) : false);
-        mod.getBehaviour().avoidBlockBreaking(pos -> (this.lavaWaitCurrentPos != null) ? pos.equals(getLavaStructurePos(this.lavaWaitCurrentPos)) : false);
-    }
-
-    protected Task onResourceTick(AltoClefController mod) {
-        if (this.lavaWaitCurrentPos != null && mod.getChunkTracker().isChunkLoaded(this.lavaWaitCurrentPos) && mod.getWorld().getBlockState(this.lavaWaitCurrentPos).getBlock() != Blocks.LAVA)
-            this.lavaWaitCurrentPos = null;
-        if (!StorageHelper.miningRequirementMet(controller, MiningRequirement.DIAMOND)) {
-            setDebugState("Getting diamond pickaxe first");
-            return (Task) new SatisfyMiningRequirementTask(MiningRequirement.DIAMOND);
-        }
-        if (this.forceCompleteTask != null && this.forceCompleteTask.isActive() && !this.forceCompleteTask.isFinished())
-            return this.forceCompleteTask;
-        Predicate<BlockPos> goodObsidian = blockPos ->
-                (blockPos.isCenterWithinDistance((Position) mod.getPlayer().getPos(), 800.0D) && WorldHelper.canBreak(mod, blockPos));
-        if (mod.getBlockScanner().anyFound(goodObsidian, new Block[]{Blocks.OBSIDIAN}) || mod.getEntityTracker().itemDropped(new Item[]{Items.OBSIDIAN})) {
-            setDebugState("Mining/Collecting obsidian");
+      if (!StorageHelper.miningRequirementMet(this.controller, MiningRequirement.DIAMOND)) {
+         this.setDebugState("Getting diamond pickaxe first");
+         return new SatisfyMiningRequirementTask(MiningRequirement.DIAMOND);
+      } else if (this.forceCompleteTask != null && this.forceCompleteTask.isActive() && !this.forceCompleteTask.isFinished()) {
+         return this.forceCompleteTask;
+      } else {
+         Predicate<BlockPos> goodObsidian = blockPos -> blockPos.closerToCenterThan(mod.getPlayer().position(), 800.0) && WorldHelper.canBreak(mod, blockPos);
+         if (mod.getBlockScanner().anyFound(goodObsidian, Blocks.OBSIDIAN) || mod.getEntityTracker().itemDropped(Items.OBSIDIAN)) {
+            this.setDebugState("Mining/Collecting obsidian");
             this.placeObsidianTask = null;
-            return (Task) new MineAndCollectTask(new ItemTarget(Items.OBSIDIAN, this.count), new Block[]{Blocks.OBSIDIAN}, MiningRequirement.DIAMOND);
-        }
-        if (WorldHelper.getCurrentDimension(mod) == Dimension.NETHER) {
-            double AVERAGE_GOLD_PER_OBSIDIAN = 11.475D;
-            int gold_buffer = (int) (11.475D * this.count);
-            setDebugState("We can't place water, so we're trading for obsidian");
-            return (Task) new TradeWithPiglinsTask(gold_buffer, Items.OBSIDIAN, this.count);
-        }
-        if (this.placeObsidianTask == null) {
-            BlockPos goodPos = getGoodObsidianPosition(mod);
-            if (goodPos != null) {
-                this.placeObsidianTask = new PlaceObsidianBucketTask(goodPos);
-            } else {
-                setDebugState("Walking until we find a spot to place obsidian");
-                return (Task) new TimeoutWanderTask();
+            return new MineAndCollectTask(new ItemTarget(Items.OBSIDIAN, this.count), new Block[]{Blocks.OBSIDIAN}, MiningRequirement.DIAMOND);
+         } else if (WorldHelper.getCurrentDimension(mod) == Dimension.NETHER) {
+            double AVERAGE_GOLD_PER_OBSIDIAN = 11.475;
+            int gold_buffer = (int)(11.475 * this.count);
+            this.setDebugState("We can't place water, so we're trading for obsidian");
+            return new TradeWithPiglinsTask(gold_buffer, Items.OBSIDIAN, this.count);
+         } else {
+            if (this.placeObsidianTask == null) {
+               BlockPos goodPos = getGoodObsidianPosition(mod);
+               if (goodPos == null) {
+                  this.setDebugState("Walking until we find a spot to place obsidian");
+                  return new TimeoutWanderTask();
+               }
+
+               this.placeObsidianTask = new PlaceObsidianBucketTask(goodPos);
             }
-        }
-        if (this.placeObsidianTask != null && !mod.getItemStorage().hasItem(new Item[]{Items.LAVA_BUCKET}))
-            if (!this.placeObsidianTask.getPos().isCenterWithinDistance((Position) mod.getPlayer().getPos(), 4.0D)) {
-                BlockPos goodPos = getGoodObsidianPosition(mod);
-                if (goodPos != null) {
-                    Debug.logMessage("(nudged obsidian target closer)");
-                    this.placeObsidianTask = new PlaceObsidianBucketTask(goodPos);
-                }
+
+            if (this.placeObsidianTask != null
+               && !mod.getItemStorage().hasItem(Items.LAVA_BUCKET)
+               && !this.placeObsidianTask.getPos().closerToCenterThan(mod.getPlayer().position(), 4.0)) {
+               BlockPos goodPos = getGoodObsidianPosition(mod);
+               if (goodPos != null) {
+                  Debug.logMessage("(nudged obsidian target closer)");
+                  this.placeObsidianTask = new PlaceObsidianBucketTask(goodPos);
+               }
             }
-        setDebugState("Placing Obsidian");
-        return (Task) this.placeObsidianTask;
-    }
 
-    protected void onResourceStop(AltoClefController mod, Task interruptTask) {
-        mod.getBehaviour().pop();
-    }
+            this.setDebugState("Placing Obsidian");
+            return this.placeObsidianTask;
+         }
+      }
+   }
 
-    protected boolean isEqualResource(ResourceTask other) {
-        if (other instanceof adris.altoclef.tasks.resources.CollectObsidianTask) {
-            adris.altoclef.tasks.resources.CollectObsidianTask task = (adris.altoclef.tasks.resources.CollectObsidianTask) other;
-            return (task.count == this.count);
-        }
-        return false;
-    }
+   @Override
+   protected void onResourceStop(AltoClefController mod, Task interruptTask) {
+      mod.getBehaviour().pop();
+   }
 
-    protected String toDebugStringName() {
-        return "Collect " + this.count + " blocks of obsidian";
-    }
+   @Override
+   protected boolean isEqualResource(ResourceTask other) {
+      return other instanceof CollectObsidianTask task ? task.count == this.count : false;
+   }
+
+   @Override
+   protected String toDebugStringName() {
+      return "Collect " + this.count + " blocks of obsidian";
+   }
 }

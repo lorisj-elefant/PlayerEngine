@@ -16,221 +16,221 @@ import adris.altoclef.util.MiningRequirement;
 import adris.altoclef.util.helpers.StlHelper;
 import adris.altoclef.util.helpers.StorageHelper;
 import adris.altoclef.util.helpers.WorldHelper;
-import net.minecraft.block.Block;
-import net.minecraft.entity.ItemEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3i;
-import org.apache.commons.lang3.ArrayUtils;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
+import org.apache.commons.lang3.ArrayUtils;
 
 public abstract class ResourceTask extends Task implements ITaskCanForce {
+   protected final ItemTarget[] itemTargets;
+   private final PickupDroppedItemTask pickupTask;
+   private Block[] mineIfPresent = null;
+   private BlockPos mineLastClosest = null;
+   private boolean forceDimension = false;
+   private Dimension targetDimension;
+   private ContainerCache currentContainer;
+   protected boolean allowContainers = false;
 
-    protected final ItemTarget[] itemTargets;
+   public ResourceTask(ItemTarget... itemTargets) {
+      this.itemTargets = itemTargets;
+      this.pickupTask = new PickupDroppedItemTask(this.itemTargets, true);
+   }
 
-    private final PickupDroppedItemTask pickupTask;
+   public ResourceTask(Item item, int targetCount) {
+      this(new ItemTarget(item, targetCount));
+   }
 
-    private Block[] mineIfPresent = null;
-    private BlockPos mineLastClosest = null;
-    // Not all resource tasks need these, but they are common.
-    private boolean forceDimension = false;
-    private Dimension targetDimension;
-    private ContainerCache currentContainer;
-    protected boolean allowContainers = false;
+   @Override
+   public boolean isFinished() {
+      return StorageHelper.itemTargetsMet(this.controller, this.itemTargets);
+   }
 
-    public ResourceTask(ItemTarget... itemTargets) {
-        this.itemTargets = itemTargets;
-        this.pickupTask = new PickupDroppedItemTask(this.itemTargets, true);
-    }
+   @Override
+   public boolean shouldForce(Task interruptingCandidate) {
+      if (StorageHelper.itemTargetsMet(this.controller, this.itemTargets) && !this.isFinished()) {
+         ItemStack cursorStack = this.controller.getSlotHandler().getCursorStack();
+         return Arrays.stream(this.itemTargets).anyMatch(target -> target.matches(cursorStack.getItem()));
+      } else {
+         return false;
+      }
+   }
 
-    public ResourceTask(Item item, int targetCount) {
-        this(new ItemTarget(item, targetCount));
-    }
+   @Override
+   protected void onStart() {
+      BotBehaviour botBehaviour = this.controller.getBehaviour();
+      botBehaviour.push();
+      botBehaviour.addProtectedItems(ItemTarget.getMatches(this.itemTargets));
+      this.onResourceStart(this.controller);
+   }
 
-    @Override
-    public boolean isFinished() {
-        return StorageHelper.itemTargetsMet(controller, itemTargets);
-    }
+   @Override
+   protected Task onTick() {
+      AltoClefController mod = this.controller;
+      if (this.isFinished()) {
+         return null;
+      } else {
+         if (!this.shouldAvoidPickingUp(mod) && mod.getEntityTracker().itemDropped(this.itemTargets)) {
+            if (PickupDroppedItemTask.isIsGettingPickaxeFirst(mod)) {
+               if (this.pickupTask.isCollectingPickaxeForThis()) {
+                  this.setDebugState("Picking up (pickaxe first!)");
+                  return this.pickupTask;
+               }
 
-    @Override
-    public boolean shouldForce(Task interruptingCandidate) {
-        // If we have items on cursor and they are our target, don't get interrupted.
-        if (StorageHelper.itemTargetsMet(controller, itemTargets) && !isFinished()) {
-            ItemStack cursorStack = controller.getSlotHandler().getCursorStack();
-            return Arrays.stream(itemTargets).anyMatch(target -> target.matches(cursorStack.getItem()));
-        }
-        return false;
-    }
-
-    @Override
-    protected void onStart() {
-        BotBehaviour botBehaviour = controller.getBehaviour();
-        botBehaviour.push();
-        botBehaviour.addProtectedItems(ItemTarget.getMatches(itemTargets));
-        onResourceStart(controller);
-    }
-
-    @Override
-    protected Task onTick() {
-        AltoClefController mod = controller;
-        if (isFinished()) {
-            return null;
-        }
-
-        // If items are on the ground, pick them up.
-        if (!shouldAvoidPickingUp(mod)) {
-            // Check if items are on the floor. If so, pick em up.
-            if (mod.getEntityTracker().itemDropped(itemTargets)) {
-
-                // If we're picking up a pickaxe (we can't go far underground or mine much)
-                if (PickupDroppedItemTask.isIsGettingPickaxeFirst(mod)) {
-                    if (pickupTask.isCollectingPickaxeForThis()) {
-                        setDebugState("Picking up (pickaxe first!)");
-                        // Our pickup task is the one collecting the pickaxe, keep it going.
-                        return pickupTask;
-                    }
-                    // Only get items that are CLOSE to us.
-                    Optional<ItemEntity> closest = mod.getEntityTracker().getClosestItemDrop(mod.getPlayer().getPos(), itemTargets);
-                    if (closest.isPresent() && !closest.get().isInRange(mod.getPlayer(), 10)) {
-                        return onResourceTick(mod);
-                    }
-                }
-
-                double range = getPickupRange(mod);
-                Optional<ItemEntity> closest = mod.getEntityTracker().getClosestItemDrop(mod.getPlayer().getPos(), itemTargets);
-                if (range < 0 || (closest.isPresent() && closest.get().isInRange(mod.getPlayer(), range)) || (pickupTask.isActive() && !pickupTask.isFinished())) {
-                    setDebugState("Picking up");
-                    return pickupTask;
-                }
+               Optional<ItemEntity> closest = mod.getEntityTracker().getClosestItemDrop(mod.getPlayer().position(), this.itemTargets);
+               if (closest.isPresent() && !closest.get().closerThan(mod.getPlayer(), 10.0)) {
+                  return this.onResourceTick(mod);
+               }
             }
-        }
 
-        // Check for chests and grab resources from them.
-        if (currentContainer == null && allowContainers) {
-            List<ContainerCache> containersWithItem = mod.getItemStorage().getContainersWithItem(Arrays.stream(itemTargets).reduce(new Item[0], (items, target) -> ArrayUtils.addAll(items, target.getMatches()), ArrayUtils::addAll));
+            double range = this.getPickupRange(mod);
+            Optional<ItemEntity> closest = mod.getEntityTracker().getClosestItemDrop(mod.getPlayer().position(), this.itemTargets);
+            if (range < 0.0
+               || closest.isPresent() && closest.get().closerThan(mod.getPlayer(), range)
+               || this.pickupTask.isActive() && !this.pickupTask.isFinished()) {
+               this.setDebugState("Picking up");
+               return this.pickupTask;
+            }
+         }
+
+         if (this.currentContainer == null && this.allowContainers) {
+            List<ContainerCache> containersWithItem = mod.getItemStorage()
+               .getContainersWithItem(
+                  Arrays.stream(this.itemTargets)
+                     .reduce(new Item[0], (items, target) -> (Item[])ArrayUtils.addAll(items, target.getMatches()), ArrayUtils::addAll)
+               );
             if (!containersWithItem.isEmpty()) {
-                ContainerCache closest = containersWithItem.stream().min(StlHelper.compareValues(container -> BlockPosVer.getSquaredDistance(container.getBlockPos(), mod.getPlayer().getPos()))).get();
-                if (closest.getBlockPos().isWithinDistance(new Vec3i((int) mod.getPlayer().getPos().x, (int) mod.getPlayer().getPos().y, (int) mod.getPlayer().getPos().z), mod.getModSettings().getResourceChestLocateRange())) {
-                    currentContainer = closest;
-                }
+               ContainerCache closest = containersWithItem.stream()
+                  .min(StlHelper.compareValues(container -> BlockPosVer.getSquaredDistance(container.getBlockPos(), mod.getPlayer().position())))
+                  .get();
+               if (closest.getBlockPos()
+                  .closerThan(
+                     new Vec3i((int)mod.getPlayer().position().x, (int)mod.getPlayer().position().y, (int)mod.getPlayer().position().z),
+                     mod.getModSettings().getResourceChestLocateRange()
+                  )) {
+                  this.currentContainer = closest;
+               }
             }
-        }
-        if (currentContainer != null) {
-            Optional<ContainerCache> container = mod.getItemStorage().getContainerAtPosition(currentContainer.getBlockPos());
+         }
+
+         if (this.currentContainer != null) {
+            Optional<ContainerCache> container = mod.getItemStorage().getContainerAtPosition(this.currentContainer.getBlockPos());
             if (container.isPresent()) {
-                if (Arrays.stream(itemTargets).noneMatch(target -> container.get().hasItem(target.getMatches()))) {
-                    currentContainer = null;
-                } else {
-                    // We have a current chest, grab from it.
-                    setDebugState("Picking up from container");
-                    return new PickupFromContainerTask(currentContainer.getBlockPos(), itemTargets);
-                }
+               if (!Arrays.stream(this.itemTargets).noneMatch(target -> container.get().hasItem(target.getMatches()))) {
+                  this.setDebugState("Picking up from container");
+                  return new PickupFromContainerTask(this.currentContainer.getBlockPos(), this.itemTargets);
+               }
+
+               this.currentContainer = null;
             } else {
-                currentContainer = null;
+               this.currentContainer = null;
             }
-        }
+         }
 
-
-        // We may just mine if a block is found.
-        if (mineIfPresent != null) {
-            ArrayList<Block> satisfiedReqs = new ArrayList<>(Arrays.asList(mineIfPresent));
+         if (this.mineIfPresent != null) {
+            ArrayList<Block> satisfiedReqs = new ArrayList<>(Arrays.asList(this.mineIfPresent));
             satisfiedReqs.removeIf(block -> !StorageHelper.miningRequirementMet(mod, MiningRequirement.getMinimumRequirementForBlock(block)));
-            if (!satisfiedReqs.isEmpty()) {
-                if (mod.getBlockScanner().anyFound(satisfiedReqs.toArray(Block[]::new))) {
-                    Optional<BlockPos> closest = mod.getBlockScanner().getNearestBlock(mineIfPresent);
-                    if (closest.isPresent() && closest.get().isWithinDistance(new Vec3i((int) mod.getPlayer().getPos().x, (int) mod.getPlayer().getPos().y, (int) mod.getPlayer().getPos().z), mod.getModSettings().getResourceMineRange())) {
-                        mineLastClosest = closest.get();
-                    }
-                    if (mineLastClosest != null) {
-                        if (mineLastClosest.isWithinDistance(new Vec3i((int) mod.getPlayer().getPos().x, (int) mod.getPlayer().getPos().y, (int) mod.getPlayer().getPos().z), mod.getModSettings().getResourceMineRange() * 1.5 + 20)) {
-                            return new MineAndCollectTask(itemTargets, mineIfPresent, MiningRequirement.HAND);
-                        }
-                    }
-                }
+            if (!satisfiedReqs.isEmpty() && mod.getBlockScanner().anyFound(satisfiedReqs.toArray(Block[]::new))) {
+               Optional<BlockPos> closest = mod.getBlockScanner().getNearestBlock(this.mineIfPresent);
+               if (closest.isPresent()
+                  && closest.get()
+                     .closerThan(
+                        new Vec3i((int)mod.getPlayer().position().x, (int)mod.getPlayer().position().y, (int)mod.getPlayer().position().z),
+                        mod.getModSettings().getResourceMineRange()
+                     )) {
+                  this.mineLastClosest = closest.get();
+               }
+
+               if (this.mineLastClosest != null
+                  && this.mineLastClosest
+                     .closerThan(
+                        new Vec3i((int)mod.getPlayer().position().x, (int)mod.getPlayer().position().y, (int)mod.getPlayer().position().z),
+                        mod.getModSettings().getResourceMineRange() * 1.5 + 20.0
+                     )) {
+                  return new MineAndCollectTask(this.itemTargets, this.mineIfPresent, MiningRequirement.HAND);
+               }
             }
-        }
+         }
 
-        // Dimension check
-        if (isInWrongDimension(controller)) {
-            setDebugState("Traveling to correct dimension");
-            return getToCorrectDimensionTask(controller);
-        }
+         if (this.isInWrongDimension(this.controller)) {
+            this.setDebugState("Traveling to correct dimension");
+            return this.getToCorrectDimensionTask(this.controller);
+         } else {
+            return this.onResourceTick(this.controller);
+         }
+      }
+   }
 
-        return onResourceTick(controller);
-    }
+   private boolean isPickupTaskValid(AltoClefController controller) {
+      double range = this.getPickupRange(controller);
+      return range < 0.0
+         ? true
+         : controller.getEntityTracker()
+            .getClosestItemDrop(controller.getEntity().position(), this.itemTargets)
+            .map(itemEntity -> itemEntity.closerThan(controller.getEntity(), range) || this.pickupTask.isActive() && !this.pickupTask.isFinished())
+            .orElse(false);
+   }
 
-    private boolean isPickupTaskValid(AltoClefController controller) {
-        double range = getPickupRange(controller);
-        if (range < 0) return true;
-        return controller.getEntityTracker()
-                .getClosestItemDrop(controller.getEntity().getPos(), itemTargets)
-                .map(itemEntity -> itemEntity.isInRange(controller.getEntity(), range) || (pickupTask.isActive() && !pickupTask.isFinished()))
-                .orElse(false);
-    }
+   protected double getPickupRange(AltoClefController controller) {
+      return controller.getModSettings().getResourcePickupRange();
+   }
 
-    protected double getPickupRange(AltoClefController controller) {
-        return controller.getModSettings().getResourcePickupRange();
-    }
+   @Override
+   protected void onStop(Task interruptTask) {
+      this.controller.getBehaviour().pop();
+      this.onResourceStop(this.controller, interruptTask);
+   }
 
-    @Override
-    protected void onStop(Task interruptTask) {
-        controller.getBehaviour().pop();
-        onResourceStop(controller, interruptTask);
-    }
+   @Override
+   protected boolean isEqual(Task other) {
+      return !(other instanceof ResourceTask task)
+         ? false
+         : Arrays.equals((Object[])task.itemTargets, (Object[])this.itemTargets) && this.isEqualResource(task);
+   }
 
-    @Override
-    protected boolean isEqual(Task other) {
-        if (other instanceof ResourceTask task) {
-            return Arrays.equals(task.itemTargets, this.itemTargets) && isEqualResource(task);
-        }
-        return false;
-    }
+   @Override
+   protected String toDebugString() {
+      return this.toDebugStringName() + ": " + Arrays.toString((Object[])this.itemTargets);
+   }
 
-    @Override
-    protected String toDebugString() {
-        return toDebugStringName() + ": " + Arrays.toString(itemTargets);
-    }
+   protected boolean isInWrongDimension(AltoClefController controller) {
+      return this.forceDimension ? WorldHelper.getCurrentDimension(controller) != this.targetDimension : false;
+   }
 
-    protected boolean isInWrongDimension(AltoClefController controller) {
-        if (forceDimension) {
-            return WorldHelper.getCurrentDimension(controller) != targetDimension;
-        }
-        return false;
-    }
+   protected Task getToCorrectDimensionTask(AltoClefController controller) {
+      return new DefaultGoToDimensionTask(this.targetDimension);
+   }
 
-    protected Task getToCorrectDimensionTask(AltoClefController controller) {
-        return new DefaultGoToDimensionTask(targetDimension);
-    }
+   public ResourceTask forceDimension(Dimension dimension) {
+      this.forceDimension = true;
+      this.targetDimension = dimension;
+      return this;
+   }
 
-    public ResourceTask forceDimension(Dimension dimension) {
-        forceDimension = true;
-        targetDimension = dimension;
-        return this;
-    }
+   public ItemTarget[] getItemTargets() {
+      return this.itemTargets;
+   }
 
-    public ItemTarget[] getItemTargets() {
-        return itemTargets;
-    }
+   public ResourceTask mineIfPresent(Block[] toMine) {
+      this.mineIfPresent = toMine;
+      return this;
+   }
 
-    public ResourceTask mineIfPresent(Block[] toMine) {
-        mineIfPresent = toMine;
-        return this;
-    }
+   protected abstract boolean shouldAvoidPickingUp(AltoClefController var1);
 
-    protected abstract boolean shouldAvoidPickingUp(AltoClefController controller);
+   protected abstract void onResourceStart(AltoClefController var1);
 
-    protected abstract void onResourceStart(AltoClefController controller);
+   protected abstract Task onResourceTick(AltoClefController var1);
 
-    protected abstract Task onResourceTick(AltoClefController controller);
+   protected abstract void onResourceStop(AltoClefController var1, Task var2);
 
-    protected abstract void onResourceStop(AltoClefController controller, Task interruptTask);
+   protected abstract boolean isEqualResource(ResourceTask var1);
 
-    protected abstract boolean isEqualResource(ResourceTask other);
-
-    protected abstract String toDebugStringName();
+   protected abstract String toDebugStringName();
 }

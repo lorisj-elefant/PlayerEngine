@@ -3,47 +3,47 @@ package adris.altoclef.tasks.entity;
 import adris.altoclef.AltoClefController;
 import adris.altoclef.Debug;
 import adris.altoclef.tasksystem.Task;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.passive.SheepEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.Items;
-import net.minecraft.sound.SoundCategory;
-
 import java.util.Optional;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.animal.Sheep;
+import net.minecraft.world.item.Items;
 
 public class ShearSheepTask extends AbstractDoToEntityTask {
-    public ShearSheepTask() {
-        super(0.0D, -1.0D, -1.0D);
-    }
+   public ShearSheepTask() {
+      super(0.0, -1.0, -1.0);
+   }
 
-    protected boolean isSubEqual(AbstractDoToEntityTask other) {
-        return other instanceof adris.altoclef.tasks.entity.ShearSheepTask;
-    }
+   @Override
+   protected boolean isSubEqual(AbstractDoToEntityTask other) {
+      return other instanceof ShearSheepTask;
+   }
 
-    protected Task onEntityInteract(AltoClefController mod, Entity entity) {
-        if (!mod.getItemStorage().hasItem(new Item[]{Items.SHEARS})) {
-            Debug.logWarning("Failed to shear sheep because you have no shears.");
-            return null;
-        }
-        if (mod.getSlotHandler().forceEquipItem(Items.SHEARS)) {
-            ((SheepEntity) entity).sheared(SoundCategory.PLAYERS);
-            mod.getPlayer().getMainHandStack().damage(1, mod.getPlayer(), (e) -> {
-            });
-        }
-        return null;
-    }
+   @Override
+   protected Task onEntityInteract(AltoClefController mod, Entity entity) {
+      if (!mod.getItemStorage().hasItem(Items.SHEARS)) {
+         Debug.logWarning("Failed to shear sheep because you have no shears.");
+         return null;
+      } else {
+         if (mod.getSlotHandler().forceEquipItem(Items.SHEARS)) {
+            ((Sheep)entity).shear(SoundSource.PLAYERS);
+            mod.getPlayer().getMainHandItem().hurtAndBreak(1, mod.getPlayer(), e -> {});
+         }
 
-    protected Optional<Entity> getEntityTarget(AltoClefController mod) {
-        return mod.getEntityTracker().getClosestEntity(mod.getPlayer().getPos(), entity -> {
-            if (entity instanceof SheepEntity) {
-                SheepEntity sheep = (SheepEntity) entity;
-                return (sheep.isShearable() && !sheep.isSheared());
-            }
-            return false;
-        }, new Class[]{SheepEntity.class});
-    }
+         return null;
+      }
+   }
 
-    protected String toDebugString() {
-        return "Shearing Sheep";
-    }
+   @Override
+   protected Optional<Entity> getEntityTarget(AltoClefController mod) {
+      return mod.getEntityTracker()
+         .getClosestEntity(
+            mod.getPlayer().position(), entity -> !(entity instanceof Sheep sheep) ? false : sheep.readyForShearing() && !sheep.isSheared(), Sheep.class
+         );
+   }
+
+   @Override
+   protected String toDebugString() {
+      return "Shearing Sheep";
+   }
 }

@@ -7,73 +7,84 @@ import adris.altoclef.tasksystem.TaskChain;
 import adris.altoclef.tasksystem.TaskRunner;
 
 public abstract class SingleTaskChain extends TaskChain {
-    protected Task mainTask = null;
+   protected Task mainTask = null;
+   private boolean interrupted = false;
+   private final AltoClefController mod;
 
-    private boolean interrupted = false;
+   public SingleTaskChain(TaskRunner runner) {
+      super(runner);
+      this.mod = runner.getMod();
+   }
 
-    private final AltoClefController mod;
-
-    public SingleTaskChain(TaskRunner runner) {
-        super(runner);
-        this.mod = runner.getMod();
-    }
-
-    protected void onTick() {
-        if (!isActive())
-            return;
-        if (this.interrupted) {
+   @Override
+   protected void onTick() {
+      if (this.isActive()) {
+         if (this.interrupted) {
             this.interrupted = false;
-            if (this.mainTask != null)
-                this.mainTask.reset();
-        }
-        if (this.mainTask != null) {
+            if (this.mainTask != null) {
+               this.mainTask.reset();
+            }
+         }
+
+         if (this.mainTask != null) {
             if (this.mainTask.controller == null) {
-                this.mainTask.controller = controller;
+               this.mainTask.controller = this.controller;
             }
-            if (this.mainTask.isFinished() || this.mainTask.stopped()) {
-                onTaskFinish(this.mod);
+
+            if (!this.mainTask.isFinished() && !this.mainTask.stopped()) {
+               this.mainTask.tick(this);
             } else {
-                this.mainTask.tick(this);
+               this.onTaskFinish(this.mod);
             }
-        }
-    }
+         }
+      }
+   }
 
-    protected void onStop() {
-        if (isActive() && this.mainTask != null) {
-            this.mainTask.stop();
-            this.mainTask = null;
-        }
-    }
+   @Override
+   protected void onStop() {
+      if (this.isActive() && this.mainTask != null) {
+         this.mainTask.stop();
+         this.mainTask = null;
+      }
+   }
 
-    public void setTask(Task task) {
-        if (this.mainTask == null || !this.mainTask.equals(task)) {
-            if (this.mainTask != null)
-                this.mainTask.stop(task);
-            this.mainTask = task;
-            if (task != null)
-                task.reset();
-        }
-    }
+   public void setTask(Task task) {
+      if (this.mainTask == null || !this.mainTask.equals(task)) {
+         if (this.mainTask != null) {
+            this.mainTask.stop(task);
+         }
 
-    public boolean isActive() {
-        return (this.mainTask != null);
-    }
+         this.mainTask = task;
+         if (task != null) {
+            task.reset();
+         }
+      }
+   }
 
-    protected abstract void onTaskFinish(AltoClefController paramAltoClefController);
+   @Override
+   public boolean isActive() {
+      return this.mainTask != null;
+   }
 
-    public void onInterrupt(TaskChain other) {
-        if (other != null)
-            Debug.logInternal("Chain Interrupted: " + String.valueOf(this) + " by " + String.valueOf(other));
-        this.interrupted = true;
-        if (this.mainTask != null && this.mainTask.isActive())
-            this.mainTask.interrupt(null);
-    }
+   protected abstract void onTaskFinish(AltoClefController var1);
 
-    protected boolean isCurrentlyRunning(AltoClefController mod) {
-        return (!this.interrupted && this.mainTask.isActive() && !this.mainTask.isFinished());
-    }
+   @Override
+   public void onInterrupt(TaskChain other) {
+      if (other != null) {
+         Debug.logInternal("Chain Interrupted: " + this + " by " + other);
+      }
 
-    public Task getCurrentTask() {
-        return this.mainTask;
-    }
+      this.interrupted = true;
+      if (this.mainTask != null && this.mainTask.isActive()) {
+         this.mainTask.interrupt(null);
+      }
+   }
+
+   protected boolean isCurrentlyRunning(AltoClefController mod) {
+      return !this.interrupted && this.mainTask.isActive() && !this.mainTask.isFinished();
+   }
+
+   public Task getCurrentTask() {
+      return this.mainTask;
+   }
 }

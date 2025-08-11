@@ -3,50 +3,41 @@ package adris.altoclef.commandsystem;
 import java.lang.reflect.ParameterizedType;
 
 public abstract class ArgBase {
-    protected int minArgCountToUseDefault;
-    protected boolean hasDefault;
+   protected int minArgCountToUseDefault;
+   protected boolean hasDefault;
 
-    protected <V> V getConverted(Class<V> vType, Object ob) {
-        try {
-            //noinspection unchecked
-            return (V) ob;
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Tried to convert the following object to type {typeof(V)} and failed: {ob}. This is probably an internal problem, contact the dev!");
-            //return default(T);
-        }
-    }
+   protected <V> V getConverted(Class<V> vType, Object ob) {
+      try {
+         return (V)ob;
+      } catch (Exception var4) {
+         throw new IllegalArgumentException(
+            "Tried to convert the following object to type {typeof(V)} and failed: {ob}. This is probably an internal problem, contact the dev!"
+         );
+      }
+   }
 
-    //public abstract Object ParseUnit ( String unit, String[] unitPlusRemainder );
+   public <V> V parseUnit(String unit, String[] unitPlusRemainder) throws CommandException {
+      Class<V> vType = (Class<V>)((ParameterizedType)this.getClass().getGenericSuperclass()).getActualTypeArguments()[0];
+      return this.getConverted(vType, this.parseUnit(unit, unitPlusRemainder));
+   }
 
-    @SuppressWarnings("unchecked")
-    public <V> V parseUnit(String unit, String[] unitPlusRemainder) throws CommandException {
-        // Fuck java
-        Class<V> vType = (Class<V>)
-                ((ParameterizedType) getClass()
-                        .getGenericSuperclass())
-                        .getActualTypeArguments()[0];
+   public abstract <V> V getDefault(Class<V> var1);
 
-        return getConverted(vType, parseUnit(unit, unitPlusRemainder));
-    }
+   public abstract String getHelpRepresentation();
 
-    public abstract <V> V getDefault(Class<V> vType);
+   public int getMinArgCountToUseDefault() {
+      return this.minArgCountToUseDefault;
+   }
 
-    public abstract String getHelpRepresentation();
+   public boolean hasDefault() {
+      return this.hasDefault;
+   }
 
-    public int getMinArgCountToUseDefault() {
-        return minArgCountToUseDefault;
-    }
+   public boolean isArray() {
+      return false;
+   }
 
-    public boolean hasDefault() {
-        return hasDefault;
-    }
-
-    public boolean isArray() {
-        return false;
-    }
-
-    public boolean isArbitrarilyLong() {
-        return false;
-    }
-
+   public boolean isArbitrarilyLong() {
+      return false;
+   }
 }

@@ -8,195 +8,173 @@ import adris.altoclef.util.ItemTarget;
 import adris.altoclef.util.helpers.ItemHelper;
 import baritone.api.entity.IInventoryProvider;
 import baritone.api.entity.LivingEntityInventory;
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.LootableContainerBlockEntity;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3i;
-
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.Stream;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
+import net.minecraft.world.Container;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
 
 public class StoreInContainerTask extends Task {
+   public static final Block[] CONTAINER_BLOCKS = Stream.concat(
+         Arrays.stream(new Block[]{Blocks.CHEST, Blocks.TRAPPED_CHEST, Blocks.BARREL}), Arrays.stream(ItemHelper.itemsToBlocks(ItemHelper.SHULKER_BOXES))
+      )
+      .toArray(Block[]::new);
+   private final BlockPos containerPos;
+   private final boolean getIfNotPresent;
+   private final ItemTarget[] toStore;
 
-    public static final Block[] CONTAINER_BLOCKS = Stream.concat(
-            Arrays.stream(new Block[]{Blocks.CHEST, Blocks.TRAPPED_CHEST, Blocks.BARREL}),
-            Arrays.stream(ItemHelper.itemsToBlocks(ItemHelper.SHULKER_BOXES))
-    ).toArray(Block[]::new);
+   public StoreInContainerTask(BlockPos targetContainer, boolean getIfNotPresent, ItemTarget... toStore) {
+      this.containerPos = targetContainer;
+      this.getIfNotPresent = getIfNotPresent;
+      this.toStore = toStore;
+   }
 
-    private final BlockPos containerPos;
-    private final boolean getIfNotPresent;
-    private final ItemTarget[] toStore;
+   @Override
+   protected void onStart() {
+      for (ItemTarget target : this.toStore) {
+         this.controller.getBehaviour().addProtectedItems(target.getMatches());
+      }
+   }
 
-    public StoreInContainerTask(BlockPos targetContainer, boolean getIfNotPresent, ItemTarget... toStore) {
-        this.containerPos = targetContainer;
-        this.getIfNotPresent = getIfNotPresent;
-        this.toStore = toStore;
-    }
-
-    @Override
-    protected void onStart() {
-        // Protect items we want to store
-        for (ItemTarget target : toStore) {
-            controller.getBehaviour().addProtectedItems(target.getMatches());
-        }
-    }
-
-    @Override
-    protected Task onTick() {
-        // Are we done?
-        if (isFinished()) {
-            return null;
-        }
-
-        // Do we need to collect items first?
-        if (getIfNotPresent) {
-            for (ItemTarget target : toStore) {
-                int needed = target.getTargetCount(); // Simplified: just ensure the total amount is available.
-                if (controller.getItemStorage().getItemCount(target) < needed) {
-                    setDebugState("Collecting " + target + " first.");
-                    return TaskCatalogue.getItemTask(target);
-                }
+   @Override
+   protected Task onTick() {
+      if (this.isFinished()) {
+         return null;
+      } else {
+         if (this.getIfNotPresent) {
+            for (ItemTarget target : this.toStore) {
+               int needed = target.getTargetCount();
+               if (this.controller.getItemStorage().getItemCount(target) < needed) {
+                  this.setDebugState("Collecting " + target + " first.");
+                  return TaskCatalogue.getItemTask(target);
+               }
             }
-        }
+         }
 
-        // Go to container
-        if (!containerPos.isWithinDistance(new Vec3i((int) controller.getEntity().getPos().x, (int) controller.getEntity().getPos().y, (int) controller.getEntity().getPos().z), 4.5)) {
-            setDebugState("Going to container");
-            return new GetToBlockTask(containerPos);
-        }
-
-        // Get inventories
-        BlockEntity be = controller.getWorld().getBlockEntity(containerPos);
-        if (!(be instanceof LootableContainerBlockEntity container)) {
-            Debug.logWarning("Block at " + containerPos + " is not a lootable container. Stopping.");
+         if (!this.containerPos
+            .closerThan(
+               new Vec3i(
+                  (int)this.controller.getEntity().position().x, (int)this.controller.getEntity().position().y, (int)this.controller.getEntity().position().z
+               ),
+               4.5
+            )) {
+            this.setDebugState("Going to container");
+            return new GetToBlockTask(this.containerPos);
+         } else if (!(this.controller.getWorld().getBlockEntity(this.containerPos) instanceof RandomizableContainerBlockEntity container)) {
+            Debug.logWarning("Block at " + this.containerPos + " is not a lootable container. Stopping.");
             return null;
-        }
-        Inventory containerInventory = container;
-        LivingEntityInventory playerInventory = ((IInventoryProvider) controller.getEntity()).getLivingInventory();
+         } else {
+            RandomizableContainerBlockEntity var19 = container;
+            LivingEntityInventory var20 = ((IInventoryProvider)this.controller.getEntity()).getLivingInventory();
+            this.controller.getItemStorage().containers.WritableCache(this.controller, this.containerPos);
+            this.setDebugState("Storing items");
 
-        // Update our cache of this container
-        controller.getItemStorage().containers.WritableCache(controller, containerPos);
+            for (ItemTarget targetx : this.toStore) {
+               int currentInContainer = this.countItem(var19, targetx);
+               if (currentInContainer < targetx.getTargetCount()) {
+                  int neededInContainer = targetx.getTargetCount() - currentInContainer;
 
-        // Store items
-        setDebugState("Storing items");
-        for (ItemTarget target : toStore) {
-            int currentInContainer = countItem(containerInventory, target);
-            if (currentInContainer >= target.getTargetCount()) {
-                continue; // This target is satisfied
-            }
-            int neededInContainer = target.getTargetCount() - currentInContainer;
-
-            // Find this item in our inventory and move it
-            for (int i = 0; i < playerInventory.size(); i++) {
-                ItemStack playerStack = playerInventory.getStack(i);
-                if (target.matches(playerStack.getItem())) {
-                    int toMove = Math.min(neededInContainer, playerStack.getCount());
-
-                    // Try to move `toMove` items from player to container.
-                    ItemStack toInsert = playerStack.copy();
-                    toInsert.setCount(toMove);
-
-                    if (insertStack(containerInventory, toInsert, true).getCount() != toInsert.getCount()) {
-                        ItemStack remainder = insertStack(containerInventory, toInsert, false);
-                        int moved = toMove - remainder.getCount();
-                        if (moved > 0) {
-                            playerStack.decrement(moved);
-                            playerInventory.setStack(i, playerStack);
-                            container.markDirty();
-                            controller.getItemStorage().registerSlotAction();
-                            // Action taken, restart tick to re-evaluate state.
-                            return null;
+                  for (int i = 0; i < var20.getContainerSize(); i++) {
+                     ItemStack playerStack = var20.getItem(i);
+                     if (targetx.matches(playerStack.getItem())) {
+                        int toMove = Math.min(neededInContainer, playerStack.getCount());
+                        ItemStack toInsert = playerStack.copy();
+                        toInsert.setCount(toMove);
+                        if (this.insertStack(var19, toInsert, true).getCount() != toInsert.getCount()) {
+                           ItemStack remainder = this.insertStack(var19, toInsert, false);
+                           int moved = toMove - remainder.getCount();
+                           if (moved > 0) {
+                              playerStack.shrink(moved);
+                              var20.setItem(i, playerStack);
+                              container.setChanged();
+                              this.controller.getItemStorage().registerSlotAction();
+                              return null;
+                           }
                         }
-                    }
-                }
+                     }
+                  }
+               }
             }
-        }
 
-        // If we get here, all possible items have been stored.
-        return null;
-    }
+            return null;
+         }
+      }
+   }
 
-    @Override
-    public boolean isFinished() {
-        // Check if all targets are met inside the container
-        BlockEntity be = controller.getWorld().getBlockEntity(containerPos);
-        if (be instanceof Inventory containerInv) {
-            return Arrays.stream(toStore).allMatch(target ->
-                    countItem(containerInv, target) >= target.getTargetCount()
-            );
-        }
-        // If we can't access the container, assume we're not done unless we have no items to store.
-        return Arrays.stream(toStore).allMatch(target ->
-                controller.getItemStorage().getItemCount(target) == 0
-        );
-    }
+   @Override
+   public boolean isFinished() {
+      return this.controller.getWorld().getBlockEntity(this.containerPos) instanceof Container containerInv
+         ? Arrays.stream(this.toStore).allMatch(target -> this.countItem(containerInv, target) >= target.getTargetCount())
+         : Arrays.stream(this.toStore).allMatch(target -> this.controller.getItemStorage().getItemCount(target) == 0);
+   }
 
-    @Override
-    protected void onStop(Task interruptTask) {
-        controller.getBehaviour().pop();
-    }
+   @Override
+   protected void onStop(Task interruptTask) {
+      this.controller.getBehaviour().pop();
+   }
 
-    @Override
-    protected boolean isEqual(Task other) {
-        if (other instanceof StoreInContainerTask task) {
-            return Objects.equals(task.containerPos, containerPos) &&
-                    task.getIfNotPresent == getIfNotPresent &&
-                    Arrays.equals(task.toStore, toStore);
-        }
-        return false;
-    }
+   @Override
+   protected boolean isEqual(Task other) {
+      return !(other instanceof StoreInContainerTask task)
+         ? false
+         : Objects.equals(task.containerPos, this.containerPos)
+            && task.getIfNotPresent == this.getIfNotPresent
+            && Arrays.equals((Object[])task.toStore, (Object[])this.toStore);
+   }
 
-    @Override
-    protected String toDebugString() {
-        return "Storing in container[" + containerPos.toShortString() + "] " + Arrays.toString(toStore);
-    }
+   @Override
+   protected String toDebugString() {
+      return "Storing in container[" + this.containerPos.toShortString() + "] " + Arrays.toString((Object[])this.toStore);
+   }
 
-    // Helper to count items in an inventory
-    private int countItem(Inventory inventory, ItemTarget target) {
-        int count = 0;
-        for (int i = 0; i < inventory.size(); i++) {
-            ItemStack stack = inventory.getStack(i);
-            if (target.matches(stack.getItem())) {
-                count += stack.getCount();
+   private int countItem(Container inventory, ItemTarget target) {
+      int count = 0;
+
+      for (int i = 0; i < inventory.getContainerSize(); i++) {
+         ItemStack stack = inventory.getItem(i);
+         if (target.matches(stack.getItem())) {
+            count += stack.getCount();
+         }
+      }
+
+      return count;
+   }
+
+   private ItemStack insertStack(Container inventory, ItemStack stack, boolean simulate) {
+      if (simulate) {
+         stack = stack.copy();
+      }
+
+      for (int i = 0; i < inventory.getContainerSize() && !stack.isEmpty(); i++) {
+         ItemStack slotStack = inventory.getItem(i);
+         if (ItemStack.isSameItemSameTags(stack, slotStack)) {
+            int space = slotStack.getMaxStackSize() - slotStack.getCount();
+            int toTransfer = Math.min(stack.getCount(), space);
+            if (toTransfer > 0) {
+               slotStack.grow(toTransfer);
+               stack.shrink(toTransfer);
+               if (!simulate) {
+                  inventory.setItem(i, slotStack);
+               }
             }
-        }
-        return count;
-    }
+         }
+      }
 
-    // Helper for inserting into an inventory
-    private ItemStack insertStack(Inventory inventory, ItemStack stack, boolean simulate) {
-        if (simulate) {
-            stack = stack.copy();
-        }
-        // Try merging with existing stacks first
-        for (int i = 0; i < inventory.size(); i++) {
-            if (stack.isEmpty()) break;
-            ItemStack slotStack = inventory.getStack(i);
-            if (ItemStack.canCombine(stack, slotStack)) {
-                int space = slotStack.getMaxCount() - slotStack.getCount();
-                int toTransfer = Math.min(stack.getCount(), space);
-                if (toTransfer > 0) {
-                    slotStack.increment(toTransfer);
-                    stack.decrement(toTransfer);
-                    if (!simulate)
-                        inventory.setStack(i, slotStack);
-                }
+      for (int ix = 0; ix < inventory.getContainerSize() && !stack.isEmpty(); ix++) {
+         if (inventory.getItem(ix).isEmpty()) {
+            if (!simulate) {
+               inventory.setItem(ix, stack.copy());
             }
-        }
-        // Put remainder in empty slots
-        for (int i = 0; i < inventory.size(); i++) {
-            if (stack.isEmpty()) break;
-            if (inventory.getStack(i).isEmpty()) {
-                if (!simulate)
-                    inventory.setStack(i, stack.copy());
-                stack.setCount(0);
-            }
-        }
-        return stack;
-    }
+
+            stack.setCount(0);
+         }
+      }
+
+      return stack;
+   }
 }

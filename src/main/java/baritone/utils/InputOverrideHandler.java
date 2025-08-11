@@ -1,141 +1,93 @@
-/*
- * This file is part of Baritone.
- *
- * Baritone is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Baritone is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
- */
-
 package baritone.utils;
 
 import baritone.Baritone;
 import baritone.api.utils.IInputOverrideHandler;
 import baritone.api.utils.input.Input;
 import baritone.behavior.Behavior;
-import net.minecraft.entity.LivingEntity;
-
 import java.util.EnumSet;
 import java.util.Set;
+import net.minecraft.world.entity.LivingEntity;
 
-/**
- * An interface with the game's control system allowing the ability to
- * force down certain controls, having the same effect as if we were actually
- * physically forcing down the assigned key.
- *
- * @author Brady
- * @since 7/31/2018
- */
 public final class InputOverrideHandler extends Behavior implements IInputOverrideHandler {
+   private final Set<Input> inputForceStateMap = EnumSet.noneOf(Input.class);
+   private final BlockBreakHelper blockBreakHelper;
+   private final BlockPlaceHelper blockPlaceHelper;
+   private boolean needsUpdate;
 
-    /**
-     * Maps inputs to whether or not we are forcing their state down.
-     */
-    private final Set<Input> inputForceStateMap = EnumSet.noneOf(Input.class);
+   public InputOverrideHandler(Baritone baritone) {
+      super(baritone);
+      this.blockBreakHelper = new BlockBreakHelper(baritone.getEntityContext());
+      this.blockPlaceHelper = new BlockPlaceHelper(baritone.getEntityContext());
+   }
 
-    private final BlockBreakHelper blockBreakHelper;
-    private final BlockPlaceHelper blockPlaceHelper;
-    private boolean needsUpdate;
+   @Override
+   public final synchronized boolean isInputForcedDown(Input input) {
+      return input != null && this.inputForceStateMap.contains(input);
+   }
 
-    public InputOverrideHandler(Baritone baritone) {
-        super(baritone);
-        this.blockBreakHelper = new BlockBreakHelper(baritone.getEntityContext());
-        this.blockPlaceHelper = new BlockPlaceHelper(baritone.getEntityContext());
-    }
+   @Override
+   public final synchronized void setInputForceState(Input input, boolean forced) {
+      if (forced) {
+         this.inputForceStateMap.add(input);
+      } else {
+         this.inputForceStateMap.remove(input);
+      }
 
-    /**
-     * Returns whether or not we are forcing down the specified {@link Input}.
-     *
-     * @param input The input
-     * @return Whether or not it is being forced down
-     */
-    @Override
-    public final synchronized boolean isInputForcedDown(Input input) {
-        return input != null && this.inputForceStateMap.contains(input);
-    }
+      this.needsUpdate = true;
+   }
 
-    /**
-     * Sets whether or not the specified {@link Input} is being forced down.
-     *
-     * @param input  The {@link Input}
-     * @param forced Whether or not the state is being forced
-     */
-    @Override
-    public final synchronized void setInputForceState(Input input, boolean forced) {
-        if (forced) {
-            this.inputForceStateMap.add(input);
-        } else {
-            this.inputForceStateMap.remove(input);
-        }
-        this.needsUpdate = true;
-    }
+   @Override
+   public final synchronized void clearAllKeys() {
+      if (this.ctx.entity().isSprinting()) {
+         this.ctx.entity().setSprinting(false);
+      }
 
-    /**
-     * Clears the override state for all keys
-     */
-    @Override
-    public final synchronized void clearAllKeys() {
-        // Note that calling setSprinting before entity attributes are initialized will crash the game
-        // PERF: entity flags use a lock, see if we can put this elsewhere to reduce the number of calls
-        if (this.ctx.entity().isSprinting()) this.ctx.entity().setSprinting(false);
-        this.inputForceStateMap.clear();
-        this.needsUpdate = true;
-    }
+      this.inputForceStateMap.clear();
+      this.needsUpdate = true;
+   }
 
-    @Override
-    public final void onTickServer() {
-        if (!this.needsUpdate) return;
+   @Override
+   public final void onTickServer() {
+      if (this.needsUpdate) {
+         if (this.isInputForcedDown(Input.CLICK_LEFT)) {
+            this.setInputForceState(Input.CLICK_RIGHT, false);
+         }
 
-        if (isInputForcedDown(Input.CLICK_LEFT)) {
-            setInputForceState(Input.CLICK_RIGHT, false);
-        }
+         LivingEntity entity = this.ctx.entity();
+         entity.xxa = 0.0F;
+         entity.zza = 0.0F;
+         entity.setShiftKeyDown(false);
+         entity.setJumping(this.isInputForcedDown(Input.JUMP));
+         float speed = 0.3F;
+         if (this.isInputForcedDown(Input.MOVE_FORWARD)) {
+            entity.zza += speed;
+         }
 
-        LivingEntity entity = this.ctx.entity();
-        entity.sidewaysSpeed = 0.0F;
-        entity.forwardSpeed = 0.0F;
-        entity.setSneaking(false);
+         if (this.isInputForcedDown(Input.MOVE_BACK)) {
+            entity.zza -= speed;
+         }
 
-        entity.setJumping(this.isInputForcedDown(Input.JUMP)); // oppa gangnam style
+         if (this.isInputForcedDown(Input.MOVE_LEFT)) {
+            entity.xxa += speed;
+         }
 
-        float speed = 0.3f;
+         if (this.isInputForcedDown(Input.MOVE_RIGHT)) {
+            entity.xxa -= speed;
+         }
 
-        if (this.isInputForcedDown(Input.MOVE_FORWARD)) {
-            entity.forwardSpeed += speed;
-        }
+         if (this.isInputForcedDown(Input.SNEAK)) {
+            entity.setShiftKeyDown(true);
+            entity.xxa = (float)(entity.xxa * 0.3);
+            entity.zza = (float)(entity.zza * 0.3);
+         }
 
-        if (this.isInputForcedDown(Input.MOVE_BACK)) {
-            entity.forwardSpeed -= speed;
-        }
+         this.blockBreakHelper.tick(this.isInputForcedDown(Input.CLICK_LEFT));
+         this.blockPlaceHelper.tick(this.isInputForcedDown(Input.CLICK_RIGHT));
+         this.needsUpdate = false;
+      }
+   }
 
-        if (this.isInputForcedDown(Input.MOVE_LEFT)) {
-            entity.sidewaysSpeed += speed;
-        }
-
-        if (this.isInputForcedDown(Input.MOVE_RIGHT)) {
-            entity.sidewaysSpeed -= speed;
-        }
-
-        if (this.isInputForcedDown(Input.SNEAK)) {
-            entity.setSneaking(true);
-            entity.sidewaysSpeed *= 0.3D;
-            entity.forwardSpeed *= 0.3D;
-        }
-
-        blockBreakHelper.tick(isInputForcedDown(Input.CLICK_LEFT));
-        blockPlaceHelper.tick(isInputForcedDown(Input.CLICK_RIGHT));
-
-        this.needsUpdate = false;
-    }
-
-    public BlockBreakHelper getBlockBreakHelper() {
-        return blockBreakHelper;
-    }
+   public BlockBreakHelper getBlockBreakHelper() {
+      return this.blockBreakHelper;
+   }
 }

@@ -1,9 +1,10 @@
 package adris.altoclef.multiversion;
 
-import net.minecraft.network.message.MessageType;
+import net.minecraft.network.chat.ChatType;
+import net.minecraft.network.chat.ChatType.Bound;
 
 public class MessageTypeVer {
-    public static MessageType getMessageType(MessageType.Parameters parameters) {
-        return parameters.messageType();
-    }
+   public static ChatType getMessageType(Bound parameters) {
+      return parameters.chatType();
+   }
 }

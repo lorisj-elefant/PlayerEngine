@@ -4,40 +4,45 @@ import adris.altoclef.AltoClefController;
 import adris.altoclef.tasks.ResourceTask;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.MiningRequirement;
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
-import net.minecraft.item.Item;
-import net.minecraft.item.Items;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 
 public class CollectWheatSeedsTask extends ResourceTask {
-    private final int count;
+   private final int count;
 
-    public CollectWheatSeedsTask(int count) {
-        super(Items.WHEAT_SEEDS, count);
-        this.count = count;
-    }
+   public CollectWheatSeedsTask(int count) {
+      super(Items.WHEAT_SEEDS, count);
+      this.count = count;
+   }
 
-    protected boolean shouldAvoidPickingUp(AltoClefController mod) {
-        return false;
-    }
+   @Override
+   protected boolean shouldAvoidPickingUp(AltoClefController mod) {
+      return false;
+   }
 
-    protected void onResourceStart(AltoClefController mod) {
-    }
+   @Override
+   protected void onResourceStart(AltoClefController mod) {
+   }
 
-    protected Task onResourceTick(AltoClefController mod) {
-        if (mod.getBlockScanner().anyFound(new Block[]{Blocks.WHEAT}))
-            return (Task) new CollectCropTask(Items.AIR, 999, Blocks.WHEAT, new Item[]{Items.WHEAT_SEEDS});
-        return (Task) new MineAndCollectTask(Items.WHEAT_SEEDS, this.count, new Block[]{Blocks.GRASS, Blocks.TALL_GRASS}, MiningRequirement.HAND);
-    }
+   @Override
+   protected Task onResourceTick(AltoClefController mod) {
+      return (Task)(mod.getBlockScanner().anyFound(Blocks.WHEAT)
+         ? new CollectCropTask(Items.AIR, 999, Blocks.WHEAT, Items.WHEAT_SEEDS)
+         : new MineAndCollectTask(Items.WHEAT_SEEDS, this.count, new Block[]{Blocks.GRASS, Blocks.TALL_GRASS}, MiningRequirement.HAND));
+   }
 
-    protected void onResourceStop(AltoClefController mod, Task interruptTask) {
-    }
+   @Override
+   protected void onResourceStop(AltoClefController mod, Task interruptTask) {
+   }
 
-    protected boolean isEqualResource(ResourceTask other) {
-        return other instanceof adris.altoclef.tasks.resources.CollectWheatSeedsTask;
-    }
+   @Override
+   protected boolean isEqualResource(ResourceTask other) {
+      return other instanceof CollectWheatSeedsTask;
+   }
 
-    protected String toDebugStringName() {
-        return "Collecting " + this.count + " wheat seeds.";
-    }
+   @Override
+   protected String toDebugStringName() {
+      return "Collecting " + this.count + " wheat seeds.";
+   }
 }

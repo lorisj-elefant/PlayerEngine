@@ -3,55 +3,51 @@ package adris.altoclef.control;
 import adris.altoclef.AltoClefController;
 import baritone.api.utils.Rotation;
 import baritone.api.utils.input.Input;
-
 import java.util.ArrayDeque;
 import java.util.HashSet;
 import java.util.Queue;
 import java.util.Set;
 
 public class InputControls {
-    AltoClefController controller;
+   AltoClefController controller;
+   private final Queue<Input> toUnpress = new ArrayDeque<>();
+   private final Set<Input> waitForRelease = new HashSet<>();
 
-    public InputControls(AltoClefController controller) {
-        this.controller = controller;
-    }
+   public InputControls(AltoClefController controller) {
+      this.controller = controller;
+   }
 
-    private final Queue<Input> toUnpress = new ArrayDeque<>();
+   public void tryPress(Input input) {
+      if (!this.waitForRelease.contains(input)) {
+         this.controller.getBaritone().getInputOverrideHandler().setInputForceState(input, true);
+         this.toUnpress.add(input);
+         this.waitForRelease.add(input);
+      }
+   }
 
-    private final Set<Input> waitForRelease = new HashSet<>();
+   public void hold(Input input) {
+      this.controller.getBaritone().getInputOverrideHandler().setInputForceState(input, true);
+   }
 
-    public void tryPress(Input input) {
-        if (this.waitForRelease.contains(input))
-            return;
+   public void release(Input input) {
+      this.controller.getBaritone().getInputOverrideHandler().setInputForceState(input, false);
+   }
 
-        controller.getBaritone().getInputOverrideHandler().setInputForceState(input, true);
-        this.toUnpress.add(input);
-        this.waitForRelease.add(input);
-    }
+   public boolean isHeldDown(Input input) {
+      return this.controller.getBaritone().getInputOverrideHandler().isInputForcedDown(input);
+   }
 
-    public void hold(Input input) {
-        controller.getBaritone().getInputOverrideHandler().setInputForceState(input, true);
-    }
+   public void forceLook(float yaw, float pitch) {
+      this.controller.getBaritone().getLookBehavior().updateTarget(new Rotation(yaw, pitch), true);
+   }
 
-    public void release(Input input) {
-        controller.getBaritone().getInputOverrideHandler().setInputForceState(input, false);
-    }
+   public void onTickPre() {
+      while (!this.toUnpress.isEmpty()) {
+         this.controller.getBaritone().getInputOverrideHandler().setInputForceState(this.toUnpress.remove(), false);
+      }
+   }
 
-
-    public boolean isHeldDown(Input input) {
-        return controller.getBaritone().getInputOverrideHandler().isInputForcedDown(input);
-    }
-
-    public void forceLook(float yaw, float pitch) {
-        controller.getBaritone().getLookBehavior().updateTarget(new Rotation(yaw, pitch), true);
-    }
-
-    public void onTickPre() {
-        while (!this.toUnpress.isEmpty())
-            controller.getBaritone().getInputOverrideHandler().setInputForceState(this.toUnpress.remove(), false);
-    }
-
-    public void onTickPost() {
-        this.waitForRelease.clear();
-    }
+   public void onTickPost() {
+      this.waitForRelease.clear();
+   }
 }

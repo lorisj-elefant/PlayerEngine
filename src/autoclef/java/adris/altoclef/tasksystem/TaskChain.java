@@ -1,53 +1,50 @@
 package adris.altoclef.tasksystem;
 
 import adris.altoclef.AltoClefController;
-
 import java.util.ArrayList;
 import java.util.List;
 
 public abstract class TaskChain {
+   protected AltoClefController controller;
+   private final List<Task> cachedTaskChain = new ArrayList<>();
 
-    protected AltoClefController controller;
+   public TaskChain(TaskRunner runner) {
+      runner.addTaskChain(this);
+      this.controller = runner.getMod();
+   }
 
-    private final List<Task> cachedTaskChain = new ArrayList<>();
+   public void tick() {
+      this.cachedTaskChain.clear();
+      this.onTick();
+   }
 
-    public TaskChain(TaskRunner runner) {
-        runner.addTaskChain(this);
-        controller = runner.getMod();
-    }
+   public void stop() {
+      this.cachedTaskChain.clear();
+      this.onStop();
+   }
 
-    public void tick() {
-        cachedTaskChain.clear();
-        onTick();
-    }
+   protected abstract void onStop();
 
-    public void stop() {
-        cachedTaskChain.clear();
-        onStop();
-    }
+   public abstract void onInterrupt(TaskChain var1);
 
-    protected abstract void onStop();
+   protected abstract void onTick();
 
-    public abstract void onInterrupt(TaskChain other);
+   public abstract float getPriority();
 
-    protected abstract void onTick();
+   public abstract boolean isActive();
 
-    public abstract float getPriority();
+   public abstract String getName();
 
-    public abstract boolean isActive();
+   public List<Task> getTasks() {
+      return this.cachedTaskChain;
+   }
 
-    public abstract String getName();
+   void addTaskToChain(Task task) {
+      this.cachedTaskChain.add(task);
+   }
 
-    public List<Task> getTasks() {
-        return cachedTaskChain;
-    }
-
-    void addTaskToChain(Task task) {
-        cachedTaskChain.add(task);
-    }
-
-    public String toString() {
-        return getName();
-    }
-
+   @Override
+   public String toString() {
+      return this.getName();
+   }
 }

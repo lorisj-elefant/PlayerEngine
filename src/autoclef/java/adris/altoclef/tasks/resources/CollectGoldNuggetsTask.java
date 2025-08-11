@@ -12,25 +12,27 @@ import adris.altoclef.util.ItemTarget;
 import adris.altoclef.util.MiningRequirement;
 import adris.altoclef.util.RecipeTarget;
 import adris.altoclef.util.helpers.WorldHelper;
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
-import net.minecraft.item.Item;
-import net.minecraft.item.Items;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 
 public class CollectGoldNuggetsTask extends ResourceTask {
-    private final int count;
+   private final int count;
 
-    public CollectGoldNuggetsTask(int count) {
-        super(Items.GOLD_NUGGET, count);
-        this.count = count;
-    }
+   public CollectGoldNuggetsTask(int count) {
+      super(Items.GOLD_NUGGET, count);
+      this.count = count;
+   }
 
-    protected boolean shouldAvoidPickingUp(AltoClefController mod) {
-        return false;
-    }
+   @Override
+   protected boolean shouldAvoidPickingUp(AltoClefController mod) {
+      return false;
+   }
 
-    protected void onResourceStart(AltoClefController mod) {
-    }
+   @Override
+   protected void onResourceStart(AltoClefController mod) {
+   }
 
     protected Task onResourceTick(AltoClefController mod) {
         int potentialNuggies, nuggiesStillNeeded;
@@ -53,14 +55,17 @@ public class CollectGoldNuggetsTask extends ResourceTask {
         return null;
     }
 
-    protected void onResourceStop(AltoClefController mod, Task interruptTask) {
-    }
+   @Override
+   protected void onResourceStop(AltoClefController mod, Task interruptTask) {
+   }
 
-    protected boolean isEqualResource(ResourceTask other) {
-        return other instanceof adris.altoclef.tasks.resources.CollectGoldNuggetsTask;
-    }
+   @Override
+   protected boolean isEqualResource(ResourceTask other) {
+      return other instanceof CollectGoldNuggetsTask;
+   }
 
-    protected String toDebugStringName() {
-        return "Collecting " + this.count + " nuggets";
-    }
+   @Override
+   protected String toDebugStringName() {
+      return "Collecting " + this.count + " nuggets";
+   }
 }

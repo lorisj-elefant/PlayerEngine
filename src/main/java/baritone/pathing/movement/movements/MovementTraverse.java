@@ -1,24 +1,6 @@
-/*
- * This file is part of Baritone.
- *
- * Baritone is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Baritone is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
- */
-
 package baritone.pathing.movement.movements;
 
 import baritone.api.IBaritone;
-import baritone.api.Settings;
 import baritone.api.pathing.movement.MovementStatus;
 import baritone.api.utils.BetterBlockPos;
 import baritone.api.utils.Rotation;
@@ -32,491 +14,446 @@ import baritone.pathing.movement.MovementState;
 import baritone.utils.BlockStateInterface;
 import baritone.utils.pathing.MutableMoveResult;
 import com.google.common.collect.ImmutableSet;
-import net.minecraft.block.AirBlock;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.DoorBlock;
-import net.minecraft.block.FenceGateBlock;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityDimensions;
-import net.minecraft.entity.EntityPose;
-import net.minecraft.fluid.WaterFluid;
-import net.minecraft.registry.tag.BlockTags;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.shape.VoxelShape;
-
 import java.util.Optional;
 import java.util.Set;
+import net.minecraft.core.BlockPos;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityDimensions;
+import net.minecraft.world.entity.Pose;
+import net.minecraft.world.level.block.AirBlock;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.DoorBlock;
+import net.minecraft.world.level.block.FenceGateBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.material.WaterFluid;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.VoxelShape;
 
-/**
- * Moves exactly one block horizontally in one of the 4 cardinal directions.
- *
- * <p>If {@link Settings#allowBreak} is {@code true}, this movement will break
- * all blocks in the way.
- *
- * <p>Seen sideways:
- * <pre>
- *     src ➡ dest
- * </pre>
- */
 public class MovementTraverse extends Movement {
+   private boolean wasTheBridgeBlockAlwaysThere = true;
 
-    /**
-     * Did we have to place a bridge block or was it always there
-     */
-    private boolean wasTheBridgeBlockAlwaysThere = true;
+   public MovementTraverse(IBaritone baritone, BetterBlockPos from, BetterBlockPos to) {
+      super(baritone, from, to, buildPositionsToBreak(baritone.getEntityContext().entity(), from, to), to.down());
+   }
 
-    public MovementTraverse(IBaritone baritone, BetterBlockPos from, BetterBlockPos to) {
-        super(baritone, from, to, buildPositionsToBreak(baritone.getEntityContext().entity(), from, to), to.down());
-    }
+   @Override
+   public void reset() {
+      super.reset();
+      this.wasTheBridgeBlockAlwaysThere = true;
+   }
 
-    @Override
-    public void reset() {
-        super.reset();
-        wasTheBridgeBlockAlwaysThere = true;
-    }
+   @Override
+   public double calculateCost(CalculationContext context) {
+      MutableMoveResult result = new MutableMoveResult();
+      cost(context, this.src.x, this.src.y, this.src.z, this.dest.x, this.dest.z, result);
+      return result.cost;
+   }
 
-    @Override
-    public double calculateCost(CalculationContext context) {
-        MutableMoveResult result = new MutableMoveResult();
-        cost(context, src.x, src.y, src.z, dest.x, dest.z, result);
-        return result.cost;
-    }
+   @Override
+   protected Set<BetterBlockPos> calculateValidPositions() {
+      return ImmutableSet.of(this.src, this.dest);
+   }
 
-    @Override
-    protected Set<BetterBlockPos> calculateValidPositions() {
-        return ImmutableSet.of(src, dest);
-    }
+   public static BetterBlockPos[] buildPositionsToBreak(Entity e, BetterBlockPos from, BetterBlockPos to) {
+      int x = from.x;
+      int y = from.y;
+      int z = from.z;
+      int destX = to.x;
+      int destZ = to.z;
+      int diffX = destX - x;
+      int diffZ = destZ - z;
+      EntityDimensions dimensions = e.getDimensions(Pose.STANDING);
+      int requiredSideSpace = CalculationContext.getRequiredSideSpace(dimensions);
+      int checkedXShift = diffX * requiredSideSpace;
+      int checkedZShift = diffZ * requiredSideSpace;
+      int checkedX = destX + checkedXShift;
+      int checkedZ = destZ + checkedZShift;
+      int height = Mth.ceil(dimensions.height);
+      int requiredForwardSpace = requiredSideSpace == 0 ? 1 : 2;
+      int volume = requiredForwardSpace * (requiredSideSpace * 2 + 1) * height;
+      int i = 0;
+      BetterBlockPos[] ret = new BetterBlockPos[volume];
 
-    public static BetterBlockPos[] buildPositionsToBreak(Entity e, BetterBlockPos from, BetterBlockPos to) {
-        int x = from.x;
-        int y = from.y;
-        int z = from.z;
-        int destX = to.x;
-        int destZ = to.z;
-        int diffX = destX - x;
-        int diffZ = destZ - z;
-        EntityDimensions dimensions = e.getDimensions(EntityPose.STANDING);
-        int requiredSideSpace = CalculationContext.getRequiredSideSpace(dimensions);
-        int checkedXShift = diffX * requiredSideSpace;
-        int checkedZShift = diffZ * requiredSideSpace;
-        int checkedX = destX + checkedXShift;
-        int checkedZ = destZ + checkedZShift;
-        int height = MathHelper.ceil(dimensions.height);
-        int requiredForwardSpace = requiredSideSpace == 0 ? 1 : 2;
-        int volume = requiredForwardSpace * (requiredSideSpace * 2 + 1) * height;
-        int i = 0;
-        BetterBlockPos[] ret = new BetterBlockPos[volume];
-
-        for (int df = 0; df < requiredForwardSpace; df++) {
-            for (int ds = -requiredSideSpace; ds <= requiredSideSpace; ds++) {
-                for (int dy = 0; dy < height; dy++) {
-                    // + mov[z/x] * ds => make hole in the wall
-                    // - mov[x/z] * df => handle unexpectedly close walls
-                    ret[i++] = new BetterBlockPos(checkedX + diffZ * ds - diffX * df, y + dy, checkedZ + diffX * ds - diffZ * df);
-                }
+      for (int df = 0; df < requiredForwardSpace; df++) {
+         for (int ds = -requiredSideSpace; ds <= requiredSideSpace; ds++) {
+            for (int dy = 0; dy < height; dy++) {
+               ret[i++] = new BetterBlockPos(checkedX + diffZ * ds - diffX * df, y + dy, checkedZ + diffX * ds - diffZ * df);
             }
-        }
+         }
+      }
 
-        return ret;
-    }
+      return ret;
+   }
 
-    public static void cost(CalculationContext context, int x, int y, int z, int destX, int destZ, MutableMoveResult result) {
-        BlockState destOn = context.get(destX, y - 1, destZ);
-        BlockState srcOn = context.get(x, y - 1, z);
-        Block srcOnBlock = srcOn.getBlock();
-        // we need to check that nothing is in the way, no matter the collision box of our entity
-        // we know that if we are standing at (x,y,z), the space around us is already cleared out
-        // (not always true, we may be pressing against the wall, but close enough)
-        // MovementTraverse only moves on a single axis, by one block
-        // For example:
-        // [-----]X                 [-----] is our entity's collision box (big)
-        // +++sd+++                 s is our source position, d is our destination
-        // 12345678                 coordinates
-        // X is a wall, which prevents us from walking from s to d despite both positions being clear
-        // So only coord 8 has to be checked, despite moving from 4 to 5
-        int movX = destX - x;
-        int movZ = destZ - z;
-        int checkedXShift = movX * context.requiredSideSpace;
-        int checkedZShift = movZ * context.requiredSideSpace;
-        int checkedX = destX + checkedXShift;
-        int checkedZ = destZ + checkedZShift;
+   public static void cost(CalculationContext context, int x, int y, int z, int destX, int destZ, MutableMoveResult result) {
+      BlockState destOn = context.get(destX, y - 1, destZ);
+      BlockState srcOn = context.get(x, y - 1, z);
+      Block srcOnBlock = srcOn.getBlock();
+      int movX = destX - x;
+      int movZ = destZ - z;
+      int checkedXShift = movX * context.requiredSideSpace;
+      int checkedZShift = movZ * context.requiredSideSpace;
+      int checkedX = destX + checkedXShift;
+      int checkedZ = destZ + checkedZShift;
+      if (MovementHelper.canWalkOn(context.bsi, destX, y - 1, destZ, destOn, context.baritone.settings())) {
+         double WC = 0.0;
+         boolean water = false;
+         BlockState destHeadState = context.get(destX, y + context.height - 1, destZ);
+         if (MovementHelper.isWater(destHeadState)) {
+            WC = context.waterWalkSpeed;
+            water = true;
+         } else {
+            for (int dy = 0; dy < context.height - 1; dy++) {
+               if (MovementHelper.isWater(context.get(destX, y + dy, destZ))) {
+                  WC = context.waterWalkSpeed;
+                  water = true;
+                  break;
+               }
+            }
+         }
 
-        if (MovementHelper.canWalkOn(context.bsi, destX, y - 1, destZ, destOn, context.baritone.settings())) {//this is a walk, not a bridge
-            double WC = 0;
-            boolean water = false;
-            BlockState destHeadState = context.get(destX, y + context.height - 1, destZ);
-            if (MovementHelper.isWater(destHeadState)) {
-                WC = context.waterWalkSpeed;
-                water = true;
+         if (!water) {
+            if (destOn.getBlock() == Blocks.WATER) {
+               WC = context.walkOnWaterOnePenalty;
             } else {
-                for (int dy = 0; dy < context.height - 1; dy++) {
-                    if (MovementHelper.isWater(context.get(destX, y + dy, destZ))) {
-                        WC = context.waterWalkSpeed;
-                        water = true;
-                        break;
-                    }
-                }
-            }
-            if (!water) {
-                if (destOn.getBlock() == Blocks.WATER) {
-                    WC = context.walkOnWaterOnePenalty;
-                } else {
-                    // we are walking half a block on destOn and half a block on srcOnBlock
-                    WC = WALK_ONE_BLOCK_COST / destOn.getBlock().getVelocityMultiplier() / 2;
-                }
-                WC += WALK_ONE_BLOCK_COST / srcOnBlock.getVelocityMultiplier() / 2;
+               WC = 4.63284688441047 / destOn.getBlock().getSpeedFactor() / 2.0;
             }
 
-            double hardness = 0;
-            BlockState srcHeadState = context.get(x, y + context.height - 1, z);
-            int hardnessModifier = MovementHelper.isWater(srcHeadState) || srcOnBlock == Blocks.LADDER || srcOnBlock == Blocks.VINE ? 5 : 1;
+            WC += 4.63284688441047 / srcOnBlock.getSpeedFactor() / 2.0;
+         }
+
+         double hardness = 0.0;
+         BlockState srcHeadState = context.get(x, y + context.height - 1, z);
+         int hardnessModifier = !MovementHelper.isWater(srcHeadState) && srcOnBlock != Blocks.LADDER && srcOnBlock != Blocks.VINE ? 1 : 5;
+
+         for (int dxz = -context.requiredSideSpace; dxz <= context.requiredSideSpace; dxz++) {
+            for (int dyx = 0; dyx < context.height; dyx++) {
+               hardness += MovementHelper.getMiningDurationTicks(context, checkedX + dxz * movZ, y + dyx, checkedZ + dxz * movX, dyx == context.height - 1)
+                  * hardnessModifier;
+               if (hardness >= 1000000.0) {
+                  return;
+               }
+            }
+         }
+
+         if (hardness == 0.0 && !water && context.canSprint) {
+            WC *= 0.7692444761225944;
+         }
+
+         result.cost = WC + hardness;
+         result.oxygenCost = context.oxygenCost(WC / 2.0 + hardness, srcHeadState) + context.oxygenCost(WC / 2.0, destHeadState);
+      } else {
+         if (srcOnBlock == Blocks.LADDER || srcOnBlock == Blocks.VINE) {
+            return;
+         }
+
+         if (MovementHelper.isReplaceable(destX, y - 1, destZ, destOn, context.bsi)) {
+            boolean throughWater = false;
+
+            for (int dyxx = 0; dyxx < context.height; dyxx++) {
+               if (MovementHelper.isWater(context.get(destX, y + dyxx, destZ))) {
+                  throughWater = true;
+                  if (MovementHelper.isWater(destOn)) {
+                     return;
+                  }
+                  break;
+               }
+            }
+
+            double placeCost = context.costOfPlacingAt(destX, y - 1, destZ, destOn);
+            if (placeCost >= 1000000.0) {
+               return;
+            }
+
+            double hardness = 0.0;
+
             for (int dxz = -context.requiredSideSpace; dxz <= context.requiredSideSpace; dxz++) {
-                for (int dy = 0; dy < context.height; dy++) {
-                    hardness += MovementHelper.getMiningDurationTicks(
-                            context,
-                            checkedX + dxz * movZ,  // if not moving along the z axis (movZ == 0), we only need to check blocks at checkedX
-                            y + dy,
-                            checkedZ + dxz * movX,  // if not moving along the x axis (movX == 0), we only need to check blocks at checkedZ
-                            dy == context.height - 1 // only consider falling blocks on the uppermost block to break
-                    ) * hardnessModifier;
-
-                    if (hardness >= COST_INF) {
-                        return;
-                    }
-                }
-            }
-            if (hardness == 0 && !water && context.canSprint) {
-                // If there's nothing in the way, and this isn't water, and we aren't sneak placing
-                // We can sprint =D
-                // Don't check for soul sand, since we can sprint on that too
-                WC *= SPRINT_MULTIPLIER;
-            }
-            result.cost = WC + hardness;
-            result.oxygenCost = context.oxygenCost(WC / 2 + hardness, srcHeadState)
-                    + context.oxygenCost(WC / 2, destHeadState);
-        } else {//this is a bridge, so we need to place a block
-            if (srcOnBlock == Blocks.LADDER || srcOnBlock == Blocks.VINE) {
-                return;
-            }
-            if (MovementHelper.isReplaceable(destX, y - 1, destZ, destOn, context.bsi)) {
-                boolean throughWater = false;
-                for (int dy = 0; dy < context.height; dy++) {
-                    if (MovementHelper.isWater(context.get(destX, y + dy, destZ))) {
-                        throughWater = true;
-                        if (MovementHelper.isWater(destOn)) {
-                            // this happens when assume walk on water is true and this is a traverse in water, which isn't allowed
-                            return;
-                        }
-                        break;
-                    }
-                }
-
-                double placeCost = context.costOfPlacingAt(destX, y - 1, destZ, destOn);
-                if (placeCost >= COST_INF) {
-                    return;
-                }
-
-                double hardness = 0;
-                for (int dxz = -context.requiredSideSpace; dxz <= context.requiredSideSpace; dxz++) {
-                    for (int dy = 0; dy < context.height; dy++) {
-                        hardness += MovementHelper.getMiningDurationTicks(
-                                context,
-                                checkedX + dxz * movZ,  // if not moving along the z axis (movZ == 0), we only need to check blocks at checkedX
-                                y + dy,
-                                checkedZ + dxz * movX,  // if not moving along the x axis (movX == 0), we only need to check blocks at checkedZ
-                                dy == context.height - 1 // only consider falling blocks on the uppermost block to break
-                        );
-
-                        if (hardness >= COST_INF) {
-                            return;
-                        }
-                    }
-                }
-
-                double WC = throughWater ? context.waterWalkSpeed : WALK_ONE_BLOCK_COST;
-                for (int i = 0; i < 5; i++) {
-                    int againstX = destX + HORIZONTALS_BUT_ALSO_DOWN_____SO_EVERY_DIRECTION_EXCEPT_UP[i].getOffsetX();
-                    int againstY = y - 1 + HORIZONTALS_BUT_ALSO_DOWN_____SO_EVERY_DIRECTION_EXCEPT_UP[i].getOffsetY();
-                    int againstZ = destZ + HORIZONTALS_BUT_ALSO_DOWN_____SO_EVERY_DIRECTION_EXCEPT_UP[i].getOffsetZ();
-                    if (againstX == x && againstZ == z) { // this would be a backplace
-                        continue;
-                    }
-                    if (MovementHelper.canPlaceAgainst(context.bsi, againstX, againstY, againstZ)) { // found a side place option
-                        result.cost = WC + placeCost + hardness;
-                        return;
-                    }
-                }
-                // now that we've checked all possible directions to side place, we actually need to backplace
-                // none of the vanilla impls do a blocking or thread unsafe call, so passing the world directly should be fine
-                // also none of the full cubes actually use the pos, so we should be fine not creating a real BlockPos for this
-                if (!srcOn.materialReplaceable() && !srcOn.isFullCube(context.world, BlockPos.ORIGIN)) {
-                    // If srcOn is currently replaceable, we will have a proper block when we stand on it
-                    return; // can't sneak and backplace against eg. soul sand or half slabs (regardless of whether it's top half or bottom half) =/
-                }
-                if (srcOn.getFluidState().getFluid() instanceof WaterFluid) {
-                    return; // this is obviously impossible
-                }
-                WC = WC * (SNEAK_ONE_BLOCK_COST / WALK_ONE_BLOCK_COST);//since we are sneak backplacing, we are sneaking lol
-                result.cost = WC + placeCost + hardness;
-                // we are not bridging underwater, right??
-                result.oxygenCost = context.oxygenCost(result.cost, Blocks.AIR.getDefaultState());
-            }
-        }
-    }
-
-    @Override
-    public MovementState updateState(MovementState state) {
-        super.updateState(state);
-        BlockState[] bss = new BlockState[positionsToBreak.length];
-        for (int i = 0; i < positionsToBreak.length; i++) {
-            bss[i] = BlockStateInterface.get(ctx, positionsToBreak[i]);
-        }
-        if (state.getStatus() != MovementStatus.RUNNING) {
-            // if the setting is enabled
-            if (!baritone.settings().walkWhileBreaking.get()) {
-                return state;
+               for (int dyxxx = 0; dyxxx < context.height; dyxxx++) {
+                  hardness += MovementHelper.getMiningDurationTicks(
+                     context, checkedX + dxz * movZ, y + dyxxx, checkedZ + dxz * movX, dyxxx == context.height - 1
+                  );
+                  if (hardness >= 1000000.0) {
+                     return;
+                  }
+               }
             }
 
-            // and if we're prepping (aka mining the block in front)
-            if (state.getStatus() != MovementStatus.PREPPING) {
-                return state;
+            double WCx = throughWater ? context.waterWalkSpeed : 4.63284688441047;
+
+            for (int i = 0; i < 5; i++) {
+               int againstX = destX + HORIZONTALS_BUT_ALSO_DOWN_____SO_EVERY_DIRECTION_EXCEPT_UP[i].getStepX();
+               int againstY = y - 1 + HORIZONTALS_BUT_ALSO_DOWN_____SO_EVERY_DIRECTION_EXCEPT_UP[i].getStepY();
+               int againstZ = destZ + HORIZONTALS_BUT_ALSO_DOWN_____SO_EVERY_DIRECTION_EXCEPT_UP[i].getStepZ();
+               if ((againstX != x || againstZ != z) && MovementHelper.canPlaceAgainst(context.bsi, againstX, againstY, againstZ)) {
+                  result.cost = WCx + placeCost + hardness;
+                  return;
+               }
             }
 
-            // and if it's fine to walk into the blocks in front
+            if (!srcOn.canBeReplaced() && !srcOn.isCollisionShapeFullBlock(context.world, BlockPos.ZERO)) {
+               return;
+            }
+
+            if (srcOn.getFluidState().getType() instanceof WaterFluid) {
+               return;
+            }
+
+            WCx *= 3.3207692307692307;
+            result.cost = WCx + placeCost + hardness;
+            result.oxygenCost = context.oxygenCost(result.cost, Blocks.AIR.defaultBlockState());
+         }
+      }
+   }
+
+   @Override
+   public MovementState updateState(MovementState state) {
+      super.updateState(state);
+      BlockState[] bss = new BlockState[this.positionsToBreak.length];
+
+      for (int i = 0; i < this.positionsToBreak.length; i++) {
+         bss[i] = BlockStateInterface.get(this.ctx, this.positionsToBreak[i]);
+      }
+
+      if (state.getStatus() != MovementStatus.RUNNING) {
+         if (!this.baritone.settings().walkWhileBreaking.get()) {
+            return state;
+         } else if (state.getStatus() != MovementStatus.PREPPING) {
+            return state;
+         } else {
             for (BlockState pb : bss) {
-                if (MovementHelper.avoidWalkingInto(pb)) {
-                    return state;
-                }
+               if (MovementHelper.avoidWalkingInto(pb)) {
+                  return state;
+               }
             }
 
-            // and we aren't already pressed up against the block
-            double dist = Math.max(Math.abs(ctx.entity().getX() - (dest.getX() + 0.5D)), Math.abs(ctx.entity().getZ() - (dest.getZ() + 0.5D)));
+            double dist = Math.max(Math.abs(this.ctx.entity().getX() - (this.dest.getX() + 0.5)), Math.abs(this.ctx.entity().getZ() - (this.dest.getZ() + 0.5)));
             if (dist < 0.83) {
-                return state;
-            }
-
-            if (state.getTarget().getRotation().isEmpty()) {
-                // this can happen rarely when the server lags and doesn't send the falling sand entity until you've already walked through the block and are now mining the next one
-                return state;
-            }
-
-            EntityDimensions dims = ctx.entity().getDimensions(ctx.entity().getPose());
-            if (dims.width > 1 || dims.height < 1 || dims.height > 2) { // player-sized entities get the optimized path, others stop and break blocks
-                return state;
-            }
-
-            float yawToDest;
-            float pitchToBreak;
-
-            // combine the yaw to the center of the destination, and the pitch to the specific block we're trying to break
-            // it's safe to do this since the two blocks we break (in a traverse) are right on top of each other and so will have the same yaw
-            yawToDest = RotationUtils.calcRotationFromVec3d(ctx.headPos(), VecUtils.calculateBlockCenter(ctx.world(), dest), ctx.entityRotations()).getYaw();
-            pitchToBreak = state.getTarget().getRotation().get().getPitch();
-            if ((MovementHelper.isBlockNormalCube(bss[0]) || bss[0].getBlock() instanceof AirBlock && (MovementHelper.isBlockNormalCube(bss[1]) || bss[1].getBlock() instanceof AirBlock))) {
-                // in the meantime, before we're right up against the block, we can break efficiently at this angle
-                pitchToBreak = 26;
-            }
-
-            return state.setTarget(new MovementState.MovementTarget(new Rotation(yawToDest, pitchToBreak), true))
-                    .setInput(Input.MOVE_FORWARD, true)
-                    .setInput(Input.SPRINT, true);
-        }
-
-        //sneak may have been set to true in the PREPPING state while mining an adjacent block
-        state.setInput(Input.SNEAK, false);
-
-        BlockState fd = BlockStateInterface.get(ctx, src.down());
-        boolean ladder = fd.isIn(BlockTags.CLIMBABLE);
-
-        for (BlockState bs : bss) {
-            if (tryOpenDoors(state, bs, dest, src)) {
-                return state;
-            }
-        }
-
-        // src & dest are swapped because we are actually checking the door at the source
-        // but we still need to compute a direction
-        if (tryOpenDoors(state, BlockStateInterface.get(ctx, src), src, dest)) {
-            return state;
-        }
-
-        boolean isTheBridgeBlockThere = MovementHelper.canWalkOn(ctx, positionToPlace) || ladder;
-        BlockPos feet = ctx.feetPos();
-        BlockPos standingOnPos = feet.down();
-        BlockState standingOn = BlockStateInterface.get(ctx, standingOnPos);
-        // A bit of random for slightly more natural look
-        if (MovementHelper.isWater(standingOn) && ctx.entity().getY() < src.getY() + Math.random() * 0.2) {
-            state.setInput(Input.JUMP, true);
-        } else if (feet.getY() != dest.getY() && !ladder) {
-            baritone.logDebug("Wrong Y coordinate");
-            if (feet.getY() < dest.getY()) {
-                MovementHelper.moveTowards(ctx, state, dest);
-                return state.setInput(Input.MOVE_FORWARD, false).setInput(Input.JUMP, true);
-            }
-            return state;
-        }
-
-        if (isTheBridgeBlockThere) {
-            if (feet.equals(dest)) {
-                return state.setStatus(MovementStatus.SUCCESS);
-            }
-            if (baritone.settings().overshootTraverse.get() && (feet.equals(dest.add(getDirection())) || feet.equals(dest.add(getDirection()).add(getDirection())))) {
-                return state.setStatus(MovementStatus.SUCCESS);
-            }
-            BlockState lowBs = BlockStateInterface.get(ctx, src);
-            Block low = lowBs.getBlock();
-            Block high = BlockStateInterface.get(ctx, src.up()).getBlock();
-            if (ctx.entity().getY() > src.y + 0.1D && !ctx.entity().isOnGround() && (low == Blocks.VINE || low == Blocks.LADDER || high == Blocks.VINE || high == Blocks.LADDER)) {
-                // hitting W could cause us to climb the ladder instead of going forward
-                if (!MovementHelper.isLiquid(lowBs)) {
-                    // wait until we're on the ground
-                    // except if we are swimming, because we will never reach the ground
-                    return state;
-                }
-            }
-            BlockPos into = dest.subtract(src).add(dest);
-            BlockState intoBelow = BlockStateInterface.get(ctx, into);
-            BlockState intoAbove = BlockStateInterface.get(ctx, into.up());
-            if (wasTheBridgeBlockAlwaysThere
-                    && (!MovementHelper.isLiquid(ctx, feet) || baritone.settings().sprintInWater.get())
-                    && (!MovementHelper.avoidWalkingInto(intoBelow) || MovementHelper.isWater(intoBelow))
-                    && (!MovementHelper.avoidWalkingInto(intoAbove))
-            ) {
-                state.setInput(Input.SPRINT, true);
-            }
-
-            BlockState destDown = BlockStateInterface.get(ctx, dest.down());
-            if (feet.getY() != dest.getY() && ladder && (destDown.isIn(BlockTags.CLIMBABLE))) {
-                BlockPos against = MovementPillar.getSupportingBlock(baritone, ctx, src, destDown);
-                if (against != null) {
-                    MovementHelper.moveTowards(ctx, state, against);
-                } else {
-                    MovementPillar.centerForAscend(ctx, dest, state, 0.25);
-                }
-                state.setInput(Input.JUMP, true);
+               return state;
+            } else if (state.getTarget().getRotation().isEmpty()) {
+               return state;
             } else {
-                MovementHelper.moveTowards(ctx, state, dest.up());
+               EntityDimensions dims = this.ctx.entity().getDimensions(this.ctx.entity().getPose());
+               if (!(dims.width > 1.0F) && !(dims.height < 1.0F) && !(dims.height > 2.0F)) {
+                  float yawToDest = RotationUtils.calcRotationFromVec3d(
+                        this.ctx.headPos(), VecUtils.calculateBlockCenter(this.ctx.world(), this.dest), this.ctx.entityRotations()
+                     )
+                     .getYaw();
+                  float pitchToBreak = state.getTarget().getRotation().get().getPitch();
+                  if (MovementHelper.isBlockNormalCube(bss[0])
+                     || bss[0].getBlock() instanceof AirBlock && (MovementHelper.isBlockNormalCube(bss[1]) || bss[1].getBlock() instanceof AirBlock)) {
+                     pitchToBreak = 26.0F;
+                  }
+
+                  return state.setTarget(new MovementState.MovementTarget(new Rotation(yawToDest, pitchToBreak), true))
+                     .setInput(Input.MOVE_FORWARD, true)
+                     .setInput(Input.SPRINT, true);
+               } else {
+                  return state;
+               }
             }
-        } else {
-            wasTheBridgeBlockAlwaysThere = false;
-            VoxelShape collisionShape = standingOn.getCollisionShape(ctx.world(), standingOnPos);
-            if (!collisionShape.isEmpty() && collisionShape.getBoundingBox().maxY < 1) { // see issue #118
-                double dist = Math.max(Math.abs(dest.getX() + 0.5 - ctx.entity().getX()), Math.abs(dest.getZ() + 0.5 - ctx.entity().getZ()));
-                if (dist < 0.85) { // 0.5 + 0.3 + epsilon
-                    MovementHelper.moveTowards(ctx, state, dest);
-                    return state.setInput(Input.MOVE_FORWARD, false)
-                            .setInput(Input.MOVE_BACK, true);
-                }
+         }
+      } else {
+         state.setInput(Input.SNEAK, false);
+         BlockState fd = BlockStateInterface.get(this.ctx, this.src.down());
+         boolean ladder = fd.is(BlockTags.CLIMBABLE);
+
+         for (BlockState bs : bss) {
+            if (this.tryOpenDoors(state, bs, this.dest, this.src)) {
+               return state;
             }
-            double dist1 = Math.max(Math.abs(ctx.entity().getX() - (dest.getX() + 0.5D)), Math.abs(ctx.entity().getZ() - (dest.getZ() + 0.5D)));
-            PlaceResult p = MovementHelper.attemptToPlaceABlock(state, baritone, dest.down(), false, true);
-            if ((p == PlaceResult.READY_TO_PLACE || dist1 < 0.6) && !baritone.settings().assumeSafeWalk.get()) {
-                state.setInput(Input.SNEAK, true);
+         }
+
+         if (this.tryOpenDoors(state, BlockStateInterface.get(this.ctx, this.src), this.src, this.dest)) {
+            return state;
+         } else {
+            boolean isTheBridgeBlockThere = MovementHelper.canWalkOn(this.ctx, this.positionToPlace) || ladder;
+            BlockPos feet = this.ctx.feetPos();
+            BlockPos standingOnPos = feet.below();
+            BlockState standingOn = BlockStateInterface.get(this.ctx, standingOnPos);
+            if (MovementHelper.isWater(standingOn) && this.ctx.entity().getY() < this.src.getY() + Math.random() * 0.2) {
+               state.setInput(Input.JUMP, true);
+            } else if (feet.getY() != this.dest.getY() && !ladder) {
+               this.baritone.logDebug("Wrong Y coordinate");
+               if (feet.getY() < this.dest.getY()) {
+                  MovementHelper.moveTowards(this.ctx, state, this.dest);
+                  return state.setInput(Input.MOVE_FORWARD, false).setInput(Input.JUMP, true);
+               }
+
+               return state;
             }
-            switch (p) {
-                case READY_TO_PLACE -> {
-                    if (ctx.entity().isSneaking() || baritone.settings().assumeSafeWalk.get()) {
+
+            if (isTheBridgeBlockThere) {
+               if (feet.equals(this.dest)) {
+                  return state.setStatus(MovementStatus.SUCCESS);
+               }
+
+               if (this.baritone.settings().overshootTraverse.get()
+                  && (feet.equals(this.dest.offset(this.getDirection())) || feet.equals(this.dest.offset(this.getDirection()).offset(this.getDirection())))) {
+                  return state.setStatus(MovementStatus.SUCCESS);
+               }
+
+               BlockState lowBs = BlockStateInterface.get(this.ctx, this.src);
+               Block low = lowBs.getBlock();
+               Block high = BlockStateInterface.get(this.ctx, this.src.up()).getBlock();
+               if (this.ctx.entity().getY() > this.src.y + 0.1
+                  && !this.ctx.entity().onGround()
+                  && (low == Blocks.VINE || low == Blocks.LADDER || high == Blocks.VINE || high == Blocks.LADDER)
+                  && !MovementHelper.isLiquid(lowBs)) {
+                  return state;
+               }
+
+               BlockPos into = this.dest.subtract(this.src).offset(this.dest);
+               BlockState intoBelow = BlockStateInterface.get(this.ctx, into);
+               BlockState intoAbove = BlockStateInterface.get(this.ctx, into.above());
+               if (this.wasTheBridgeBlockAlwaysThere
+                  && (!MovementHelper.isLiquid(this.ctx, feet) || this.baritone.settings().sprintInWater.get())
+                  && (!MovementHelper.avoidWalkingInto(intoBelow) || MovementHelper.isWater(intoBelow))
+                  && !MovementHelper.avoidWalkingInto(intoAbove)) {
+                  state.setInput(Input.SPRINT, true);
+               }
+
+               BlockState destDown = BlockStateInterface.get(this.ctx, this.dest.down());
+               if (feet.getY() != this.dest.getY() && ladder && destDown.is(BlockTags.CLIMBABLE)) {
+                  BlockPos against = MovementPillar.getSupportingBlock(this.baritone, this.ctx, this.src, destDown);
+                  if (against != null) {
+                     MovementHelper.moveTowards(this.ctx, state, against);
+                  } else {
+                     MovementPillar.centerForAscend(this.ctx, this.dest, state, 0.25);
+                  }
+
+                  state.setInput(Input.JUMP, true);
+               } else {
+                  MovementHelper.moveTowards(this.ctx, state, this.dest.up());
+               }
+            } else {
+               this.wasTheBridgeBlockAlwaysThere = false;
+               VoxelShape collisionShape = standingOn.getCollisionShape(this.ctx.world(), standingOnPos);
+               if (!collisionShape.isEmpty() && collisionShape.bounds().maxY < 1.0) {
+                  double dist = Math.max(
+                     Math.abs(this.dest.getX() + 0.5 - this.ctx.entity().getX()), Math.abs(this.dest.getZ() + 0.5 - this.ctx.entity().getZ())
+                  );
+                  if (dist < 0.85) {
+                     MovementHelper.moveTowards(this.ctx, state, this.dest);
+                     return state.setInput(Input.MOVE_FORWARD, false).setInput(Input.MOVE_BACK, true);
+                  }
+               }
+
+               double dist1 = Math.max(
+                  Math.abs(this.ctx.entity().getX() - (this.dest.getX() + 0.5)), Math.abs(this.ctx.entity().getZ() - (this.dest.getZ() + 0.5))
+               );
+               MovementHelper.PlaceResult p = MovementHelper.attemptToPlaceABlock(state, this.baritone, this.dest.down(), false, true);
+               if ((p == MovementHelper.PlaceResult.READY_TO_PLACE || dist1 < 0.6) && !this.baritone.settings().assumeSafeWalk.get()) {
+                  state.setInput(Input.SNEAK, true);
+               }
+
+               switch (p) {
+                  case READY_TO_PLACE:
+                     if (this.ctx.entity().isShiftKeyDown() || this.baritone.settings().assumeSafeWalk.get()) {
                         state.setInput(Input.CLICK_RIGHT, true);
-                    }
-                    return state;
-                }
-                case ATTEMPTING -> {
-                    if (dist1 > 0.83) {
-                        // might need to go forward a bit
-                        float yaw = RotationUtils.calcRotationFromVec3d(ctx.headPos(), VecUtils.getBlockPosCenter(dest), ctx.entityRotations()).getYaw();
+                     }
+
+                     return state;
+                  case ATTEMPTING:
+                     if (dist1 > 0.83) {
+                        float yaw = RotationUtils.calcRotationFromVec3d(this.ctx.headPos(), VecUtils.getBlockPosCenter(this.dest), this.ctx.entityRotations())
+                           .getYaw();
                         if (Math.abs(state.getTarget().rotation.getYaw() - yaw) < 0.1) {
-                            // but only if our attempted place is straight ahead
-                            return state.setInput(Input.MOVE_FORWARD, true);
+                           return state.setInput(Input.MOVE_FORWARD, true);
                         }
-                    } else if (ctx.entityRotations().isReallyCloseTo(state.getTarget().rotation)) {
-                        // well i guess theres something in the way
+                     } else if (this.ctx.entityRotations().isReallyCloseTo(state.getTarget().rotation)) {
                         return state.setInput(Input.CLICK_LEFT, true);
-                    }
-                    return state;
-                }
-                default -> {
-                }
-            }
-            if (feet.equals(dest)) {
-                // If we are in the block that we are trying to get to, we are sneaking over air and we need to place a block beneath us against the one we just walked off of
-                // Out.log(from + " " + to + " " + faceX + "," + faceY + "," + faceZ + " " + whereAmI);
-                double faceX = (dest.getX() + src.getX() + 1.0D) * 0.5D;
-                double faceY = (dest.getY() + src.getY() - 1.0D) * 0.5D;
-                double faceZ = (dest.getZ() + src.getZ() + 1.0D) * 0.5D;
-                // faceX, faceY, faceZ is the middle of the face between from and to
-                BlockPos goalLook = src.down(); // this is the block we were just standing on, and the one we want to place against
+                     }
 
-                Rotation backToFace = RotationUtils.calcRotationFromVec3d(ctx.headPos(), new Vec3d(faceX, faceY, faceZ), ctx.entityRotations());
-                float pitch = backToFace.getPitch();
-                double dist2 = Math.max(Math.abs(ctx.entity().getX() - faceX), Math.abs(ctx.entity().getZ() - faceZ));
-                if (dist2 < 0.29) { // see issue #208
-                    float yaw = RotationUtils.calcRotationFromVec3d(VecUtils.getBlockPosCenter(dest), ctx.headPos(), ctx.entityRotations()).getYaw();
-                    state.setTarget(new MovementState.MovementTarget(new Rotation(yaw, pitch), true));
-                    state.setInput(Input.MOVE_BACK, true);
-                } else {
-                    state.setTarget(new MovementState.MovementTarget(backToFace, true));
-                }
-                if (ctx.isLookingAt(goalLook)) {
-                    return state.setInput(Input.CLICK_RIGHT, true); // wait to right click until we are able to place
-                }
-                // Out.log("Trying to look at " + goalLook + ", actually looking at" + Baritone.whatAreYouLookingAt());
-                if (ctx.entityRotations().isReallyCloseTo(state.getTarget().rotation)) {
-                    state.setInput(Input.CLICK_LEFT, true);
-                }
-                return state;
-            }
-            MovementHelper.moveTowards(ctx, state, dest.up());
-            // TODO MovementManager.moveTowardsBlock(to); // move towards not look at because if we are bridging for a couple blocks in a row, it is faster if we dont spin around and walk forwards then spin around and place backwards for every block
-        }
-        return state;
-    }
+                     return state;
+                  default:
+                     if (feet.equals(this.dest)) {
+                        double faceX = (this.dest.getX() + this.src.getX() + 1.0) * 0.5;
+                        double faceY = (this.dest.getY() + this.src.getY() - 1.0) * 0.5;
+                        double faceZ = (this.dest.getZ() + this.src.getZ() + 1.0) * 0.5;
+                        BlockPos goalLook = this.src.down();
+                        Rotation backToFace = RotationUtils.calcRotationFromVec3d(this.ctx.headPos(), new Vec3(faceX, faceY, faceZ), this.ctx.entityRotations());
+                        float pitch = backToFace.getPitch();
+                        double dist2 = Math.max(Math.abs(this.ctx.entity().getX() - faceX), Math.abs(this.ctx.entity().getZ() - faceZ));
+                        if (dist2 < 0.29) {
+                           float yaw = RotationUtils.calcRotationFromVec3d(
+                                 VecUtils.getBlockPosCenter(this.dest), this.ctx.headPos(), this.ctx.entityRotations()
+                              )
+                              .getYaw();
+                           state.setTarget(new MovementState.MovementTarget(new Rotation(yaw, pitch), true));
+                           state.setInput(Input.MOVE_BACK, true);
+                        } else {
+                           state.setTarget(new MovementState.MovementTarget(backToFace, true));
+                        }
 
-    private boolean tryOpenDoors(MovementState state, BlockState bs, BetterBlockPos dest, BetterBlockPos src) {
-        if (bs.getBlock() instanceof DoorBlock) {
-            boolean notPassable = bs.getBlock() instanceof DoorBlock && !MovementHelper.isDoorPassable(ctx, dest, src);
-            // assume wooden doors can be opened and other doors cannot
-            boolean canOpen = DoorBlock.isWoodenDoor(bs);
+                        if (this.ctx.isLookingAt(goalLook)) {
+                           return state.setInput(Input.CLICK_RIGHT, true);
+                        }
 
-            if (notPassable && canOpen) {
-                state.setTarget(new MovementState.MovementTarget(RotationUtils.calcRotationFromVec3d(ctx.headPos(), VecUtils.calculateBlockCenter(ctx.world(), dest.up()), ctx.entityRotations()), true))
-                        .setInput(Input.CLICK_RIGHT, true);
-                return true;
-            }
-        } else if (bs.getBlock() instanceof FenceGateBlock) {
-            BlockPos blocked = !MovementHelper.isGatePassable(ctx, dest.up(), src.up()) ? dest.up()
-                    : !MovementHelper.isGatePassable(ctx, dest, src) ? dest
-                    : null;
-            if (blocked != null) {
-                Optional<Rotation> rotation = RotationUtils.reachable(ctx, blocked);
-                if (rotation.isPresent()) {
-                    state.setTarget(new MovementState.MovementTarget(rotation.get(), true)).setInput(Input.CLICK_RIGHT, true);
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
+                        if (this.ctx.entityRotations().isReallyCloseTo(state.getTarget().rotation)) {
+                           state.setInput(Input.CLICK_LEFT, true);
+                        }
 
-    @Override
-    public boolean safeToCancel(MovementState state) {
-        // if we're in the process of breaking blocks before walking forwards
-        // or if this isn't a sneak place (the block is already there)
-        // then it's safe to cancel this
-        return state.getStatus() != MovementStatus.RUNNING || MovementHelper.canWalkOn(ctx, dest.down());
-    }
+                        return state;
+                     }
 
-    @Override
-    protected boolean prepared(MovementState state) {
-        if (ctx.feetPos().equals(src) || ctx.feetPos().equals(src.down())) {
-            Block block = BlockStateInterface.getBlock(ctx, src.down());
-            if (block == Blocks.LADDER || block == Blocks.VINE) {
-                state.setInput(Input.SNEAK, true);
+                     MovementHelper.moveTowards(this.ctx, state, this.dest.up());
+               }
             }
-        }
-        return super.prepared(state);
-    }
+
+            return state;
+         }
+      }
+   }
+
+   private boolean tryOpenDoors(MovementState state, BlockState bs, BetterBlockPos dest, BetterBlockPos src) {
+      if (bs.getBlock() instanceof DoorBlock) {
+         boolean notPassable = bs.getBlock() instanceof DoorBlock && !MovementHelper.isDoorPassable(this.ctx, dest, src);
+         boolean canOpen = DoorBlock.isWoodenDoor(bs);
+         if (notPassable && canOpen) {
+            state.setTarget(
+                  new MovementState.MovementTarget(
+                     RotationUtils.calcRotationFromVec3d(
+                        this.ctx.headPos(), VecUtils.calculateBlockCenter(this.ctx.world(), dest.up()), this.ctx.entityRotations()
+                     ),
+                     true
+                  )
+               )
+               .setInput(Input.CLICK_RIGHT, true);
+            return true;
+         }
+      } else if (bs.getBlock() instanceof FenceGateBlock) {
+         BlockPos blocked = !MovementHelper.isGatePassable(this.ctx, dest.up(), src.up())
+            ? dest.up()
+            : (!MovementHelper.isGatePassable(this.ctx, dest, src) ? dest : null);
+         if (blocked != null) {
+            Optional<Rotation> rotation = RotationUtils.reachable(this.ctx, blocked);
+            if (rotation.isPresent()) {
+               state.setTarget(new MovementState.MovementTarget(rotation.get(), true)).setInput(Input.CLICK_RIGHT, true);
+               return true;
+            }
+         }
+      }
+
+      return false;
+   }
+
+   @Override
+   public boolean safeToCancel(MovementState state) {
+      return state.getStatus() != MovementStatus.RUNNING || MovementHelper.canWalkOn(this.ctx, this.dest.down());
+   }
+
+   @Override
+   protected boolean prepared(MovementState state) {
+      if (this.ctx.feetPos().equals(this.src) || this.ctx.feetPos().equals(this.src.down())) {
+         Block block = BlockStateInterface.getBlock(this.ctx, this.src.down());
+         if (block == Blocks.LADDER || block == Blocks.VINE) {
+            state.setInput(Input.SNEAK, true);
+         }
+      }
+
+      return super.prepared(state);
+   }
 }

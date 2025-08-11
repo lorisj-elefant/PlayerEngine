@@ -1,20 +1,3 @@
-/*
- * This file is part of Baritone.
- *
- * Baritone is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Baritone is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
- */
-
 package baritone.process;
 
 import baritone.Baritone;
@@ -32,263 +15,259 @@ import baritone.utils.NotificationHelper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
-
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.ChunkPos;
 
 public final class ExploreProcess extends BaritoneProcessHelper implements IExploreProcess {
+   private BlockPos explorationOrigin;
+   private ExploreProcess.IChunkFilter filter;
+   private int distanceCompleted;
 
-    private BlockPos explorationOrigin;
+   public ExploreProcess(Baritone baritone) {
+      super(baritone);
+   }
 
-    private IChunkFilter filter;
+   @Override
+   public boolean isActive() {
+      return this.explorationOrigin != null;
+   }
 
-    private int distanceCompleted;
+   @Override
+   public void explore(int centerX, int centerZ) {
+      this.explorationOrigin = new BlockPos(centerX, 0, centerZ);
+      this.distanceCompleted = 0;
+   }
 
-    public ExploreProcess(Baritone baritone) {
-        super(baritone);
-    }
+   @Override
+   public void applyJsonFilter(Path path, boolean invert) throws Exception {
+      this.filter = new ExploreProcess.JsonChunkFilter(path, invert);
+   }
 
-    @Override
-    public boolean isActive() {
-        return explorationOrigin != null;
-    }
+   public ExploreProcess.IChunkFilter calcFilter() {
+      ExploreProcess.IChunkFilter filter;
+      if (this.filter != null) {
+         filter = new ExploreProcess.EitherChunk(this.filter, new ExploreProcess.BaritoneChunkCache());
+      } else {
+         filter = new ExploreProcess.BaritoneChunkCache();
+      }
 
-    @Override
-    public void explore(int centerX, int centerZ) {
-        explorationOrigin = new BlockPos(centerX, 0, centerZ);
-        distanceCompleted = 0;
-    }
+      return filter;
+   }
 
-    @Override
-    public void applyJsonFilter(Path path, boolean invert) throws Exception {
-        filter = new JsonChunkFilter(path, invert);
-    }
+   @Override
+   public PathingCommand onTick(boolean calcFailed, boolean isSafeToCancel) {
+      if (calcFailed) {
+         this.logDirect("Failed");
+         if (this.baritone.settings().desktopNotifications.get() && this.baritone.settings().notificationOnExploreFinished.get()) {
+            NotificationHelper.notify("Exploration failed", true);
+         }
 
-    public IChunkFilter calcFilter() {
-        IChunkFilter filter;
-        if (this.filter != null) {
-            filter = new EitherChunk(this.filter, new BaritoneChunkCache());
-        } else {
-            filter = new BaritoneChunkCache();
-        }
-        return filter;
-    }
-
-    @Override
-    public PathingCommand onTick(boolean calcFailed, boolean isSafeToCancel) {
-        if (calcFailed) {
-            logDirect("Failed");
-            if (baritone.settings().desktopNotifications.get() && baritone.settings().notificationOnExploreFinished.get()) {
-                NotificationHelper.notify("Exploration failed", true);
+         this.onLostControl();
+         return null;
+      } else {
+         ExploreProcess.IChunkFilter filter = this.calcFilter();
+         if (!this.baritone.settings().disableCompletionCheck.get() && filter.countRemain() == 0) {
+            this.logDirect("Explored all chunks");
+            if (this.baritone.settings().desktopNotifications.get() && this.baritone.settings().notificationOnExploreFinished.get()) {
+               NotificationHelper.notify("Explored all chunks", false);
             }
-            onLostControl();
+
+            this.onLostControl();
             return null;
-        }
-        IChunkFilter filter = calcFilter();
-        if (!baritone.settings().disableCompletionCheck.get() && filter.countRemain() == 0) {
-            logDirect("Explored all chunks");
-            if (baritone.settings().desktopNotifications.get() && baritone.settings().notificationOnExploreFinished.get()) {
-                NotificationHelper.notify("Explored all chunks", false);
-            }
-            onLostControl();
-            return null;
-        }
-        Goal[] closestUncached = closestUncachedChunks(explorationOrigin, filter);
-        if (closestUncached == null) {
-            baritone.logDebug("awaiting region load from disk");
-            return new PathingCommand(null, PathingCommandType.REQUEST_PAUSE);
-        }
-        return new PathingCommand(new GoalComposite(closestUncached), PathingCommandType.FORCE_REVALIDATE_GOAL_AND_PATH);
-    }
-
-    private Goal[] closestUncachedChunks(BlockPos center, IChunkFilter filter) {
-        int chunkX = center.getX() >> 4;
-        int chunkZ = center.getZ() >> 4;
-        int count = Math.min(filter.countRemain(), baritone.settings().exploreChunkSetMinimumSize.get());
-        List<BlockPos> centers = new ArrayList<>();
-        int renderDistance = baritone.settings().worldExploringChunkOffset.get();
-        for (int dist = distanceCompleted; ; dist++) {
-            for (int dx = -dist; dx <= dist; dx++) {
-                int zval = dist - Math.abs(dx);
-                for (int mult = 0; mult < 2; mult++) {
-                    int dz = (mult * 2 - 1) * zval; // dz can be either -zval or zval
-                    int trueDist = Math.abs(dx) + Math.abs(dz);
-                    if (trueDist != dist) {
-                        throw new IllegalStateException();
-                    }
-                    switch (filter.isAlreadyExplored(chunkX + dx, chunkZ + dz)) {
-                        case UNKNOWN:
-                            return null; // awaiting load
-                        case NOT_EXPLORED:
-                            break; // note: this breaks the switch not the for
-                        case EXPLORED:
-                            continue; // note: this continues the for
-                        default:
-                    }
-                    int centerX = ((chunkX + dx) << 4) + 8;
-                    int centerZ = ((chunkZ + dz) << 4) + 8;
-                    int offset = renderDistance << 4;
-                    if (dx < 0) {
-                        centerX -= offset;
-                    } else {
-                        centerX += offset;
-                    }
-                    if (dz < 0) {
-                        centerZ -= offset;
-                    } else {
-                        centerZ += offset;
-                    }
-                    centers.add(new BlockPos(centerX, 0, centerZ));
-                }
-            }
-            if (dist % 10 == 0) {
-                count = Math.min(filter.countRemain(), baritone.settings().exploreChunkSetMinimumSize.get());
-            }
-            if (centers.size() >= count) {
-                return centers.stream().map(pos -> createGoal(pos.getX(), pos.getZ())).toArray(Goal[]::new);
-            }
-            if (centers.isEmpty()) {
-                // we have explored everything from 0 to dist inclusive
-                // next time we should start our check at dist+1
-                distanceCompleted = dist + 1;
-            }
-        }
-    }
-
-    private Goal createGoal(int x, int z) {
-        if (baritone.settings().exploreMaintainY.get() == -1) {
-            return new GoalXZ(x, z);
-        }
-        // don't use a goalblock because we still want isInGoal to return true if X and Z are correct
-        // we just want to try and maintain Y on the way there, not necessarily end at that specific Y
-        return new GoalXZ(x, z) {
-            @Override
-            public double heuristic(int x, int y, int z) {
-                return super.heuristic(x, y, z) + GoalYLevel.calculate(baritone.settings().exploreMaintainY.get(), y);
-            }
-        };
-    }
-
-    private enum Status {
-        EXPLORED, NOT_EXPLORED, UNKNOWN;
-    }
-
-    private interface IChunkFilter {
-
-        Status isAlreadyExplored(int chunkX, int chunkZ);
-
-        int countRemain();
-    }
-
-    private class BaritoneChunkCache implements IChunkFilter {
-
-        private final ICachedWorld cache = baritone.getWorldProvider().getCurrentWorld().getCachedWorld();
-
-        @Override
-        public Status isAlreadyExplored(int chunkX, int chunkZ) {
-            int centerX = chunkX << 4;
-            int centerZ = chunkZ << 4;
-            if (cache.isCached(centerX, centerZ)) {
-                return Status.EXPLORED;
-            }
-            return Status.NOT_EXPLORED;
-        }
-
-        @Override
-        public int countRemain() {
-            return Integer.MAX_VALUE;
-        }
-    }
-
-    private class JsonChunkFilter implements IChunkFilter {
-
-        private final boolean invert; // if true, the list is interpreted as a list of chunks that are NOT explored, if false, the list is interpreted as a list of chunks that ARE explored
-        private final LongOpenHashSet inFilter;
-        private final MyChunkPos[] positions;
-
-        private JsonChunkFilter(Path path, boolean invert) throws Exception { // ioexception, json exception, etc
-            this.invert = invert;
-            Gson gson = new GsonBuilder().create();
-            positions = gson.fromJson(new InputStreamReader(Files.newInputStream(path)), MyChunkPos[].class);
-            logDirect("Loaded " + positions.length + " positions");
-            inFilter = new LongOpenHashSet();
-            for (MyChunkPos mcp : positions) {
-                inFilter.add(ChunkPos.toLong(mcp.x, mcp.z));
-            }
-        }
-
-        @Override
-        public Status isAlreadyExplored(int chunkX, int chunkZ) {
-            if (inFilter.contains(ChunkPos.toLong(chunkX, chunkZ)) ^ invert) {
-                // either it's on the list of explored chunks, or it's not on the list of unexplored chunks
-                // either way, we have it
-                return Status.EXPLORED;
+         } else {
+            Goal[] closestUncached = this.closestUncachedChunks(this.explorationOrigin, filter);
+            if (closestUncached == null) {
+               this.baritone.logDebug("awaiting region load from disk");
+               return new PathingCommand(null, PathingCommandType.REQUEST_PAUSE);
             } else {
-                // either it's not on the list of explored chunks, or it's on the list of unexplored chunks
-                // either way, it depends on if baritone has cached it so defer to that
-                return Status.UNKNOWN;
+               return new PathingCommand(new GoalComposite(closestUncached), PathingCommandType.FORCE_REVALIDATE_GOAL_AND_PATH);
             }
-        }
+         }
+      }
+   }
 
-        @Override
-        public int countRemain() {
-            if (!invert) {
-                // if invert is false, anything not on the list is uncached
-                return Integer.MAX_VALUE;
+   private Goal[] closestUncachedChunks(BlockPos center, ExploreProcess.IChunkFilter filter) {
+      int chunkX = center.getX() >> 4;
+      int chunkZ = center.getZ() >> 4;
+      int count = Math.min(filter.countRemain(), this.baritone.settings().exploreChunkSetMinimumSize.get());
+      List<BlockPos> centers = new ArrayList<>();
+      int renderDistance = this.baritone.settings().worldExploringChunkOffset.get();
+      int dist = this.distanceCompleted;
+
+      while (true) {
+         for (int dx = -dist; dx <= dist; dx++) {
+            int zval = dist - Math.abs(dx);
+            int mult = 0;
+
+            while (mult < 2) {
+               int dz = (mult * 2 - 1) * zval;
+               int trueDist = Math.abs(dx) + Math.abs(dz);
+               if (trueDist != dist) {
+                  throw new IllegalStateException();
+               }
+
+               switch (filter.isAlreadyExplored(chunkX + dx, chunkZ + dz)) {
+                  case UNKNOWN:
+                     return null;
+                  case NOT_EXPLORED:
+                  default:
+                     int centerX = (chunkX + dx << 4) + 8;
+                     int centerZ = (chunkZ + dz << 4) + 8;
+                     int offset = renderDistance << 4;
+                     if (dx < 0) {
+                        centerX -= offset;
+                     } else {
+                        centerX += offset;
+                     }
+
+                     if (dz < 0) {
+                        centerZ -= offset;
+                     } else {
+                        centerZ += offset;
+                     }
+
+                     centers.add(new BlockPos(centerX, 0, centerZ));
+                  case EXPLORED:
+                     mult++;
+               }
             }
-            // but if invert is true, anything not on the list IS assumed cached
-            // so we are done if everything on our list is cached!
+         }
+
+         if (dist % 10 == 0) {
+            count = Math.min(filter.countRemain(), this.baritone.settings().exploreChunkSetMinimumSize.get());
+         }
+
+         if (centers.size() >= count) {
+            return centers.stream().map(pos -> this.createGoal(pos.getX(), pos.getZ())).toArray(Goal[]::new);
+         }
+
+         if (centers.isEmpty()) {
+            this.distanceCompleted = dist + 1;
+         }
+
+         dist++;
+      }
+   }
+
+   private Goal createGoal(int x, int z) {
+      return this.baritone.settings().exploreMaintainY.get() == -1 ? new GoalXZ(x, z) : new GoalXZ(x, z) {
+         @Override
+         public double heuristic(int x, int y, int zx) {
+            return super.heuristic(x, y, zx) + GoalYLevel.calculate(ExploreProcess.this.baritone.settings().exploreMaintainY.get(), y);
+         }
+      };
+   }
+
+   @Override
+   public void onLostControl() {
+      this.explorationOrigin = null;
+   }
+
+   @Override
+   public String displayName0() {
+      return "Exploring around "
+         + this.explorationOrigin
+         + ", distance completed "
+         + this.distanceCompleted
+         + ", currently going to "
+         + new GoalComposite(this.closestUncachedChunks(this.explorationOrigin, this.calcFilter()));
+   }
+
+   private class BaritoneChunkCache implements ExploreProcess.IChunkFilter {
+      private final ICachedWorld cache = ExploreProcess.this.baritone.getWorldProvider().getCurrentWorld().getCachedWorld();
+
+      @Override
+      public ExploreProcess.Status isAlreadyExplored(int chunkX, int chunkZ) {
+         int centerX = chunkX << 4;
+         int centerZ = chunkZ << 4;
+         return this.cache.isCached(centerX, centerZ) ? ExploreProcess.Status.EXPLORED : ExploreProcess.Status.NOT_EXPLORED;
+      }
+
+      @Override
+      public int countRemain() {
+         return Integer.MAX_VALUE;
+      }
+   }
+
+   private class EitherChunk implements ExploreProcess.IChunkFilter {
+      private final ExploreProcess.IChunkFilter a;
+      private final ExploreProcess.IChunkFilter b;
+
+      private EitherChunk(ExploreProcess.IChunkFilter a, ExploreProcess.IChunkFilter b) {
+         this.a = a;
+         this.b = b;
+      }
+
+      @Override
+      public ExploreProcess.Status isAlreadyExplored(int chunkX, int chunkZ) {
+         return this.a.isAlreadyExplored(chunkX, chunkZ) == ExploreProcess.Status.EXPLORED
+            ? ExploreProcess.Status.EXPLORED
+            : this.b.isAlreadyExplored(chunkX, chunkZ);
+      }
+
+      @Override
+      public int countRemain() {
+         return Math.min(this.a.countRemain(), this.b.countRemain());
+      }
+   }
+
+   private interface IChunkFilter {
+      ExploreProcess.Status isAlreadyExplored(int var1, int var2);
+
+      int countRemain();
+   }
+
+   private class JsonChunkFilter implements ExploreProcess.IChunkFilter {
+      private final boolean invert;
+      private final LongOpenHashSet inFilter;
+      private final MyChunkPos[] positions;
+
+      private JsonChunkFilter(Path path, boolean invert) throws Exception {
+         this.invert = invert;
+         Gson gson = new GsonBuilder().create();
+         this.positions = (MyChunkPos[])gson.fromJson(new InputStreamReader(Files.newInputStream(path)), MyChunkPos[].class);
+         ExploreProcess.this.logDirect("Loaded " + this.positions.length + " positions");
+         this.inFilter = new LongOpenHashSet();
+
+         for (MyChunkPos mcp : this.positions) {
+            this.inFilter.add(ChunkPos.asLong(mcp.x, mcp.z));
+         }
+      }
+
+      @Override
+      public ExploreProcess.Status isAlreadyExplored(int chunkX, int chunkZ) {
+         return this.inFilter.contains(ChunkPos.asLong(chunkX, chunkZ)) ^ this.invert ? ExploreProcess.Status.EXPLORED : ExploreProcess.Status.UNKNOWN;
+      }
+
+      @Override
+      public int countRemain() {
+         if (!this.invert) {
+            return Integer.MAX_VALUE;
+         } else {
             int countRemain = 0;
-            BaritoneChunkCache bcc = new BaritoneChunkCache();
-            for (MyChunkPos pos : positions) {
-                if (bcc.isAlreadyExplored(pos.x, pos.z) != Status.EXPLORED) {
-                    // either waiting for it or dont have it at all
-                    countRemain++;
-                    if (countRemain >= baritone.settings().exploreChunkSetMinimumSize.get()) {
-                        return countRemain;
-                    }
-                }
+            ExploreProcess.BaritoneChunkCache bcc = ExploreProcess.this.new BaritoneChunkCache();
+
+            for (MyChunkPos pos : this.positions) {
+               if (bcc.isAlreadyExplored(pos.x, pos.z) != ExploreProcess.Status.EXPLORED) {
+                  if (++countRemain >= ExploreProcess.this.baritone.settings().exploreChunkSetMinimumSize.get()) {
+                     return countRemain;
+                  }
+               }
             }
+
             return countRemain;
-        }
-    }
+         }
+      }
+   }
 
-    private class EitherChunk implements IChunkFilter {
-
-        private final IChunkFilter a;
-        private final IChunkFilter b;
-
-        private EitherChunk(IChunkFilter a, IChunkFilter b) {
-            this.a = a;
-            this.b = b;
-        }
-
-        @Override
-        public Status isAlreadyExplored(int chunkX, int chunkZ) {
-            if (a.isAlreadyExplored(chunkX, chunkZ) == Status.EXPLORED) {
-                return Status.EXPLORED;
-            }
-            return b.isAlreadyExplored(chunkX, chunkZ);
-        }
-
-        @Override
-        public int countRemain() {
-            return Math.min(a.countRemain(), b.countRemain());
-        }
-    }
-
-    @Override
-    public void onLostControl() {
-        explorationOrigin = null;
-    }
-
-    @Override
-    public String displayName0() {
-        return "Exploring around " + explorationOrigin + ", distance completed " + distanceCompleted + ", currently going to " + new GoalComposite(closestUncachedChunks(explorationOrigin, calcFilter()));
-    }
+   private static enum Status {
+      EXPLORED,
+      NOT_EXPLORED,
+      UNKNOWN;
+   }
 }

@@ -1,9 +1,9 @@
 package adris.altoclef.util.progresscheck;
 
 public interface IProgressChecker<T> {
-    void setProgress(T paramT);
+   void setProgress(T var1);
 
-    boolean failed();
+   boolean failed();
 
-    void reset();
+   void reset();
 }

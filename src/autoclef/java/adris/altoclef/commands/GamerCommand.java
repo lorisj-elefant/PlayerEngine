@@ -6,12 +6,12 @@ import adris.altoclef.commandsystem.Command;
 import adris.altoclef.tasks.speedrun.beatgame.BeatMinecraftTask;
 
 public class GamerCommand extends Command {
-    public GamerCommand() {
-        super("gamer", "Beats the game (Miran version)");
-    }
+   public GamerCommand() {
+      super("gamer", "Beats the game (Miran version)");
+   }
 
-    @Override
-    protected void call(AltoClefController mod, ArgParser parser) {
-        mod.runUserTask(new BeatMinecraftTask(mod), this::finish);
-    }
+   @Override
+   protected void call(AltoClefController mod, ArgParser parser) {
+      mod.runUserTask(new BeatMinecraftTask(mod), () -> this.finish());
+   }
 }

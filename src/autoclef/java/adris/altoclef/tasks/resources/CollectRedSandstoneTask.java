@@ -9,43 +9,54 @@ import adris.altoclef.util.Dimension;
 import adris.altoclef.util.ItemTarget;
 import adris.altoclef.util.MiningRequirement;
 import adris.altoclef.util.RecipeTarget;
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
-import net.minecraft.item.Item;
-import net.minecraft.item.Items;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 
 public class CollectRedSandstoneTask extends ResourceTask {
-    private final int count;
+   private final int count;
 
-    public CollectRedSandstoneTask(int targetCount) {
-        super(Items.RED_SANDSTONE, targetCount);
-        this.count = targetCount;
-    }
+   public CollectRedSandstoneTask(int targetCount) {
+      super(Items.RED_SANDSTONE, targetCount);
+      this.count = targetCount;
+   }
 
-    protected boolean shouldAvoidPickingUp(AltoClefController mod) {
-        return false;
-    }
+   @Override
+   protected boolean shouldAvoidPickingUp(AltoClefController mod) {
+      return false;
+   }
 
-    protected void onResourceStart(AltoClefController mod) {
-    }
+   @Override
+   protected void onResourceStart(AltoClefController mod) {
+   }
 
-    protected Task onResourceTick(AltoClefController mod) {
-        if (mod.getItemStorage().getItemCount(new Item[]{Items.RED_SAND}) >= 4) {
-            int target = mod.getItemStorage().getItemCount(new Item[]{Items.RED_SANDSTONE}) + 1;
-            ItemTarget s = new ItemTarget(Items.RED_SAND, 1);
-            return (Task) new CraftInInventoryTask(new RecipeTarget(Items.RED_SANDSTONE, target, CraftingRecipe.newShapedRecipe("red_sandstone", new ItemTarget[]{s, s, s, s}, 1)));
-        }
-        return (Task) (new MineAndCollectTask(new ItemTarget(Items.RED_SANDSTONE, Items.RED_SAND), new Block[]{Blocks.RED_SANDSTONE, Blocks.RED_SAND}, MiningRequirement.WOOD)).forceDimension(Dimension.OVERWORLD);
-    }
+   @Override
+   protected Task onResourceTick(AltoClefController mod) {
+      if (mod.getItemStorage().getItemCount(Items.RED_SAND) >= 4) {
+         int target = mod.getItemStorage().getItemCount(Items.RED_SANDSTONE) + 1;
+         ItemTarget s = new ItemTarget(Items.RED_SAND, 1);
+         return new CraftInInventoryTask(
+            new RecipeTarget(Items.RED_SANDSTONE, target, CraftingRecipe.newShapedRecipe("red_sandstone", new ItemTarget[]{s, s, s, s}, 1))
+         );
+      } else {
+         return new MineAndCollectTask(
+               new ItemTarget(Items.RED_SANDSTONE, Items.RED_SAND), new Block[]{Blocks.RED_SANDSTONE, Blocks.RED_SAND}, MiningRequirement.WOOD
+            )
+            .forceDimension(Dimension.OVERWORLD);
+      }
+   }
 
-    protected void onResourceStop(AltoClefController mod, Task interruptTask) {
-    }
+   @Override
+   protected void onResourceStop(AltoClefController mod, Task interruptTask) {
+   }
 
-    protected boolean isEqualResource(ResourceTask other) {
-        return other instanceof adris.altoclef.tasks.resources.CollectRedSandstoneTask;
-    }
+   @Override
+   protected boolean isEqualResource(ResourceTask other) {
+      return other instanceof CollectRedSandstoneTask;
+   }
 
-    protected String toDebugStringName() {
-        return "Collecting " + this.count + " red sandstone.";
-    }
+   @Override
+   protected String toDebugStringName() {
+      return "Collecting " + this.count + " red sandstone.";
+   }
 }

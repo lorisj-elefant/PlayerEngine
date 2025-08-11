@@ -2,114 +2,114 @@ package adris.altoclef.commandsystem;
 
 import adris.altoclef.AltoClefController;
 import adris.altoclef.Debug;
-
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.function.Consumer;
 
 public class CommandExecutor {
+   private final HashMap<String, Command> commandSheet = new HashMap<>();
+   private final AltoClefController mod;
 
-    private final HashMap<String, Command> commandSheet = new HashMap<>();
-    private final AltoClefController mod;
+   public CommandExecutor(AltoClefController mod) {
+      this.mod = mod;
+   }
 
-    public CommandExecutor(AltoClefController mod) {
-        this.mod = mod;
-    }
+   public void registerNewCommand(Command... commands) {
+      for (Command command : commands) {
+         if (this.commandSheet.containsKey(command.getName())) {
+            Debug.logInternal("Command with name " + command.getName() + " already exists! Can't register that name twice.");
+         } else {
+            this.commandSheet.put(command.getName(), command);
+         }
+      }
+   }
 
-    public void registerNewCommand(Command... commands) {
-        for (Command command : commands) {
-            if (commandSheet.containsKey(command.getName())) {
-                Debug.logInternal("Command with name " + command.getName() + " already exists! Can't register that name twice.");
-                continue;
-            }
-            commandSheet.put(command.getName(), command);
-        }
-    }
+   public String getCommandPrefix() {
+      return this.mod.getModSettings().getCommandPrefix();
+   }
 
-    public String getCommandPrefix() {
-        return mod.getModSettings().getCommandPrefix();
-    }
+   public boolean isClientCommand(String line) {
+      return line.startsWith(this.getCommandPrefix());
+   }
 
-    public boolean isClientCommand(String line) {
-        return line.startsWith(getCommandPrefix());
-    }
+   private void executeRecursive(Command[] commands, String[] parts, int index, Runnable onFinish, Consumer<CommandException> getException) {
+      if (index >= commands.length) {
+         onFinish.run();
+      } else {
+         Command command = commands[index];
+         String part = parts[index];
 
-    // This is how we "nest" command finishes so we can complete them in order.
-    private void executeRecursive(Command[] commands, String[] parts, int index, Runnable onFinish, Consumer<CommandException> getException) {
-        if (index >= commands.length) {
-            onFinish.run();
-            return;
-        }
-        Command command = commands[index];
-        String part = parts[index];
-        try {
+         try {
             if (command == null) {
-                getException.accept(new CommandException("Invalid command:" + part));
-                executeRecursive(commands, parts, index + 1, onFinish, getException);
+               getException.accept(new CommandException("Invalid command:" + part));
+               this.executeRecursive(commands, parts, index + 1, onFinish, getException);
             } else {
-                command.run(mod, part, () -> executeRecursive(commands, parts, index + 1, onFinish, getException));
+               command.run(this.mod, part, () -> this.executeRecursive(commands, parts, index + 1, onFinish, getException));
             }
-        } catch (CommandException ae) {
-            getException.accept(new CommandException(ae.getMessage() + "\nUsage: " + command.getHelpRepresentation(), ae));
-        }
-    }
+         } catch (CommandException var9) {
+            getException.accept(new CommandException(var9.getMessage() + "\nUsage: " + command.getHelpRepresentation(), var9));
+         }
+      }
+   }
 
-    public void execute(String line, Runnable onFinish, Consumer<CommandException> getException) {
-        if (!isClientCommand(line)) return;
-        line = line.substring(getCommandPrefix().length());
-        // Run commands separated by ;
-        String[] parts = line.split(";");
-        Command[] commands = new Command[parts.length];
-        try {
-            for (int i = 0; i < parts.length; ++i) {
-                commands[i] = getCommand(parts[i]);
+   public void execute(String line, Runnable onFinish, Consumer<CommandException> getException) {
+      if (this.isClientCommand(line)) {
+         line = line.substring(this.getCommandPrefix().length());
+         String[] parts = line.split(";");
+         Command[] commands = new Command[parts.length];
+
+         try {
+            for (int i = 0; i < parts.length; i++) {
+               commands[i] = this.getCommand(parts[i]);
             }
-        } catch (CommandException e) {
-            getException.accept(e);
-        }
-        executeRecursive(commands, parts, 0, onFinish, getException);
-    }
+         } catch (CommandException var7) {
+            getException.accept(var7);
+         }
 
-    public void execute(String line, Consumer<CommandException> getException) {
-        execute(line, () -> {
-        }, getException);
-    }
+         this.executeRecursive(commands, parts, 0, onFinish, getException);
+      }
+   }
 
-    public void execute(String line) {
-        execute(line, ex -> Debug.logWarning(ex.getMessage()));
-    }
+   public void execute(String line, Consumer<CommandException> getException) {
+      this.execute(line, () -> {}, getException);
+   }
 
-    public void executeWithPrefix(String line) {
-        if (!line.startsWith(getCommandPrefix())) {
-            line = getCommandPrefix() + line;
-        }
-        execute(line);
-    }
+   public void execute(String line) {
+      this.execute(line, ex -> Debug.logWarning(ex.getMessage()));
+   }
 
-    private Command getCommand(String line) throws CommandException {
-        line = line.trim();
-        if (line.length() != 0) {
-            String command = line;
-            int firstSpace = line.indexOf(' ');
-            if (firstSpace != -1) {
-                command = line.substring(0, firstSpace);
-            }
+   public void executeWithPrefix(String line) {
+      if (!line.startsWith(this.getCommandPrefix())) {
+         line = this.getCommandPrefix() + line;
+      }
 
-            if (!commandSheet.containsKey(command)) {
-                throw new CommandException("Command " + command + " does not exist.");
-            }
+      this.execute(line);
+   }
 
-            return commandSheet.get(command);
-        }
-        return null;
+   private Command getCommand(String line) throws CommandException {
+      line = line.trim();
+      if (line.length() != 0) {
+         String command = line;
+         int firstSpace = line.indexOf(32);
+         if (firstSpace != -1) {
+            command = line.substring(0, firstSpace);
+         }
 
-    }
+         if (!this.commandSheet.containsKey(command)) {
+            throw new CommandException("Command " + command + " does not exist.");
+         } else {
+            return this.commandSheet.get(command);
+         }
+      } else {
+         return null;
+      }
+   }
 
-    public Collection<Command> allCommands() {
-        return commandSheet.values();
-    }
+   public Collection<Command> allCommands() {
+      return this.commandSheet.values();
+   }
 
-    public Command get(String name) {
-        return (commandSheet.getOrDefault(name, null));
-    }
+   public Command get(String name) {
+      return this.commandSheet.getOrDefault(name, null);
+   }
 }

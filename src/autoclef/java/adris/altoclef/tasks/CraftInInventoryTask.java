@@ -10,112 +10,110 @@ import adris.altoclef.util.helpers.StorageHelper;
 import adris.altoclef.util.time.TimerGame;
 import baritone.api.entity.IInventoryProvider;
 import baritone.api.entity.LivingEntityInventory;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.Hand;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 
 public class CraftInInventoryTask extends ResourceTask {
+   private final RecipeTarget target;
+   private final boolean collect;
+   private final boolean ignoreUncataloguedSlots;
+   private final TimerGame craftTimer = new TimerGame(2.0);
+   private boolean isCrafting = false;
 
-    private final RecipeTarget target;
-    private final boolean collect;
-    private final boolean ignoreUncataloguedSlots;
-    private final TimerGame craftTimer = new TimerGame(2);
-    private boolean isCrafting = false;
+   public CraftInInventoryTask(RecipeTarget target, boolean collect, boolean ignoreUncataloguedSlots) {
+      super(new ItemTarget(target.getOutputItem(), target.getTargetCount()));
+      this.target = target;
+      this.collect = collect;
+      this.ignoreUncataloguedSlots = ignoreUncataloguedSlots;
+      if (target.getRecipe().isBig()) {
+         Debug.logError("CraftInInventoryTask was used for a 3x3 recipe. This is not supported. Use CraftInTableTask instead.");
+      }
+   }
 
-    public CraftInInventoryTask(RecipeTarget target, boolean collect, boolean ignoreUncataloguedSlots) {
-        super(new ItemTarget(target.getOutputItem(), target.getTargetCount()));
-        this.target = target;
-        this.collect = collect;
-        this.ignoreUncataloguedSlots = ignoreUncataloguedSlots;
+   public CraftInInventoryTask(RecipeTarget target) {
+      this(target, true, false);
+   }
 
-        if (target.getRecipe().isBig()) {
-            Debug.logError("CraftInInventoryTask was used for a 3x3 recipe. This is not supported. Use CraftInTableTask instead.");
-        }
-    }
+   @Override
+   protected boolean shouldAvoidPickingUp(AltoClefController controller) {
+      return false;
+   }
 
-    public CraftInInventoryTask(RecipeTarget target) {
-        this(target, true, false);
-    }
+   @Override
+   protected void onResourceStart(AltoClefController controller) {
+   }
 
-    @Override
-    protected boolean shouldAvoidPickingUp(AltoClefController controller) {
-        return false;
-    }
+   @Override
+   protected Task onResourceTick(AltoClefController controller) {
+      int targetCount = this.target.getTargetCount();
+      Item outputItem = this.target.getOutputItem();
+      if (controller.getItemStorage().getItemCount(outputItem) >= targetCount) {
+         return null;
+      } else if (this.collect && !StorageHelper.hasRecipeMaterialsOrTarget(controller, this.target)) {
+         this.setDebugState("Collecting ingredients for " + outputItem.getDescription().getString());
+         return new CollectRecipeCataloguedResourcesTask(this.ignoreUncataloguedSlots, this.target);
+      } else {
+         this.setDebugState("Crafting " + outputItem.getDescription().getString());
+         if (!this.isCrafting) {
+            this.craftTimer.reset();
+            this.isCrafting = true;
+         }
 
-    @Override
-    protected void onResourceStart(AltoClefController controller) {
-    }
-
-    @Override
-    protected Task onResourceTick(AltoClefController controller) {
-        int targetCount = target.getTargetCount();
-        Item outputItem = target.getOutputItem();
-
-        if (controller.getItemStorage().getItemCount(outputItem) >= targetCount) {
+         if (!this.craftTimer.elapsed()) {
             return null;
-        }
+         } else {
+            int craftsNeeded = (int)Math.ceil(
+               (double)(targetCount - controller.getItemStorage().getItemCount(outputItem)) / this.target.getRecipe().outputCount()
+            );
+            if (craftsNeeded <= 0) {
+               return null;
+            } else {
+               LivingEntityInventory inventory = ((IInventoryProvider)controller.getEntity()).getLivingInventory();
 
-        if (collect && !StorageHelper.hasRecipeMaterialsOrTarget(controller, target)) {
-            setDebugState("Collecting ingredients for " + outputItem.getName().getString());
-            return new CollectRecipeCataloguedResourcesTask(ignoreUncataloguedSlots, target);
-        }
+               for (int i = 0; i < craftsNeeded; i++) {
+                  if (!StorageHelper.hasRecipeMaterialsOrTarget(
+                     controller, new RecipeTarget(this.target.getOutputItem(), this.target.getRecipe().outputCount(), this.target.getRecipe())
+                  )) {
+                     Debug.logWarning(
+                        "Failed to craft " + outputItem.getDescription().getString() + ", not enough ingredients even though we passed the initial check."
+                     );
+                     break;
+                  }
 
-        setDebugState("Crafting " + outputItem.getName().getString());
+                  for (ItemTarget ingredient : this.target.getRecipe().getSlots()) {
+                     if (ingredient != null && !ingredient.isEmpty()) {
+                        inventory.remove(stack -> ingredient.matches(stack.getItem()), ingredient.getTargetCount(), inventory);
+                     }
+                  }
 
-        if(!isCrafting){
-            craftTimer.reset();
-            isCrafting=true;
-        }
+                  ItemStack result = new ItemStack(this.target.getOutputItem(), this.target.getRecipe().outputCount());
+                  inventory.insertStack(result);
+                  controller.getItemStorage().registerSlotAction();
+               }
 
-        if (!craftTimer.elapsed()) {
-            return null;
-        }
-
-        int craftsNeeded = (int) Math.ceil((double) (targetCount - controller.getItemStorage().getItemCount(outputItem)) / target.getRecipe().outputCount());
-        if (craftsNeeded <= 0) {
-            return null;
-        }
-
-        LivingEntityInventory inventory = ((IInventoryProvider) controller.getEntity()).getLivingInventory();
-
-        for (int i = 0; i < craftsNeeded; i++) {
-            if (!StorageHelper.hasRecipeMaterialsOrTarget(controller, new RecipeTarget(target.getOutputItem(), target.getRecipe().outputCount(), target.getRecipe()))) {
-                Debug.logWarning("Failed to craft " + outputItem.getName().getString() + ", not enough ingredients even though we passed the initial check.");
-                break;
+               controller.getEntity().swing(InteractionHand.MAIN_HAND);
+               return null;
             }
+         }
+      }
+   }
 
-            for (ItemTarget ingredient : target.getRecipe().getSlots()) {
-                if (ingredient == null || ingredient.isEmpty()) continue;
-                inventory.remove(stack -> ingredient.matches(stack.getItem()), ingredient.getTargetCount(), inventory);
-            }
+   @Override
+   protected void onResourceStop(AltoClefController controller, Task interruptTask) {
+   }
 
-            ItemStack result = new ItemStack(target.getOutputItem(), target.getRecipe().outputCount());
-            inventory.insertStack(result);
-            controller.getItemStorage().registerSlotAction();
-        }
-        controller.getEntity().swingHand(Hand.MAIN_HAND);
+   @Override
+   protected boolean isEqualResource(ResourceTask other) {
+      return other instanceof CraftInInventoryTask task ? task.target.equals(this.target) : false;
+   }
 
-        return null;
-    }
+   @Override
+   protected String toDebugStringName() {
+      return "Craft in inventory: " + this.target.getOutputItem().getDescription().getString();
+   }
 
-    @Override
-    protected void onResourceStop(AltoClefController controller, Task interruptTask) {
-    }
-
-    @Override
-    protected boolean isEqualResource(ResourceTask other) {
-        if (other instanceof CraftInInventoryTask task) {
-            return task.target.equals(this.target);
-        }
-        return false;
-    }
-
-    @Override
-    protected String toDebugStringName() {
-        return "Craft in inventory: " + target.getOutputItem().getName().getString();
-    }
-
-    public RecipeTarget getRecipeTarget() {
-        return target;
-    }
+   public RecipeTarget getRecipeTarget() {
+      return this.target;
+   }
 }

@@ -8,42 +8,49 @@ import adris.altoclef.util.Dimension;
 import adris.altoclef.util.ItemTarget;
 import adris.altoclef.util.MiningRequirement;
 import adris.altoclef.util.helpers.WorldHelper;
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
-import net.minecraft.item.Items;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 
 public class CollectQuartzTask extends ResourceTask {
-    private final int count;
+   private final int count;
 
-    public CollectQuartzTask(int count) {
-        super(Items.QUARTZ, count);
-        this.count = count;
-    }
+   public CollectQuartzTask(int count) {
+      super(Items.QUARTZ, count);
+      this.count = count;
+   }
 
-    protected boolean shouldAvoidPickingUp(AltoClefController mod) {
-        return false;
-    }
+   @Override
+   protected boolean shouldAvoidPickingUp(AltoClefController mod) {
+      return false;
+   }
 
-    protected void onResourceStart(AltoClefController mod) {
-    }
+   @Override
+   protected void onResourceStart(AltoClefController mod) {
+   }
 
-    protected Task onResourceTick(AltoClefController mod) {
-        if (WorldHelper.getCurrentDimension(mod) != Dimension.NETHER) {
-            setDebugState("Going to nether");
-            return (Task) new DefaultGoToDimensionTask(Dimension.NETHER);
-        }
-        setDebugState("Mining");
-        return (Task) new MineAndCollectTask(new ItemTarget(Items.QUARTZ, this.count), new Block[]{Blocks.NETHER_QUARTZ_ORE}, MiningRequirement.WOOD);
-    }
+   @Override
+   protected Task onResourceTick(AltoClefController mod) {
+      if (WorldHelper.getCurrentDimension(mod) != Dimension.NETHER) {
+         this.setDebugState("Going to nether");
+         return new DefaultGoToDimensionTask(Dimension.NETHER);
+      } else {
+         this.setDebugState("Mining");
+         return new MineAndCollectTask(new ItemTarget(Items.QUARTZ, this.count), new Block[]{Blocks.NETHER_QUARTZ_ORE}, MiningRequirement.WOOD);
+      }
+   }
 
-    protected void onResourceStop(AltoClefController mod, Task interruptTask) {
-    }
+   @Override
+   protected void onResourceStop(AltoClefController mod, Task interruptTask) {
+   }
 
-    protected boolean isEqualResource(ResourceTask other) {
-        return other instanceof adris.altoclef.tasks.resources.CollectQuartzTask;
-    }
+   @Override
+   protected boolean isEqualResource(ResourceTask other) {
+      return other instanceof CollectQuartzTask;
+   }
 
-    protected String toDebugStringName() {
-        return "Collecting " + this.count + " quartz";
-    }
+   @Override
+   protected String toDebugStringName() {
+      return "Collecting " + this.count + " quartz";
+   }
 }

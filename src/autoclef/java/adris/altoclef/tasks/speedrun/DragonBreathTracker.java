@@ -8,62 +8,60 @@ import adris.altoclef.util.helpers.WorldHelper;
 import adris.altoclef.util.progresscheck.MovementProgressChecker;
 import baritone.api.pathing.goals.Goal;
 import baritone.api.pathing.goals.GoalRunAway;
-import net.minecraft.entity.AreaEffectCloudEntity;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.HashSet;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.AreaEffectCloud;
 
 public class DragonBreathTracker {
-    private final HashSet<BlockPos> breathBlocks = new HashSet<>();
+   private final HashSet<BlockPos> breathBlocks = new HashSet<>();
 
-    public void updateBreath(AltoClefController mod) {
-        this.breathBlocks.clear();
-        for (AreaEffectCloudEntity cloud : mod.getEntityTracker().getTrackedEntities(AreaEffectCloudEntity.class)) {
-            for (BlockPos bad : WorldHelper.getBlocksTouchingBox(cloud.getBoundingBox()))
-                this.breathBlocks.add(bad);
-        }
-    }
+   public void updateBreath(AltoClefController mod) {
+      this.breathBlocks.clear();
 
-    public boolean isTouchingDragonBreath(BlockPos pos) {
-        return this.breathBlocks.contains(pos);
-    }
+      for (AreaEffectCloud cloud : mod.getEntityTracker().getTrackedEntities(AreaEffectCloud.class)) {
+         for (BlockPos bad : WorldHelper.getBlocksTouchingBox(cloud.getBoundingBox())) {
+            this.breathBlocks.add(bad);
+         }
+      }
+   }
 
-    public Task getRunAwayTask() {
-        return (Task) new RunAwayFromDragonsBreathTask();
-    }
+   public boolean isTouchingDragonBreath(BlockPos pos) {
+      return this.breathBlocks.contains(pos);
+   }
 
-    private class RunAwayFromDragonsBreathTask extends CustomBaritoneGoalTask {
+   public Task getRunAwayTask() {
+      return new DragonBreathTracker.RunAwayFromDragonsBreathTask();
+   }
 
-        @Override
-        protected void onStart() {
-            super.onStart();
-            BotBehaviour botBehaviour = controller.getBehaviour();
+   private class RunAwayFromDragonsBreathTask extends CustomBaritoneGoalTask {
+      @Override
+      protected void onStart() {
+         super.onStart();
+         BotBehaviour botBehaviour = this.controller.getBehaviour();
+         botBehaviour.push();
+         botBehaviour.setBlockPlacePenalty(Double.POSITIVE_INFINITY);
+         this.checker = new MovementProgressChecker(Integer.MAX_VALUE);
+      }
 
-            botBehaviour.push();
-            botBehaviour.setBlockPlacePenalty(Double.POSITIVE_INFINITY);
-            // do NOT ever wander
-            checker = new MovementProgressChecker((int) Float.POSITIVE_INFINITY);
-        }
+      @Override
+      protected void onStop(Task interruptTask) {
+         super.onStop(interruptTask);
+         this.controller.getBehaviour().pop();
+      }
 
-        @Override
-        protected void onStop(Task interruptTask) {
-            super.onStop(interruptTask);
-            controller.getBehaviour().pop();
-        }
+      @Override
+      protected Goal newGoal(AltoClefController mod) {
+         return new GoalRunAway(10.0, DragonBreathTracker.this.breathBlocks.toArray(BlockPos[]::new));
+      }
 
-        @Override
-        protected Goal newGoal(AltoClefController mod) {
-            return new GoalRunAway(10, breathBlocks.toArray(BlockPos[]::new));
-        }
+      @Override
+      protected boolean isEqual(Task other) {
+         return other instanceof DragonBreathTracker.RunAwayFromDragonsBreathTask;
+      }
 
-        @Override
-        protected boolean isEqual(Task other) {
-            return other instanceof RunAwayFromDragonsBreathTask;
-        }
-
-        @Override
-        protected String toDebugString() {
-            return "ESCAPE Dragons Breath";
-        }
-    }
+      @Override
+      protected String toDebugString() {
+         return "ESCAPE Dragons Breath";
+      }
+   }
 }

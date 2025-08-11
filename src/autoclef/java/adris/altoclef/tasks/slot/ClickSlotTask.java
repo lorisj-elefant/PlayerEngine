@@ -3,65 +3,65 @@ package adris.altoclef.tasks.slot;
 import adris.altoclef.control.SlotHandler;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.slots.Slot;
-import net.minecraft.screen.slot.SlotActionType;
+import net.minecraft.world.inventory.ClickType;
 
 public class ClickSlotTask extends Task {
-    private final Slot slot;
+   private final Slot slot;
+   private final int mouseButton;
+   private final ClickType type;
+   private boolean clicked = false;
 
-    private final int mouseButton;
+   public ClickSlotTask(Slot slot, int mouseButton, ClickType type) {
+      this.slot = slot;
+      this.mouseButton = mouseButton;
+      this.type = type;
+   }
 
-    private final SlotActionType type;
+   public ClickSlotTask(Slot slot, ClickType type) {
+      this(slot, 0, type);
+   }
 
-    private boolean clicked = false;
+   public ClickSlotTask(Slot slot, int mouseButton) {
+      this(slot, mouseButton, ClickType.PICKUP);
+   }
 
-    public ClickSlotTask(Slot slot, int mouseButton, SlotActionType type) {
-        this.slot = slot;
-        this.mouseButton = mouseButton;
-        this.type = type;
-    }
+   public ClickSlotTask(Slot slot) {
+      this(slot, ClickType.PICKUP);
+   }
 
-    public ClickSlotTask(Slot slot, SlotActionType type) {
-        this(slot, 0, type);
-    }
+   @Override
+   protected void onStart() {
+      this.clicked = false;
+   }
 
-    public ClickSlotTask(Slot slot, int mouseButton) {
-        this(slot, mouseButton, SlotActionType.PICKUP);
-    }
+   @Override
+   protected Task onTick() {
+      SlotHandler slotHandler = this.controller.getSlotHandler();
+      if (slotHandler.canDoSlotAction()) {
+         slotHandler.clickSlot(this.slot, this.mouseButton, this.type);
+         slotHandler.registerSlotAction();
+         this.clicked = true;
+      }
 
-    public ClickSlotTask(Slot slot) {
-        this(slot, SlotActionType.PICKUP);
-    }
+      return null;
+   }
 
-    protected void onStart() {
-        this.clicked = false;
-    }
+   @Override
+   protected void onStop(Task interruptTask) {
+   }
 
-    protected Task onTick() {
-        SlotHandler slotHandler = controller.getSlotHandler();
-        if (slotHandler.canDoSlotAction()) {
-            slotHandler.clickSlot(this.slot, this.mouseButton, this.type);
-            slotHandler.registerSlotAction();
-            this.clicked = true;
-        }
-        return null;
-    }
+   @Override
+   protected boolean isEqual(Task obj) {
+      return !(obj instanceof ClickSlotTask task) ? false : task.mouseButton == this.mouseButton && task.type == this.type && task.slot.equals(this.slot);
+   }
 
-    protected void onStop(Task interruptTask) {
-    }
+   @Override
+   protected String toDebugString() {
+      return "Clicking " + this.slot.toString();
+   }
 
-    protected boolean isEqual(Task obj) {
-        if (obj instanceof adris.altoclef.tasks.slot.ClickSlotTask) {
-            adris.altoclef.tasks.slot.ClickSlotTask task = (adris.altoclef.tasks.slot.ClickSlotTask) obj;
-            return (task.mouseButton == this.mouseButton && task.type == this.type && task.slot.equals(this.slot));
-        }
-        return false;
-    }
-
-    protected String toDebugString() {
-        return "Clicking " + this.slot.toString();
-    }
-
-    public boolean isFinished() {
-        return this.clicked;
-    }
+   @Override
+   public boolean isFinished() {
+      return this.clicked;
+   }
 }

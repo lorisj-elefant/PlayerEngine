@@ -19,451 +19,501 @@ import baritone.api.utils.RotationUtils;
 import baritone.api.utils.input.Input;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.Items;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.BlockView;
-import net.minecraft.world.RaycastContext;
-import net.minecraft.world.World;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.BlockPos.MutableBlockPos;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.ClipContext.Fluid;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.HitResult.Type;
 
 public class MLGBucketTask extends Task {
-    private static MLGClutchConfig config;
+   private static MLGBucketTask.MLGClutchConfig config;
+   private BlockPos placedPos;
+   private BlockPos movingTorwards;
 
-    private BlockPos placedPos;
+   private static boolean isLava(AltoClefController controller, BlockPos pos) {
+      assert controller.getWorld() != null;
 
-    private BlockPos movingTorwards;
+      return controller.getWorld().getBlockState(pos).getBlock() == Blocks.LAVA;
+   }
 
-    static {
-        ConfigHelper.loadConfig("configs/mlg_clutch_settings.json", adris.altoclef.tasks.movement.MLGBucketTask.MLGClutchConfig::new, MLGClutchConfig.class, newConfig -> config = newConfig);
-    }
+   private static boolean lavaWillProtect(AltoClefController controller, BlockPos pos) {
+      assert controller.getWorld() != null;
 
-    private static boolean isLava(AltoClefController controller, BlockPos pos) {
-        assert controller.getWorld() != null;
-        return (controller.getWorld().getBlockState(pos).getBlock() == Blocks.LAVA);
-    }
+      BlockState state = controller.getWorld().getBlockState(pos);
+      if (state.getBlock() != Blocks.LAVA) {
+         return false;
+      } else {
+         int level = state.getFluidState().getAmount();
+         return level == 0 || level >= config.lavaLevelOrGreaterWillCancelFallDamage;
+      }
+   }
 
-    private static boolean lavaWillProtect(AltoClefController controller, BlockPos pos) {
-        assert controller.getWorld() != null;
-        BlockState state = controller.getWorld().getBlockState(pos);
-        if (state.getBlock() == Blocks.LAVA) {
-            int level = state.getFluidState().getLevel();
-            return (level == 0 || level >= config.lavaLevelOrGreaterWillCancelFallDamage);
-        }
-        return false;
-    }
+   private static boolean isWater(AltoClefController controller, BlockPos pos) {
+      assert controller.getWorld() != null;
 
-    private static boolean isWater(AltoClefController controller, BlockPos pos) {
-        assert controller.getWorld() != null;
-        return (controller.getWorld().getBlockState(pos).getBlock() == Blocks.WATER);
-    }
+      return controller.getWorld().getBlockState(pos).getBlock() == Blocks.WATER;
+   }
 
-    private static boolean canTravelToInAir(AltoClefController controller, BlockPos pos) {
-        LivingEntity clientPlayerEntity = controller.getPlayer();
-        assert clientPlayerEntity != null;
-        double verticalDist = clientPlayerEntity.getPos().getY() - pos.getY() - 1.0D;
-        double verticalVelocity = -1.0D * (clientPlayerEntity.getVelocity()).y;
-        double grav = 0.08D;
-        double movementSpeedPerTick = config.averageHorizontalMovementSpeedPerTick;
-        double ticksToTravelSq = (-verticalVelocity + Math.sqrt(verticalVelocity * verticalVelocity + 2.0D * grav * verticalDist)) / grav;
-        double maxMoveDistanceSq = movementSpeedPerTick * movementSpeedPerTick * ticksToTravelSq * ticksToTravelSq;
-        double horizontalDistance = WorldHelper.distanceXZ(clientPlayerEntity.getPos(), WorldHelper.toVec3d(pos)) - 0.8D;
-        if (horizontalDistance < 0.0D)
-            horizontalDistance = 0.0D;
-        return (maxMoveDistanceSq > horizontalDistance * horizontalDistance);
-    }
+   private static boolean canTravelToInAir(AltoClefController controller, BlockPos pos) {
+      LivingEntity clientPlayerEntity = controller.getPlayer();
 
-    private static boolean isFallDeadly(AltoClefController controller, BlockPos pos) {
-        LivingEntity clientPlayerEntity = controller.getPlayer();
-        double damage = calculateFallDamageToLandOn(controller, pos);
-        assert controller.getWorld() != null;
-        Block b = controller.getWorld().getBlockState(pos).getBlock();
-        if (b == Blocks.HAY_BLOCK)
-            damage *= 0.20000000298023224D;
-        assert clientPlayerEntity != null;
-        double resultingHealth = (clientPlayerEntity.getHealth() - (float) damage);
-        return (resultingHealth < config.preferLavaWhenFallDropsHealthBelowThreshold);
-    }
+      assert clientPlayerEntity != null;
 
-    private static double calculateFallDamageToLandOn(AltoClefController controller, BlockPos pos) {
-        World world = controller.getWorld();
-        LivingEntity clientPlayerEntity = controller.getPlayer();
-        assert clientPlayerEntity != null;
-        double totalFallDistance = (clientPlayerEntity).fallDistance + clientPlayerEntity.getY() - pos.getY() - 1.0D;
-        double baseFallDamage = MathHelper.ceil(totalFallDistance - 3.0D);
-        assert world != null;
-        return EntityHelper.calculateResultingPlayerDamage(clientPlayerEntity, DamageSourceVer.getFallDamageSource((World) world), baseFallDamage);
-    }
+      double verticalDist = clientPlayerEntity.position().y() - pos.getY() - 1.0;
+      double verticalVelocity = -1.0 * clientPlayerEntity.getDeltaMovement().y;
+      double grav = 0.08;
+      double movementSpeedPerTick = config.averageHorizontalMovementSpeedPerTick;
+      double ticksToTravelSq = (-verticalVelocity + Math.sqrt(verticalVelocity * verticalVelocity + 2.0 * grav * verticalDist)) / grav;
+      double maxMoveDistanceSq = movementSpeedPerTick * movementSpeedPerTick * ticksToTravelSq * ticksToTravelSq;
+      double horizontalDistance = WorldHelper.distanceXZ(clientPlayerEntity.position(), WorldHelper.toVec3d(pos)) - 0.8;
+      if (horizontalDistance < 0.0) {
+         horizontalDistance = 0.0;
+      }
 
-    private static void moveLeftRight(AltoClefController controller, int delta) {
-        InputControls controls = controller.getInputControls();
-        if (delta == 0) {
-            controls.release(Input.MOVE_LEFT);
-            controls.release(Input.MOVE_RIGHT);
-        } else if (delta > 0) {
-            controls.release(Input.MOVE_LEFT);
-            controls.hold(Input.MOVE_RIGHT);
-        } else {
-            controls.hold(Input.MOVE_LEFT);
-            controls.release(Input.MOVE_RIGHT);
-        }
-    }
+      return maxMoveDistanceSq > horizontalDistance * horizontalDistance;
+   }
 
-    private static void moveForwardBack(AltoClefController controller, int delta) {
-        InputControls controls = controller.getInputControls();
-        if (delta == 0) {
-            controls.release(Input.MOVE_FORWARD);
-            controls.release(Input.MOVE_BACK);
-        } else if (delta > 0) {
-            controls.hold(Input.MOVE_FORWARD);
-            controls.release(Input.MOVE_BACK);
-        } else {
-            controls.release(Input.MOVE_FORWARD);
-            controls.hold(Input.MOVE_BACK);
-        }
-    }
+   private static boolean isFallDeadly(AltoClefController controller, BlockPos pos) {
+      LivingEntity clientPlayerEntity = controller.getPlayer();
+      double damage = calculateFallDamageToLandOn(controller, pos);
 
-    private Task onTickInternal(AltoClefController mod, BlockPos oldMovingTorwards) {
-        Optional<BlockPos> willLandOn = getBlockWeWillLandOn(mod);
-        Optional<BlockPos> bestClutchPos = getBestConeClutchBlock(mod, oldMovingTorwards);
-        if (bestClutchPos.isPresent()) {
-            this.movingTorwards = (BlockPos) ((BlockPos) bestClutchPos.get()).mutableCopy();
-            if (!this.movingTorwards.equals(oldMovingTorwards))
-                if (oldMovingTorwards == null) {
-                    Debug.logMessage("(NEW clutch target: " + String.valueOf(this.movingTorwards) + ")");
-                } else {
-                    Debug.logMessage("(changed clutch target: " + String.valueOf(this.movingTorwards) + ")");
-                }
-        } else if (oldMovingTorwards != null) {
-            Debug.logMessage("(LOST clutch position!)");
-        }
-        if (willLandOn.isPresent()) {
-            handleJumpForLand(mod, willLandOn.get());
-            return placeMLGBucketTask(mod, willLandOn.get());
-        }
-        setDebugState("Wait for it...");
-        mod.getInputControls().release(Input.JUMP);
-        return null;
-    }
+      assert controller.getWorld() != null;
 
-    private Task placeMLGBucketTask(AltoClefController mod, BlockPos toPlaceOn) {
-        if (!hasClutchItem(mod)) {
-            setDebugState("No clutch item");
-            return null;
-        }
-        if (!WorldHelper.isSolidBlock(controller, toPlaceOn))
-            toPlaceOn = toPlaceOn.down();
-        BlockPos willLandIn = toPlaceOn.up();
-        BlockState willLandInState = mod.getWorld().getBlockState(willLandIn);
-        if (willLandInState.getBlock() == Blocks.WATER) {
-            setDebugState("Waiting to fall into water");
+      Block b = controller.getWorld().getBlockState(pos).getBlock();
+      if (b == Blocks.HAY_BLOCK) {
+         damage *= 0.2F;
+      }
+
+      assert clientPlayerEntity != null;
+
+      double resultingHealth = clientPlayerEntity.getHealth() - (float)damage;
+      return resultingHealth < config.preferLavaWhenFallDropsHealthBelowThreshold;
+   }
+
+   private static double calculateFallDamageToLandOn(AltoClefController controller, BlockPos pos) {
+      Level world = controller.getWorld();
+      LivingEntity clientPlayerEntity = controller.getPlayer();
+
+      assert clientPlayerEntity != null;
+
+      double totalFallDistance = clientPlayerEntity.fallDistance + clientPlayerEntity.getY() - pos.getY() - 1.0;
+      double baseFallDamage = Mth.ceil(totalFallDistance - 3.0);
+
+      assert world != null;
+
+      return EntityHelper.calculateResultingPlayerDamage(clientPlayerEntity, DamageSourceVer.getFallDamageSource(world), baseFallDamage);
+   }
+
+   private static void moveLeftRight(AltoClefController controller, int delta) {
+      InputControls controls = controller.getInputControls();
+      if (delta == 0) {
+         controls.release(Input.MOVE_LEFT);
+         controls.release(Input.MOVE_RIGHT);
+      } else if (delta > 0) {
+         controls.release(Input.MOVE_LEFT);
+         controls.hold(Input.MOVE_RIGHT);
+      } else {
+         controls.hold(Input.MOVE_LEFT);
+         controls.release(Input.MOVE_RIGHT);
+      }
+   }
+
+   private static void moveForwardBack(AltoClefController controller, int delta) {
+      InputControls controls = controller.getInputControls();
+      if (delta == 0) {
+         controls.release(Input.MOVE_FORWARD);
+         controls.release(Input.MOVE_BACK);
+      } else if (delta > 0) {
+         controls.hold(Input.MOVE_FORWARD);
+         controls.release(Input.MOVE_BACK);
+      } else {
+         controls.release(Input.MOVE_FORWARD);
+         controls.hold(Input.MOVE_BACK);
+      }
+   }
+
+   private Task onTickInternal(AltoClefController mod, BlockPos oldMovingTorwards) {
+      Optional<BlockPos> willLandOn = this.getBlockWeWillLandOn(mod);
+      Optional<BlockPos> bestClutchPos = this.getBestConeClutchBlock(mod, oldMovingTorwards);
+      if (bestClutchPos.isPresent()) {
+         this.movingTorwards = bestClutchPos.get().mutable();
+         if (!this.movingTorwards.equals(oldMovingTorwards)) {
+            if (oldMovingTorwards == null) {
+               Debug.logMessage("(NEW clutch target: " + this.movingTorwards + ")");
+            } else {
+               Debug.logMessage("(changed clutch target: " + this.movingTorwards + ")");
+            }
+         }
+      } else if (oldMovingTorwards != null) {
+         Debug.logMessage("(LOST clutch position!)");
+      }
+
+      if (willLandOn.isPresent()) {
+         this.handleJumpForLand(mod, willLandOn.get());
+         return this.placeMLGBucketTask(mod, willLandOn.get());
+      } else {
+         this.setDebugState("Wait for it...");
+         mod.getInputControls().release(Input.JUMP);
+         return null;
+      }
+   }
+
+   private Task placeMLGBucketTask(AltoClefController mod, BlockPos toPlaceOn) {
+      if (!this.hasClutchItem(mod)) {
+         this.setDebugState("No clutch item");
+         return null;
+      } else {
+         if (!WorldHelper.isSolidBlock(this.controller, toPlaceOn)) {
+            toPlaceOn = toPlaceOn.below();
+         }
+
+         BlockPos willLandIn = toPlaceOn.above();
+         BlockState willLandInState = mod.getWorld().getBlockState(willLandIn);
+         if (willLandInState.getBlock() == Blocks.WATER) {
+            this.setDebugState("Waiting to fall into water");
             mod.getBaritone().getInputOverrideHandler().setInputForceState(Input.CLICK_RIGHT, false);
             return null;
-        }
-        IEntityContext ctx = mod.getBaritone().getEntityContext();
-        Optional<Rotation> reachable = RotationUtils.reachableCenter((Entity) ctx.entity(), toPlaceOn, ctx.playerController().getBlockReachDistance(), false);
-        if (reachable.isPresent()) {
-            setDebugState("Performing MLG");
-            LookHelper.lookAt(controller, reachable.get());
-            boolean hasClutch = (!mod.getWorld().getDimension().ultraWarm() && mod.getSlotHandler().forceEquipItem(Items.WATER_BUCKET));
-            if (!hasClutch)
-                if (!config.clutchItems.isEmpty())
-                    for (Item tryEquip : config.clutchItems) {
-                        if (mod.getSlotHandler().forceEquipItem(tryEquip)) {
-                            hasClutch = true;
-                            break;
-                        }
-                    }
-            BlockPos[] toCheckLook = {toPlaceOn, toPlaceOn.up(), toPlaceOn.up(2)};
-            if (hasClutch && Arrays.<BlockPos>stream(toCheckLook).anyMatch(check -> mod.getBaritone().getEntityContext().isLookingAt(check))) {
-                Debug.logMessage("HIT: " + String.valueOf(willLandIn));
-                this.placedPos = willLandIn;
-                mod.getInputControls().tryPress(Input.CLICK_RIGHT);
+         } else {
+            IEntityContext ctx = mod.getBaritone().getEntityContext();
+            Optional<Rotation> reachable = RotationUtils.reachableCenter(ctx.entity(), toPlaceOn, ctx.playerController().getBlockReachDistance(), false);
+            if (reachable.isPresent()) {
+               this.setDebugState("Performing MLG");
+               LookHelper.lookAt(this.controller, reachable.get());
+               boolean hasClutch = !mod.getWorld().dimensionType().ultraWarm() && mod.getSlotHandler().forceEquipItem(Items.WATER_BUCKET);
+               if (!hasClutch && !config.clutchItems.isEmpty()) {
+                  for (Item tryEquip : config.clutchItems) {
+                     if (mod.getSlotHandler().forceEquipItem(tryEquip)) {
+                        hasClutch = true;
+                        break;
+                     }
+                  }
+               }
+
+               BlockPos[] toCheckLook = new BlockPos[]{toPlaceOn, toPlaceOn.above(), toPlaceOn.above(2)};
+               if (hasClutch && Arrays.stream(toCheckLook).anyMatch(check -> mod.getBaritone().getEntityContext().isLookingAt(check))) {
+                  Debug.logMessage("HIT: " + willLandIn);
+                  this.placedPos = willLandIn;
+                  mod.getInputControls().tryPress(Input.CLICK_RIGHT);
+               } else {
+                  this.setDebugState("NOT LOOKING CORRECTLY!");
+               }
             } else {
-                setDebugState("NOT LOOKING CORRECTLY!");
+               this.setDebugState("Waiting to reach target block...");
             }
-        } else {
-            setDebugState("Waiting to reach target block...");
-        }
-        return null;
-    }
 
-    protected Task onTick() {
-        AltoClefController mod = controller;
-        mod.getInputControls().hold(Input.SPRINT);
-        BlockPos.Mutable mutable = (this.movingTorwards != null) ? this.movingTorwards.mutableCopy() : null;
-        this.movingTorwards = null;
-        Task result = onTickInternal(mod, (BlockPos) mutable);
-        handleForwardVelocity(mod, !Objects.equals(mutable, this.movingTorwards));
-        handleCancellingSidewaysVelocity(mod);
-        return result;
-    }
+            return null;
+         }
+      }
+   }
 
-    private void handleForwardVelocity(AltoClefController mod, boolean newForwardTarget) {
-        if (mod.getPlayer().isOnGround() || this.movingTorwards == null || WorldHelper.inRangeXZ((Entity) mod.getPlayer(), this.movingTorwards, 0.05000000074505806D)) {
-            moveForwardBack(mod, 0);
-            return;
-        }
-        Rotation look = LookHelper.getLookRotation(controller);
-        look = new Rotation(look.getYaw(), 0.0F);
-        Vec3d forwardFacing = LookHelper.toVec3d(look).multiply(1.0D, 0.0D, 1.0D).normalize();
-        Vec3d delta = WorldHelper.toVec3d(this.movingTorwards).subtract(mod.getPlayer().getPos()).multiply(1.0D, 0.0D, 1.0D);
-        Vec3d velocity = mod.getPlayer().getVelocity().multiply(1.0D, 0.0D, 1.0D);
-        Vec3d pd = delta.subtract(velocity.multiply(3.0D));
-        double forwardStrength = pd.dotProduct(forwardFacing);
-        if (newForwardTarget)
+   @Override
+   protected Task onTick() {
+      AltoClefController mod = this.controller;
+      mod.getInputControls().hold(Input.SPRINT);
+      MutableBlockPos mutable = this.movingTorwards != null ? this.movingTorwards.mutable() : null;
+      this.movingTorwards = null;
+      Task result = this.onTickInternal(mod, mutable);
+      this.handleForwardVelocity(mod, !Objects.equals(mutable, this.movingTorwards));
+      this.handleCancellingSidewaysVelocity(mod);
+      return result;
+   }
+
+   private void handleForwardVelocity(AltoClefController mod, boolean newForwardTarget) {
+      if (!mod.getPlayer().onGround() && this.movingTorwards != null && !WorldHelper.inRangeXZ(mod.getPlayer(), this.movingTorwards, 0.05F)) {
+         Rotation look = LookHelper.getLookRotation(this.controller);
+         look = new Rotation(look.getYaw(), 0.0F);
+         Vec3 forwardFacing = LookHelper.toVec3d(look).multiply(1.0, 0.0, 1.0).normalize();
+         Vec3 delta = WorldHelper.toVec3d(this.movingTorwards).subtract(mod.getPlayer().position()).multiply(1.0, 0.0, 1.0);
+         Vec3 velocity = mod.getPlayer().getDeltaMovement().multiply(1.0, 0.0, 1.0);
+         Vec3 pd = delta.subtract(velocity.scale(3.0));
+         double forwardStrength = pd.dot(forwardFacing);
+         if (newForwardTarget) {
             LookHelper.lookAt(mod, this.movingTorwards);
-        Debug.logInternal("F:" + forwardStrength);
-        moveForwardBack(mod, (int) Math.signum(forwardStrength));
-    }
+         }
 
-    protected void onStart() {
-        controller.getBaritone().getPathingBehavior().forceCancel();
-        this.placedPos = null;
-        controller.getPlayer().setPitch(90.0F);
-    }
+         Debug.logInternal("F:" + forwardStrength);
+         moveForwardBack(mod, (int)Math.signum(forwardStrength));
+      } else {
+         moveForwardBack(mod, 0);
+      }
+   }
 
-    private void handleJumpForLand(AltoClefController mod, BlockPos willLandOn) {
-        Box blockBounds;
-        BlockPos willLandIn = WorldHelper.isSolidBlock(controller, willLandOn) ? willLandOn.up() : willLandOn;
-        BlockState s = mod.getWorld().getBlockState(willLandIn);
-        if (s.getBlock() == Blocks.LAVA) {
+   @Override
+   protected void onStart() {
+      this.controller.getBaritone().getPathingBehavior().forceCancel();
+      this.placedPos = null;
+      this.controller.getPlayer().setXRot(90.0F);
+   }
+
+   private void handleJumpForLand(AltoClefController mod, BlockPos willLandOn) {
+      BlockPos willLandIn = WorldHelper.isSolidBlock(this.controller, willLandOn) ? willLandOn.above() : willLandOn;
+      BlockState s = mod.getWorld().getBlockState(willLandIn);
+      if (s.getBlock() == Blocks.LAVA) {
+         mod.getInputControls().hold(Input.JUMP);
+      } else {
+         AABB blockBounds;
+         try {
+            blockBounds = s.getCollisionShape(mod.getWorld(), willLandIn).bounds();
+         } catch (UnsupportedOperationException var7) {
+            blockBounds = AABB.ofSize(WorldHelper.toVec3d(willLandIn), 1.0, 1.0, 1.0);
+         }
+
+         boolean inside = mod.getPlayer().getBoundingBox().intersects(blockBounds);
+         if (inside) {
             mod.getInputControls().hold(Input.JUMP);
-            return;
-        }
-        try {
-            blockBounds = s.getCollisionShape((BlockView) mod.getWorld(), willLandIn).getBoundingBox();
-        } catch (UnsupportedOperationException ex) {
-            blockBounds = Box.of(WorldHelper.toVec3d(willLandIn), 1.0D, 1.0D, 1.0D);
-        }
-        boolean inside = mod.getPlayer().getBoundingBox().intersects(blockBounds);
-        if (inside) {
-            mod.getInputControls().hold(Input.JUMP);
-        } else {
+         } else {
             mod.getInputControls().release(Input.JUMP);
-        }
-    }
+         }
+      }
+   }
 
-    private Optional<BlockPos> getBlockWeWillLandOn(AltoClefController mod) {
-        Vec3d velCheck = mod.getPlayer().getVelocity();
-        velCheck.multiply(10.0D, 0.0D, 10.0D);
-        Box b = mod.getPlayer().getBoundingBox().offset(velCheck);
-        Vec3d c = b.getCenter();
-        Vec3d[] coords = {c, new Vec3d(b.minX, c.y, b.minZ), new Vec3d(b.maxX, c.y, b.minZ), new Vec3d(b.minX, c.y, b.maxZ), new Vec3d(b.maxX, c.y, b.maxZ)};
-        BlockHitResult result = null;
-        double bestSqDist = Double.POSITIVE_INFINITY;
-        for (Vec3d rayOrigin : coords) {
-            RaycastContext rctx = castDown(rayOrigin);
-            BlockHitResult hit = mod.getWorld().raycast(rctx);
-            if (hit.getType() == HitResult.Type.BLOCK) {
-                double curDis = hit.getPos().squaredDistanceTo(rayOrigin);
-                if (curDis < bestSqDist) {
-                    result = hit;
-                    bestSqDist = curDis;
-                }
+   private Optional<BlockPos> getBlockWeWillLandOn(AltoClefController mod) {
+      Vec3 velCheck = mod.getPlayer().getDeltaMovement();
+      velCheck.multiply(10.0, 0.0, 10.0);
+      AABB b = mod.getPlayer().getBoundingBox().move(velCheck);
+      Vec3 c = b.getCenter();
+      Vec3[] coords = new Vec3[]{c, new Vec3(b.minX, c.y, b.minZ), new Vec3(b.maxX, c.y, b.minZ), new Vec3(b.minX, c.y, b.maxZ), new Vec3(b.maxX, c.y, b.maxZ)};
+      BlockHitResult result = null;
+      double bestSqDist = Double.POSITIVE_INFINITY;
+
+      for (Vec3 rayOrigin : coords) {
+         ClipContext rctx = this.castDown(rayOrigin);
+         BlockHitResult hit = mod.getWorld().clip(rctx);
+         if (hit.getType() == Type.BLOCK) {
+            double curDis = hit.getLocation().distanceToSqr(rayOrigin);
+            if (curDis < bestSqDist) {
+               result = hit;
+               bestSqDist = curDis;
             }
-        }
-        if (result == null || result.getType() != HitResult.Type.BLOCK)
-            return Optional.empty();
-        return Optional.ofNullable(result.getBlockPos());
-    }
+         }
+      }
 
-    private void handleCancellingSidewaysVelocity(AltoClefController mod) {
-        if (this.movingTorwards == null) {
-            moveLeftRight(mod, 0);
-            return;
-        }
-        Vec3d velocity = mod.getPlayer().getVelocity();
-        Vec3d deltaTarget = WorldHelper.toVec3d(this.movingTorwards).subtract(mod.getPlayer().getPos());
-        Rotation look = LookHelper.getLookRotation(controller);
-        Vec3d forwardFacing = LookHelper.toVec3d(look).multiply(1.0D, 0.0D, 1.0D).normalize();
-        Vec3d rightVelocity = MathsHelper.projectOntoPlane(velocity, forwardFacing).multiply(1.0D, 0.0D, 1.0D);
-        Vec3d rightDelta = MathsHelper.projectOntoPlane(deltaTarget, forwardFacing).multiply(1.0D, 0.0D, 1.0D);
-        Vec3d pd = rightDelta.subtract(rightVelocity.multiply(2.0D));
-        Vec3d faceRight = forwardFacing.crossProduct(new Vec3d(0.0D, 1.0D, 0.0D));
-        boolean moveRight = (pd.dotProduct(faceRight) > 0.0D);
-        if (moveRight) {
+      return result != null && result.getType() == Type.BLOCK ? Optional.ofNullable(result.getBlockPos()) : Optional.empty();
+   }
+
+   private void handleCancellingSidewaysVelocity(AltoClefController mod) {
+      if (this.movingTorwards == null) {
+         moveLeftRight(mod, 0);
+      } else {
+         Vec3 velocity = mod.getPlayer().getDeltaMovement();
+         Vec3 deltaTarget = WorldHelper.toVec3d(this.movingTorwards).subtract(mod.getPlayer().position());
+         Rotation look = LookHelper.getLookRotation(this.controller);
+         Vec3 forwardFacing = LookHelper.toVec3d(look).multiply(1.0, 0.0, 1.0).normalize();
+         Vec3 rightVelocity = MathsHelper.projectOntoPlane(velocity, forwardFacing).multiply(1.0, 0.0, 1.0);
+         Vec3 rightDelta = MathsHelper.projectOntoPlane(deltaTarget, forwardFacing).multiply(1.0, 0.0, 1.0);
+         Vec3 pd = rightDelta.subtract(rightVelocity.scale(2.0));
+         Vec3 faceRight = forwardFacing.cross(new Vec3(0.0, 1.0, 0.0));
+         boolean moveRight = pd.dot(faceRight) > 0.0;
+         if (moveRight) {
             moveLeftRight(mod, 1);
-        } else {
+         } else {
             moveLeftRight(mod, -1);
-        }
-    }
+         }
+      }
+   }
 
-    private Optional<BlockPos> getBestConeClutchBlock(AltoClefController mod, BlockPos oldClutchTarget) {
-        double pitchHalfWidth = config.epicClutchConePitchAngle;
-        double dpitchStart = pitchHalfWidth / config.epicClutchConePitchResolution;
-        ConeClutchContext cctx = new ConeClutchContext(mod);
-        if (oldClutchTarget != null)
-            cctx.checkBlock(mod, oldClutchTarget);
-        double pitch;
-        for (pitch = dpitchStart; pitch <= pitchHalfWidth; pitch += pitchHalfWidth / config.epicClutchConePitchResolution) {
-            double pitchProgress = (pitch - dpitchStart) / (pitchHalfWidth - dpitchStart);
-            double yawResolution = config.epicClutchConeYawDivisionStart + pitchProgress * (config.epicClutchConeYawDivisionEnd - config.epicClutchConeYawDivisionStart);
-            double yaw;
-            for (yaw = 0.0D; yaw < 360.0D; yaw += 360.0D / yawResolution) {
-                RaycastContext rctx = castCone(yaw, pitch);
-                cctx.checkRay(mod, rctx);
-            }
-        }
-        Vec3d center = mod.getPlayer().getPos();
-        for (int dx = -2; dx <= 2; dx++) {
-            for (int dz = -2; dz <= 2; dz++) {
-                RaycastContext ctx = castDown(center.add(dx, 0.0D, dz));
-                cctx.checkRay(mod, ctx);
-            }
-        }
-        return Optional.ofNullable(cctx.bestBlock);
-    }
+   private Optional<BlockPos> getBestConeClutchBlock(AltoClefController mod, BlockPos oldClutchTarget) {
+      double pitchHalfWidth = config.epicClutchConePitchAngle;
+      double dpitchStart = pitchHalfWidth / config.epicClutchConePitchResolution;
+      MLGBucketTask.ConeClutchContext cctx = new MLGBucketTask.ConeClutchContext(mod);
+      if (oldClutchTarget != null) {
+         cctx.checkBlock(mod, oldClutchTarget);
+      }
 
-    private RaycastContext castDown(Vec3d origin) {
-        LivingEntity clientPlayerEntity = controller.getPlayer();
-        assert clientPlayerEntity != null;
-        return new RaycastContext(origin, origin.add(0.0D, -1.0D * config.castDownDistance, 0.0D), RaycastContext.ShapeType.COLLIDER, RaycastContext.FluidHandling.ANY, (Entity) clientPlayerEntity);
-    }
+      for (double pitch = dpitchStart; pitch <= pitchHalfWidth; pitch += pitchHalfWidth / config.epicClutchConePitchResolution) {
+         double pitchProgress = (pitch - dpitchStart) / (pitchHalfWidth - dpitchStart);
+         double yawResolution = config.epicClutchConeYawDivisionStart
+            + pitchProgress * (config.epicClutchConeYawDivisionEnd - config.epicClutchConeYawDivisionStart);
 
-    private RaycastContext castCone(double yaw, double pitch) {
-        LivingEntity clientPlayerEntity = controller.getPlayer();
-        assert clientPlayerEntity != null;
-        Vec3d origin = clientPlayerEntity.getPos();
-        double dy = config.epicClutchConeCastHeight;
-        double dH = dy * Math.sin(Math.toRadians(pitch));
-        double yawRad = Math.toRadians(yaw);
-        double dx = dH * Math.cos(yawRad);
-        double dz = dH * Math.sin(yawRad);
-        Vec3d end = origin.add(dx, -1.0D * dy, dz);
-        return new RaycastContext(origin, end, RaycastContext.ShapeType.COLLIDER, RaycastContext.FluidHandling.ANY, (Entity) clientPlayerEntity);
-    }
+         for (double yaw = 0.0; yaw < 360.0; yaw += 360.0 / yawResolution) {
+            ClipContext rctx = this.castCone(yaw, pitch);
+            cctx.checkRay(mod, rctx);
+         }
+      }
 
-    protected void onStop(Task interruptTask) {
-        IBaritone baritone = controller.getBaritone();
-        InputControls controls = controller.getInputControls();
-        baritone.getPathingBehavior().forceCancel();
-        this.movingTorwards = null;
-        baritone.getInputOverrideHandler().setInputForceState(Input.CLICK_RIGHT, false);
-        moveLeftRight(controller, 0);
-        moveForwardBack(controller, 0);
-        controls.release(Input.SPRINT);
-        controls.release(Input.JUMP);
-    }
+      Vec3 center = mod.getPlayer().position();
 
-    private boolean hasClutchItem(AltoClefController mod) {
-        if (!mod.getWorld().getDimension().ultraWarm() && mod.getItemStorage().hasItem(new Item[]{Items.WATER_BUCKET}))
-            return true;
-        return config.clutchItems.stream().anyMatch(item -> mod.getItemStorage().hasItem(new Item[]{item}));
-    }
+      for (int dx = -2; dx <= 2; dx++) {
+         for (int dz = -2; dz <= 2; dz++) {
+            ClipContext ctx = this.castDown(center.add(dx, 0.0, dz));
+            cctx.checkRay(mod, ctx);
+         }
+      }
 
-    public boolean isFinished() {
-        LivingEntity player = controller.getPlayer();
-        return (player.isSwimming() || player.isTouchingWater() || player.isOnGround() || player.isClimbing());
-    }
+      return Optional.ofNullable(cctx.bestBlock);
+   }
 
-    protected boolean isEqual(Task other) {
-        return other instanceof adris.altoclef.tasks.movement.MLGBucketTask;
-    }
+   private ClipContext castDown(Vec3 origin) {
+      LivingEntity clientPlayerEntity = this.controller.getPlayer();
 
-    protected String toDebugString() {
-        String result = "Epic gaemer moment";
-        if (this.movingTorwards != null)
-            result = result + " (CLUTCH AT: " + result + ")";
-        return result;
-    }
+      assert clientPlayerEntity != null;
 
-    public BlockPos getWaterPlacedPos() {
-        return this.placedPos;
-    }
+      return new ClipContext(
+         origin, origin.add(0.0, -1.0 * config.castDownDistance, 0.0), net.minecraft.world.level.ClipContext.Block.COLLIDER, Fluid.ANY, clientPlayerEntity
+      );
+   }
 
-    private static class MLGClutchConfig {
-        public double castDownDistance = 40;
-        public double averageHorizontalMovementSpeedPerTick = 0.25; // How "far" the player moves horizontally per tick. Set too low and the bot will ignore viable clutches. Set too high and the bot will go for clutches it can't reach.
-        public double epicClutchConeCastHeight = 40; // How high the "epic clutch" ray cone is
-        public double epicClutchConePitchAngle = 25; // How wide (degrees) the "epic clutch" ray cone is
-        public int epicClutchConePitchResolution = 8; // How many divisions in each direction the cone's pitch has
-        public int epicClutchConeYawDivisionStart = 6; // How many divisions to start the cone clutch at in the center
-        public int epicClutchConeYawDivisionEnd = 20; // How many divisions to move the cone clutch at torwars the end
-        public int preferLavaWhenFallDropsHealthBelowThreshold = 3; // If a fall results in our player's health going below this value, consider it deadly.
-        public int lavaLevelOrGreaterWillCancelFallDamage = 5; // Lava at this level will cancel our fall damage if we hold space.
-        @JsonSerialize(using = ItemSerializer.class)
-        @JsonDeserialize(using = ItemDeserializer.class)
-        public List<Item> clutchItems = List.of(Items.HAY_BLOCK, Items.TWISTING_VINES);
-    }
+   private ClipContext castCone(double yaw, double pitch) {
+      LivingEntity clientPlayerEntity = this.controller.getPlayer();
 
-    class ConeClutchContext {
-        private final boolean hasClutchItem;
-        public BlockPos bestBlock = null;
-        private double highestY = Double.NEGATIVE_INFINITY;
-        private double closestXZ = Double.POSITIVE_INFINITY;
-        private boolean bestBlockIsSafe = false;
-        private boolean bestBlockIsDeadlyFall = false;
-        private boolean bestBlockIsLava = false;
+      assert clientPlayerEntity != null;
 
-        public ConeClutchContext(AltoClefController mod) {
-            hasClutchItem = hasClutchItem(mod);
-        }
+      Vec3 origin = clientPlayerEntity.position();
+      double dy = config.epicClutchConeCastHeight;
+      double dH = dy * Math.sin(Math.toRadians(pitch));
+      double yawRad = Math.toRadians(yaw);
+      double dx = dH * Math.cos(yawRad);
+      double dz = dH * Math.sin(yawRad);
+      Vec3 end = origin.add(dx, -1.0 * dy, dz);
+      return new ClipContext(origin, end, net.minecraft.world.level.ClipContext.Block.COLLIDER, Fluid.ANY, clientPlayerEntity);
+   }
 
-        public void checkBlock(AltoClefController mod, BlockPos check) {
-            // Already checked
-            if (Objects.equals(bestBlock, check))
-                return;
+   @Override
+   protected void onStop(Task interruptTask) {
+      IBaritone baritone = this.controller.getBaritone();
+      InputControls controls = this.controller.getInputControls();
+      baritone.getPathingBehavior().forceCancel();
+      this.movingTorwards = null;
+      baritone.getInputOverrideHandler().setInputForceState(Input.CLICK_RIGHT, false);
+      moveLeftRight(this.controller, 0);
+      moveForwardBack(this.controller, 0);
+      controls.release(Input.SPRINT);
+      controls.release(Input.JUMP);
+   }
+
+   private boolean hasClutchItem(AltoClefController mod) {
+      return !mod.getWorld().dimensionType().ultraWarm() && mod.getItemStorage().hasItem(Items.WATER_BUCKET)
+         ? true
+         : config.clutchItems.stream().anyMatch(item -> mod.getItemStorage().hasItem(item));
+   }
+
+   @Override
+   public boolean isFinished() {
+      LivingEntity player = this.controller.getPlayer();
+      return player.isSwimming() || player.isInWater() || player.onGround() || player.onClimbable();
+   }
+
+   @Override
+   protected boolean isEqual(Task other) {
+      return other instanceof MLGBucketTask;
+   }
+
+   @Override
+   protected String toDebugString() {
+      String result = "Epic gaemer moment";
+      if (this.movingTorwards != null) {
+         result = result + " (CLUTCH AT: " + result + ")";
+      }
+
+      return result;
+   }
+
+   public BlockPos getWaterPlacedPos() {
+      return this.placedPos;
+   }
+
+   static {
+      ConfigHelper.loadConfig(
+         "configs/mlg_clutch_settings.json", MLGBucketTask.MLGClutchConfig::new, MLGBucketTask.MLGClutchConfig.class, newConfig -> config = newConfig
+      );
+   }
+
+   class ConeClutchContext {
+      private final boolean hasClutchItem;
+      public BlockPos bestBlock = null;
+      private double highestY = Double.NEGATIVE_INFINITY;
+      private double closestXZ = Double.POSITIVE_INFINITY;
+      private boolean bestBlockIsSafe = false;
+      private boolean bestBlockIsDeadlyFall = false;
+      private boolean bestBlockIsLava = false;
+
+      public ConeClutchContext(AltoClefController mod) {
+         this.hasClutchItem = MLGBucketTask.this.hasClutchItem(mod);
+      }
+
+      public void checkBlock(AltoClefController mod, BlockPos check) {
+         if (!Objects.equals(this.bestBlock, check)) {
             if (WorldHelper.isAir(mod.getWorld().getBlockState(check).getBlock())) {
-                Debug.logMessage("(MLG Air block checked for landing, the block broke. We'll try another): " + check);
-                return;
-            }
-            boolean lava = isLava(controller, check);
-            boolean lavaWillProtect = lava && lavaWillProtect(controller, check);
-            boolean water = isWater(controller, check);
-            boolean isDeadlyFall = !hasClutchItem && isFallDeadly(controller, check);
-            // Prioritize safe blocks ALWAYS
-            if (bestBlockIsSafe && !water)
-                return;
-            double height = check.getY();
-            double distSqXZ = WorldHelper.distanceXZSquared(WorldHelper.toVec3d(check), mod.getPlayer().getPos());
-            boolean highestSoFar = height > highestY;
-            boolean closestSoFar = distSqXZ < closestXZ;
-            // We found a new contender
-            if (
-                    bestBlock == null || // No target was found.
-                            (water && !bestBlockIsSafe) || // We ALWAYS land in water if we can
-                            (lava && lavaWillProtect && bestBlockIsDeadlyFall && !hasClutchItem) || // Land in lava if our best alternative is death by fall damage
-                            (!lava && !isDeadlyFall && ((closestSoFar && hasClutchItem) && highestSoFar || bestBlockIsLava)) // If it's not lava and is not deadly, land on it if it's higher than before OR if our best alternative is lava
-            ) {
-                if (canTravelToInAir(controller, (lava || water) ? check.down() : check)) {
-                    if (highestSoFar) {
-                        highestY = height;
-                    }
-                    if (closestSoFar) {
-                        closestXZ = distSqXZ;
-                    }
-                    bestBlockIsSafe = water;
-                    bestBlockIsDeadlyFall = isDeadlyFall;
-                    bestBlockIsLava = lava;
-                    bestBlock = check;
-                }
-            }
-        }
+               Debug.logMessage("(MLG Air block checked for landing, the block broke. We'll try another): " + check);
+            } else {
+               boolean lava = MLGBucketTask.isLava(MLGBucketTask.this.controller, check);
+               boolean lavaWillProtect = lava && MLGBucketTask.lavaWillProtect(MLGBucketTask.this.controller, check);
+               boolean water = MLGBucketTask.isWater(MLGBucketTask.this.controller, check);
+               boolean isDeadlyFall = !this.hasClutchItem && MLGBucketTask.isFallDeadly(MLGBucketTask.this.controller, check);
+               if (!this.bestBlockIsSafe || water) {
+                  double height = check.getY();
+                  double distSqXZ = WorldHelper.distanceXZSquared(WorldHelper.toVec3d(check), mod.getPlayer().position());
+                  boolean highestSoFar = height > this.highestY;
+                  boolean closestSoFar = distSqXZ < this.closestXZ;
+                  if ((
+                        this.bestBlock == null
+                           || water && !this.bestBlockIsSafe
+                           || lava && lavaWillProtect && this.bestBlockIsDeadlyFall && !this.hasClutchItem
+                           || !lava && !isDeadlyFall && (closestSoFar && this.hasClutchItem && highestSoFar || this.bestBlockIsLava)
+                     )
+                     && MLGBucketTask.canTravelToInAir(MLGBucketTask.this.controller, !lava && !water ? check : check.below())) {
+                     if (highestSoFar) {
+                        this.highestY = height;
+                     }
 
-        public void checkRay(AltoClefController mod, RaycastContext rctx) {
-            BlockHitResult hit = mod.getWorld().raycast(rctx);
-            if (hit.getType() == HitResult.Type.BLOCK) {
-                BlockPos check = hit.getBlockPos();
-                // For now, REQUIRE we land on this
-                if (hit.getSide().getOffsetY() <= 0)
-                    return;
-                checkBlock(mod, check);
+                     if (closestSoFar) {
+                        this.closestXZ = distSqXZ;
+                     }
+
+                     this.bestBlockIsSafe = water;
+                     this.bestBlockIsDeadlyFall = isDeadlyFall;
+                     this.bestBlockIsLava = lava;
+                     this.bestBlock = check;
+                  }
+               }
             }
-        }
-    }
+         }
+      }
+
+      public void checkRay(AltoClefController mod, ClipContext rctx) {
+         BlockHitResult hit = mod.getWorld().clip(rctx);
+         if (hit.getType() == Type.BLOCK) {
+            BlockPos check = hit.getBlockPos();
+            if (hit.getDirection().getStepY() <= 0) {
+               return;
+            }
+
+            this.checkBlock(mod, check);
+         }
+      }
+   }
+
+   private static class MLGClutchConfig {
+      public double castDownDistance = 40.0;
+      public double averageHorizontalMovementSpeedPerTick = 0.25;
+      public double epicClutchConeCastHeight = 40.0;
+      public double epicClutchConePitchAngle = 25.0;
+      public int epicClutchConePitchResolution = 8;
+      public int epicClutchConeYawDivisionStart = 6;
+      public int epicClutchConeYawDivisionEnd = 20;
+      public int preferLavaWhenFallDropsHealthBelowThreshold = 3;
+      public int lavaLevelOrGreaterWillCancelFallDamage = 5;
+      @JsonSerialize(
+         using = ItemSerializer.class
+      )
+      @JsonDeserialize(
+         using = ItemDeserializer.class
+      )
+      public List<Item> clutchItems = List.of(Items.HAY_BLOCK, Items.TWISTING_VINES);
+   }
 }

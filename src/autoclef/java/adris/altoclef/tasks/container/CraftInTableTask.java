@@ -6,7 +6,6 @@ import adris.altoclef.TaskCatalogue;
 import adris.altoclef.tasks.ResourceTask;
 import adris.altoclef.tasks.construction.PlaceBlockNearbyTask;
 import adris.altoclef.tasks.movement.GetCloseToBlockTask;
-import adris.altoclef.tasks.movement.GetToBlockTask;
 import adris.altoclef.tasks.resources.CollectRecipeCataloguedResourcesTask;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.ItemTarget;
@@ -15,163 +14,148 @@ import adris.altoclef.util.helpers.StorageHelper;
 import adris.altoclef.util.time.TimerGame;
 import baritone.api.entity.IInventoryProvider;
 import baritone.api.entity.LivingEntityInventory;
-import net.minecraft.block.Blocks;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3i;
-
 import java.util.Arrays;
 import java.util.Optional;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Blocks;
 
 public class CraftInTableTask extends ResourceTask {
+   private final RecipeTarget[] targets;
+   private BlockPos craftingTablePos = null;
+   private final TimerGame craftTimer = new TimerGame(2.0);
+   private boolean isCrafting = false;
 
-    private final RecipeTarget[] targets;
-    private BlockPos craftingTablePos = null;
-    private final TimerGame craftTimer = new TimerGame(2);
-    private boolean isCrafting = false;
+   public CraftInTableTask(RecipeTarget[] targets) {
+      super(extractItemTargets(targets));
+      this.targets = targets;
+   }
 
-    public CraftInTableTask(RecipeTarget[] targets) {
-        super(extractItemTargets(targets));
-        this.targets = targets;
-    }
+   public CraftInTableTask(RecipeTarget target) {
+      this(new RecipeTarget[]{target});
+   }
 
-    public CraftInTableTask(RecipeTarget target) {
-        this(new RecipeTarget[]{target});
-    }
+   private static ItemTarget[] extractItemTargets(RecipeTarget[] recipeTargets) {
+      return Arrays.stream(recipeTargets).map(t -> new ItemTarget(t.getOutputItem(), t.getTargetCount())).toArray(ItemTarget[]::new);
+   }
 
-    private static ItemTarget[] extractItemTargets(RecipeTarget[] recipeTargets) {
-        return Arrays.stream(recipeTargets)
-                .map(t -> new ItemTarget(t.getOutputItem(), t.getTargetCount()))
-                .toArray(ItemTarget[]::new);
-    }
+   @Override
+   protected boolean shouldAvoidPickingUp(AltoClefController controller) {
+      return false;
+   }
 
-    @Override
-    protected boolean shouldAvoidPickingUp(AltoClefController controller) {
-        return false;
-    }
+   @Override
+   protected void onResourceStart(AltoClefController controller) {
+      controller.getBehaviour().push();
 
-    @Override
-    protected void onResourceStart(AltoClefController controller) {
-        // Protect items to avoid accidentally throwing them away
-        controller.getBehaviour().push();
-        for (RecipeTarget target : targets) {
-            for (ItemTarget ingredient : target.getRecipe().getSlots()) {
-                if (ingredient != null && !ingredient.isEmpty()) {
-                    controller.getBehaviour().addProtectedItems(ingredient.getMatches());
-                }
+      for (RecipeTarget target : this.targets) {
+         for (ItemTarget ingredient : target.getRecipe().getSlots()) {
+            if (ingredient != null && !ingredient.isEmpty()) {
+               controller.getBehaviour().addProtectedItems(ingredient.getMatches());
             }
-        }
-    }
+         }
+      }
+   }
 
-    @Override
-    protected Task onResourceTick(AltoClefController controller) {
-        // 1. Check if all crafts are already done
-        boolean allDone = Arrays.stream(targets).allMatch(target ->
-                controller.getItemStorage().getItemCount(target.getOutputItem()) >= target.getTargetCount()
-        );
-        if (allDone) {
-            return null; // All target items have been crafted
-        }
-
-        // 2. Collect resources for crafting
-        if (!StorageHelper.hasRecipeMaterialsOrTarget(controller, targets)) {
-            setDebugState("Collecting ingredients");
-            return new CollectRecipeCataloguedResourcesTask(false, targets);
-        }
-
-        // 3. Find or place a crafting table
-        if (craftingTablePos == null || !controller.getWorld().getBlockState(craftingTablePos).isOf(Blocks.CRAFTING_TABLE)) {
+   @Override
+   protected Task onResourceTick(AltoClefController controller) {
+      boolean allDone = Arrays.stream(this.targets)
+         .allMatch(targetx -> controller.getItemStorage().getItemCount(targetx.getOutputItem()) >= targetx.getTargetCount());
+      if (allDone) {
+         return null;
+      } else if (!StorageHelper.hasRecipeMaterialsOrTarget(controller, this.targets)) {
+         this.setDebugState("Collecting ingredients");
+         return new CollectRecipeCataloguedResourcesTask(false, this.targets);
+      } else {
+         if (this.craftingTablePos == null || !controller.getWorld().getBlockState(this.craftingTablePos).is(Blocks.CRAFTING_TABLE)) {
             Optional<BlockPos> nearestTable = controller.getBlockScanner().getNearestBlock(Blocks.CRAFTING_TABLE);
             if (nearestTable.isPresent()) {
-                craftingTablePos = nearestTable.get();
-                setDebugState("Found crafting table: " + craftingTablePos.toShortString());
+               this.craftingTablePos = nearestTable.get();
+               this.setDebugState("Found crafting table: " + this.craftingTablePos.toShortString());
             } else {
-                craftingTablePos = null;
-                setDebugState("Crafting table not found.");
+               this.craftingTablePos = null;
+               this.setDebugState("Crafting table not found.");
             }
-        }
+         }
 
-        // 4. If table is needed but missing or far, get/build one
-        if (craftingTablePos == null) {
+         if (this.craftingTablePos == null) {
             if (controller.getItemStorage().hasItem(Items.CRAFTING_TABLE)) {
-                setDebugState("Placing crafting table.");
-                return new PlaceBlockNearbyTask(Blocks.CRAFTING_TABLE);
+               this.setDebugState("Placing crafting table.");
+               return new PlaceBlockNearbyTask(Blocks.CRAFTING_TABLE);
+            } else {
+               this.setDebugState("Obtaining crafting table.");
+               return TaskCatalogue.getItemTask(Items.CRAFTING_TABLE, 1);
             }
-            setDebugState("Obtaining crafting table.");
-            return TaskCatalogue.getItemTask(Items.CRAFTING_TABLE, 1);
-        }
+         } else if (!this.craftingTablePos
+            .closerThan(
+               new Vec3i((int)controller.getEntity().position().x, (int)controller.getEntity().position().y, (int)controller.getEntity().position().z), 3.5
+            )) {
+            this.setDebugState("Going to crafting table at: " + this.craftingTablePos.toShortString());
+            return new GetCloseToBlockTask(this.craftingTablePos);
+         } else {
+            this.setDebugState("Crafting...");
+            if (!this.isCrafting) {
+               this.craftTimer.reset();
+               this.isCrafting = true;
+            }
 
-        // 5. Go to the crafting table
-        if (!craftingTablePos.isWithinDistance(new Vec3i((int) controller.getEntity().getPos().x, (int) controller.getEntity().getPos().y, (int) controller.getEntity().getPos().z), 3.5)) {
-            setDebugState("Going to crafting table at: " + craftingTablePos.toShortString());
-            return new GetCloseToBlockTask(craftingTablePos);
-        }
+            if (!this.craftTimer.elapsed()) {
+               return null;
+            } else {
+               for (RecipeTarget target : this.targets) {
+                  int currentAmount = controller.getItemStorage().getItemCount(target.getOutputItem());
+                  if (currentAmount < target.getTargetCount()) {
+                     int craftsNeeded = (int)Math.ceil((double)(target.getTargetCount() - currentAmount) / target.getRecipe().outputCount());
 
-        // 6. Perform the craft
-        setDebugState("Crafting...");
-        if(!isCrafting){
-            craftTimer.reset();
-            isCrafting=true;
-        }
-
-        if (!craftTimer.elapsed()) {
-            return null;
-        }
-        for (RecipeTarget target : targets) {
-            int currentAmount = controller.getItemStorage().getItemCount(target.getOutputItem());
-            if (currentAmount < target.getTargetCount()) {
-                // How many we need to craft
-                int craftsNeeded = (int) Math.ceil((double) (target.getTargetCount() - currentAmount) / target.getRecipe().outputCount());
-
-                for (int i = 0; i < craftsNeeded; i++) {
-                    if (!StorageHelper.hasRecipeMaterialsOrTarget(controller, new RecipeTarget(target.getOutputItem(), target.getRecipe().outputCount(), target.getRecipe()))) {
-                        Debug.logWarning("Not enough ingredients to craft, even though the check passed. Aborting.");
-                        return new CollectRecipeCataloguedResourcesTask(false, targets);
-                    }
-
-                    // Consume ingredients
-                    LivingEntityInventory inventory = ((IInventoryProvider) controller.getEntity()).getLivingInventory();
-                    for (ItemTarget ingredient : target.getRecipe().getSlots()) {
-                        if (ingredient != null && !ingredient.isEmpty()) {
-                            inventory.remove(stack -> ingredient.matches(stack.getItem()), ingredient.getTargetCount(), inventory);
+                     for (int i = 0; i < craftsNeeded; i++) {
+                        if (!StorageHelper.hasRecipeMaterialsOrTarget(
+                           controller, new RecipeTarget(target.getOutputItem(), target.getRecipe().outputCount(), target.getRecipe())
+                        )) {
+                           Debug.logWarning("Not enough ingredients to craft, even though the check passed. Aborting.");
+                           return new CollectRecipeCataloguedResourcesTask(false, this.targets);
                         }
-                    }
 
-                    // Add result
-                    ItemStack result = new ItemStack(target.getOutputItem(), target.getRecipe().outputCount());
-                    inventory.insertStack(result);
-                    controller.getItemStorage().registerSlotAction();
-                }
+                        LivingEntityInventory inventory = ((IInventoryProvider)controller.getEntity()).getLivingInventory();
+
+                        for (ItemTarget ingredient : target.getRecipe().getSlots()) {
+                           if (ingredient != null && !ingredient.isEmpty()) {
+                              inventory.remove(stack -> ingredient.matches(stack.getItem()), ingredient.getTargetCount(), inventory);
+                           }
+                        }
+
+                        ItemStack result = new ItemStack(target.getOutputItem(), target.getRecipe().outputCount());
+                        inventory.insertStack(result);
+                        controller.getItemStorage().registerSlotAction();
+                     }
+                  }
+               }
+
+               controller.getEntity().swing(InteractionHand.MAIN_HAND);
+               return null;
             }
-        }
-        controller.getEntity().swingHand(Hand.MAIN_HAND);
-        // This task is now effectively synchronous and should complete in one tick once conditions are met.
-        return null;
-    }
+         }
+      }
+   }
 
-    @Override
-    protected void onResourceStop(AltoClefController controller, Task interruptTask) {
-        controller.getBehaviour().pop();
-    }
+   @Override
+   protected void onResourceStop(AltoClefController controller, Task interruptTask) {
+      controller.getBehaviour().pop();
+   }
 
-    @Override
-    protected boolean isEqualResource(ResourceTask other) {
-        if (other instanceof CraftInTableTask task) {
-            return Arrays.equals(task.targets, this.targets);
-        }
-        return false;
-    }
+   @Override
+   protected boolean isEqualResource(ResourceTask other) {
+      return other instanceof CraftInTableTask task ? Arrays.equals((Object[])task.targets, (Object[])this.targets) : false;
+   }
 
-    @Override
-    protected String toDebugStringName() {
-        return "Craft on table: " + Arrays.toString(
-                Arrays.stream(targets).map(t -> t.getOutputItem().getName().getString()).toArray()
-        );
-    }
+   @Override
+   protected String toDebugStringName() {
+      return "Craft on table: " + Arrays.toString(Arrays.stream(this.targets).map(t -> t.getOutputItem().getDescription().getString()).toArray());
+   }
 
-    public RecipeTarget[] getRecipeTargets() {
-        return targets;
-    }
+   public RecipeTarget[] getRecipeTargets() {
+      return this.targets;
+   }
 }

@@ -6,14 +6,14 @@ import adris.altoclef.commandsystem.Command;
 import adris.altoclef.util.helpers.ConfigHelper;
 
 public class ReloadSettingsCommand extends Command {
-    public ReloadSettingsCommand() {
-        super("reload_settings", "Reloads bot settings and butler whitelist/blacklist.");
-    }
+   public ReloadSettingsCommand() {
+      super("reload_settings", "Reloads bot settings and butler whitelist/blacklist.");
+   }
 
-    @Override
-    protected void call(AltoClefController mod, ArgParser parser) {
-        ConfigHelper.reloadAllConfigs();
-        mod.log("Reload successful!");
-        finish();
-    }
+   @Override
+   protected void call(AltoClefController mod, ArgParser parser) {
+      ConfigHelper.reloadAllConfigs();
+      mod.log("Reload successful!");
+      this.finish();
+   }
 }

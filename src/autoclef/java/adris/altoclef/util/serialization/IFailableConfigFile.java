@@ -1,7 +1,7 @@
 package adris.altoclef.util.serialization;
 
 public interface IFailableConfigFile {
-    void onFailLoad();
+   void onFailLoad();
 
-    boolean failedToLoad();
+   boolean failedToLoad();
 }

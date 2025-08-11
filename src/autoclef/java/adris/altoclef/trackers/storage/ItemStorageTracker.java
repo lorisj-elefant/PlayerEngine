@@ -5,165 +5,129 @@ import adris.altoclef.trackers.Tracker;
 import adris.altoclef.trackers.TrackerManager;
 import adris.altoclef.util.ItemTarget;
 import adris.altoclef.util.helpers.StorageHelper;
-import adris.altoclef.util.slots.PlayerSlot;
 import adris.altoclef.util.slots.Slot;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.Vec3i;
-
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.Vec3;
 
 public class ItemStorageTracker extends Tracker {
+   private final InventorySubTracker inventory;
+   public final ContainerSubTracker containers;
 
-    private final InventorySubTracker inventory;
-    public final ContainerSubTracker containers;
+   public ItemStorageTracker(AltoClefController mod, TrackerManager manager, Consumer<ContainerSubTracker> containerTrackerConsumer) {
+      super(manager);
+      this.inventory = new InventorySubTracker(manager);
+      this.containers = new ContainerSubTracker(manager);
+      containerTrackerConsumer.accept(this.containers);
+   }
 
-    public ItemStorageTracker(AltoClefController mod, TrackerManager manager, Consumer<ContainerSubTracker> containerTrackerConsumer) {
-        super(manager);
-        this.inventory = new InventorySubTracker(manager);
-        this.containers = new ContainerSubTracker(manager);
-        containerTrackerConsumer.accept(this.containers);
-    }
+   public int getItemCount(Item... items) {
+      return this.inventory.getItemCount(items);
+   }
 
-    // --- Item Counting ---
+   public int getItemCount(ItemTarget... targets) {
+      return Arrays.stream(targets).mapToInt(target -> this.getItemCount(target.getMatches())).sum();
+   }
 
-    /**
-     * Returns the total count of items the bot has access to in its own inventory, including the cursor.
-     */
-    public int getItemCount(Item... items) {
-        return inventory.getItemCount(items);
-    }
+   @Deprecated
+   public int getItemCountScreen(Item... items) {
+      return this.getItemCount(items);
+   }
 
-    public int getItemCount(ItemTarget... targets) {
-        return Arrays.stream(targets).mapToInt(target -> getItemCount(target.getMatches())).sum();
-    }
+   public int getItemCountInventoryOnly(Item... items) {
+      return this.getItemCount(items);
+   }
 
-    /**
-     * Returns the total count of items in the bot's inventory AND any currently open/cached container.
-     * DEPRECATED on server: "Screen" is a client concept. This is an alias for getItemCount().
-     */
-    @Deprecated
-    public int getItemCountScreen(Item... items) {
-        return getItemCount(items);
-    }
+   public boolean hasItemInventoryOnly(Item... items) {
+      return this.inventory.hasItem(items);
+   }
 
-    /**
-     * Alias for getItemCount.
-     */
-    public int getItemCountInventoryOnly(Item... items) {
-        return getItemCount(items);
-    }
+   public boolean hasItem(Item... items) {
+      return this.inventory.hasItem(items);
+   }
 
-    public boolean hasItemInventoryOnly(Item... items) {
-        return inventory.hasItem(items);
-    }
+   public boolean hasItemAll(Item... items) {
+      return Arrays.stream(items).allMatch(xva$0 -> this.hasItem(xva$0));
+   }
 
-    // --- Item Checking ---
+   public boolean hasItem(ItemTarget... targets) {
+      return Arrays.stream(targets).anyMatch(target -> this.hasItem(target.getMatches()));
+   }
 
-    public boolean hasItem(Item... items) {
-        return inventory.hasItem(items);
-    }
+   public boolean hasItemInOffhand(AltoClefController controller, Item item) {
+      ItemStack offhand = StorageHelper.getItemStackInSlot(new Slot(controller.getInventory().offHand, 0));
+      return offhand.getItem() == item;
+   }
 
-    public boolean hasItemAll(Item... items) {
-        return Arrays.stream(items).allMatch(this::hasItem);
-    }
+   public List<Slot> getSlotsWithItemPlayerInventory(boolean includeArmor, Item... items) {
+      return this.inventory.getSlotsWithItemsPlayerInventory(includeArmor, items);
+   }
 
-    public boolean hasItem(ItemTarget... targets) {
-        return Arrays.stream(targets).anyMatch(target -> hasItem(target.getMatches()));
-    }
+   public List<ItemStack> getItemStacksPlayerInventory(boolean includeCursorSlot) {
+      List<ItemStack> stacks = this.inventory.getInventoryStacks();
+      if (includeCursorSlot) {
+         stacks.add(0, this.mod.getSlotHandler().getCursorStack());
+      }
 
-    public boolean hasItemInOffhand(AltoClefController controller, Item item) {
-        ItemStack offhand = StorageHelper.getItemStackInSlot(new Slot(controller.getInventory().offHand, PlayerSlot.OFFHAND_SLOT_INDEX));
-        return offhand.getItem() == item;
-    }
+      return stacks;
+   }
 
-    // --- Slot Access ---
+   public List<Slot> getSlotsThatCanFitInPlayerInventory(ItemStack stack, boolean acceptPartial) {
+      return this.inventory.getSlotsThatCanFit(stack, acceptPartial);
+   }
 
-    /**
-     * Gets all slots in the player's inventory containing any of the specified items.
-     *
-     * @param includeArmor Whether to include armor slots in the search.
-     */
-    public List<Slot> getSlotsWithItemPlayerInventory(boolean includeArmor, Item... items) {
-        return inventory.getSlotsWithItemsPlayerInventory(includeArmor, items);
-    }
+   public Optional<Slot> getSlotThatCanFitInPlayerInventory(ItemStack stack, boolean acceptPartial) {
+      return this.getSlotsThatCanFitInPlayerInventory(stack, acceptPartial).stream().findFirst();
+   }
 
-    /**
-     * Gets all item stacks from the player's inventory.
-     *
-     * @param includeCursorSlot Whether to include the simulated cursor stack.
-     */
-    public List<ItemStack> getItemStacksPlayerInventory(boolean includeCursorSlot) {
-        List<ItemStack> stacks = inventory.getInventoryStacks();
-        if (includeCursorSlot) {
-            stacks.add(0, mod.getSlotHandler().getCursorStack());
-        }
-        return stacks;
-    }
+   public boolean hasEmptyInventorySlot() {
+      return this.inventory.hasEmptySlot();
+   }
 
-    /**
-     * Finds slots in the player's inventory that can fit the given stack.
-     *
-     * @param stack         The stack to fit.
-     * @param acceptPartial Whether to accept slots that can only partially fit the stack.
-     */
-    public List<Slot> getSlotsThatCanFitInPlayerInventory(ItemStack stack, boolean acceptPartial) {
-        return inventory.getSlotsThatCanFit(stack, acceptPartial);
-    }
+   public boolean hasItemContainer(Predicate<ContainerCache> accept, Item... items) {
+      return this.containers.getCachedContainers(accept).stream().anyMatch(cache -> cache.hasItem(items));
+   }
 
-    public Optional<Slot> getSlotThatCanFitInPlayerInventory(ItemStack stack, boolean acceptPartial) {
-        return getSlotsThatCanFitInPlayerInventory(stack, acceptPartial).stream().findFirst();
-    }
+   public Optional<ContainerCache> getContainerAtPosition(BlockPos pos) {
+      return this.containers.getContainerAtPosition(pos);
+   }
 
-    public boolean hasEmptyInventorySlot() {
-        return inventory.hasEmptySlot();
-    }
+   public List<ContainerCache> getContainersWithItem(Item... items) {
+      return this.containers.getContainersWithItem(items);
+   }
 
-    // --- Container Tracking ---
+   public Optional<ContainerCache> getClosestContainerWithItem(Vec3 pos, Item... items) {
+      return this.containers
+         .getCachedContainers(c -> c.hasItem(items))
+         .stream()
+         .min(Comparator.comparingDouble(c -> c.getBlockPos().distSqr(new Vec3i((int)pos.x(), (int)pos.y(), (int)pos.z()))));
+   }
 
-    public boolean hasItemContainer(Predicate<ContainerCache> accept, Item... items) {
-        return containers.getCachedContainers(accept).stream().anyMatch(cache -> cache.hasItem(items));
-    }
+   public Optional<BlockPos> getLastBlockPosInteraction() {
+      return this.containers.getLastInteractedContainer();
+   }
 
-    public Optional<ContainerCache> getContainerAtPosition(BlockPos pos) {
-        return containers.getContainerAtPosition(pos);
-    }
+   public void registerSlotAction() {
+      this.inventory.setDirty();
+   }
 
-    public List<ContainerCache> getContainersWithItem(Item... items) {
-        return containers.getContainersWithItem(items);
-    }
+   @Override
+   protected void updateState() {
+      this.inventory.ensureUpdated();
+      this.containers.ensureUpdated();
+   }
 
-    public Optional<ContainerCache> getClosestContainerWithItem(Vec3d pos, Item... items) {
-        return containers.getCachedContainers(c -> c.hasItem(items)).stream()
-                .min(Comparator.comparingDouble(c -> c.getBlockPos().getSquaredDistance(new Vec3i((int) pos.getX(), (int) pos.getY(), (int) pos.getZ()))));
-    }
-
-    public Optional<BlockPos> getLastBlockPosInteraction() {
-        return containers.getLastInteractedContainer();
-    }
-
-    // --- State Management ---
-
-    public void registerSlotAction() {
-        inventory.setDirty();
-    }
-
-    @Override
-    protected void updateState() {
-        inventory.ensureUpdated();
-        containers.ensureUpdated();
-    }
-
-    @Override
-    protected void reset() {
-        inventory.reset();
-        containers.reset();
-    }
+   @Override
+   protected void reset() {
+      this.inventory.reset();
+      this.containers.reset();
+   }
 }

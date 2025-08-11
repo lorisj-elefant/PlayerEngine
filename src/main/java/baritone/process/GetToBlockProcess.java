@@ -1,20 +1,3 @@
-/*
- * This file is part of Baritone.
- *
- * Baritone is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Baritone is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
- */
-
 package baritone.process;
 
 import baritone.Automatone;
@@ -36,211 +19,209 @@ import baritone.api.utils.input.Input;
 import baritone.pathing.movement.CalculationContext;
 import baritone.pathing.movement.MovementHelper;
 import baritone.utils.BaritoneProcessHelper;
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 
 public final class GetToBlockProcess extends BaritoneProcessHelper implements IGetToBlockProcess {
+   private BlockOptionalMeta gettingTo;
+   private List<BlockPos> knownLocations;
+   private List<BlockPos> blacklist;
+   private BlockPos start;
+   private int tickCount = 0;
+   private int arrivalTickCount = 0;
 
-    private BlockOptionalMeta gettingTo;
-    private List<BlockPos> knownLocations;
-    private List<BlockPos> blacklist; // locations we failed to calc to
-    private BlockPos start;
+   public GetToBlockProcess(Baritone baritone) {
+      super(baritone);
+   }
 
-    private int tickCount = 0;
-    private int arrivalTickCount = 0;
+   @Override
+   public void getToBlock(BlockOptionalMeta block) {
+      this.onLostControl();
+      this.gettingTo = block;
+      this.start = this.ctx.feetPos();
+      this.blacklist = new ArrayList<>();
+      this.arrivalTickCount = 0;
+      this.rescan(new ArrayList<>(), new CalculationContext(this.baritone));
+   }
 
-    public GetToBlockProcess(Baritone baritone) {
-        super(baritone);
-    }
+   @Override
+   public boolean isActive() {
+      return this.gettingTo != null;
+   }
 
-    @Override
-    public void getToBlock(BlockOptionalMeta block) {
-        onLostControl();
-        gettingTo = block;
-        start = ctx.feetPos();
-        blacklist = new ArrayList<>();
-        arrivalTickCount = 0;
-        rescan(new ArrayList<>(), new CalculationContext(baritone));
-    }
+   @Override
+   public synchronized PathingCommand onTick(boolean calcFailed, boolean isSafeToCancel) {
+      if (this.knownLocations == null) {
+         this.rescan(new ArrayList<>(), new CalculationContext(this.baritone));
+      }
 
-    @Override
-    public boolean isActive() {
-        return gettingTo != null;
-    }
+      if (this.knownLocations.isEmpty()) {
+         if (this.baritone.settings().exploreForBlocks.get() && !calcFailed) {
+            return new PathingCommand(new GoalRunAway(1.0, this.start) {
+               @Override
+               public boolean isInGoal(int x, int y, int z) {
+                  return false;
+               }
 
-    @Override
-    public synchronized PathingCommand onTick(boolean calcFailed, boolean isSafeToCancel) {
-        if (knownLocations == null) {
-            rescan(new ArrayList<>(), new CalculationContext(baritone));
-        }
-        if (knownLocations.isEmpty()) {
-            if (baritone.settings().exploreForBlocks.get() && !calcFailed) {
-                return new PathingCommand(new GoalRunAway(1, start) {
-                    @Override
-                    public boolean isInGoal(int x, int y, int z) {
-                        return false;
-                    }
-
-                    @Override
-                    public double heuristic() {
-                        return Double.NEGATIVE_INFINITY;
-                    }
-                }, PathingCommandType.FORCE_REVALIDATE_GOAL_AND_PATH);
-            }
-            logDirect("No known locations of " + gettingTo + ", canceling GetToBlock");
+               @Override
+               public double heuristic() {
+                  return Double.NEGATIVE_INFINITY;
+               }
+            }, PathingCommandType.FORCE_REVALIDATE_GOAL_AND_PATH);
+         } else {
+            this.logDirect("No known locations of " + this.gettingTo + ", canceling GetToBlock");
             if (isSafeToCancel) {
-                onLostControl();
+               this.onLostControl();
             }
+
             return new PathingCommand(null, PathingCommandType.CANCEL_AND_SET_GOAL);
-        }
-        Goal goal = new GoalComposite(knownLocations.stream().map(this::createGoal).toArray(Goal[]::new));
-        if (calcFailed) {
-            if (baritone.settings().blacklistClosestOnFailure.get()) {
-                logDirect("Unable to find any path to " + gettingTo + ", blacklisting presumably unreachable closest instances...");
-                blacklistClosest();
-                return onTick(false, isSafeToCancel); // gamer moment
+         }
+      } else {
+         Goal goal = new GoalComposite(this.knownLocations.stream().map(this::createGoal).toArray(Goal[]::new));
+         if (calcFailed) {
+            if (this.baritone.settings().blacklistClosestOnFailure.get()) {
+               this.logDirect("Unable to find any path to " + this.gettingTo + ", blacklisting presumably unreachable closest instances...");
+               this.blacklistClosest();
+               return this.onTick(false, isSafeToCancel);
             } else {
-                logDirect("Unable to find any path to " + gettingTo + ", canceling GetToBlock");
-                if (isSafeToCancel) {
-                    onLostControl();
-                }
-                return new PathingCommand(goal, PathingCommandType.CANCEL_AND_SET_GOAL);
+               this.logDirect("Unable to find any path to " + this.gettingTo + ", canceling GetToBlock");
+               if (isSafeToCancel) {
+                  this.onLostControl();
+               }
+
+               return new PathingCommand(goal, PathingCommandType.CANCEL_AND_SET_GOAL);
             }
-        }
-        int mineGoalUpdateInterval = baritone.settings().mineGoalUpdateInterval.get();
-        if (mineGoalUpdateInterval != 0 && tickCount++ % mineGoalUpdateInterval == 0) { // big brain
-            List<BlockPos> current = new ArrayList<>(knownLocations);
-            CalculationContext context = new CalculationContext(baritone, true);
-            Automatone.getExecutor().execute(() -> rescan(current, context));
-        }
-        if (goal.isInGoal(ctx.feetPos()) && goal.isInGoal(baritone.getPathingBehavior().pathStart()) && isSafeToCancel) {
-            // we're there
-            if (rightClickOnArrival(gettingTo.getBlock())) {
-                if (rightClick()) {
-                    onLostControl();
-                    return new PathingCommand(null, PathingCommandType.CANCEL_AND_SET_GOAL);
-                }
-            } else {
-                onLostControl();
-                return new PathingCommand(null, PathingCommandType.CANCEL_AND_SET_GOAL);
+         } else {
+            int mineGoalUpdateInterval = this.baritone.settings().mineGoalUpdateInterval.get();
+            if (mineGoalUpdateInterval != 0 && this.tickCount++ % mineGoalUpdateInterval == 0) {
+               List<BlockPos> current = new ArrayList<>(this.knownLocations);
+               CalculationContext context = new CalculationContext(this.baritone, true);
+               Automatone.getExecutor().execute(() -> this.rescan(current, context));
             }
-        }
-        return new PathingCommand(goal, PathingCommandType.REVALIDATE_GOAL_AND_PATH);
-    }
 
-    // blacklist the closest block and its adjacent blocks
-    public synchronized boolean blacklistClosest() {
-        List<BlockPos> newBlacklist = new ArrayList<>();
-        knownLocations.stream().min(Comparator.comparingDouble(ctx.feetPos()::getSquaredDistance)).ifPresent(newBlacklist::add);
-        outer:
-        while (true) {
-            for (BlockPos known : knownLocations) {
-                for (BlockPos blacklist : newBlacklist) {
-                    if (areAdjacent(known, blacklist)) { // directly adjacent
-                        newBlacklist.add(known);
-                        knownLocations.remove(known);
-                        continue outer;
-                    }
-                }
+            if (goal.isInGoal(this.ctx.feetPos()) && goal.isInGoal(this.baritone.getPathingBehavior().pathStart()) && isSafeToCancel) {
+               if (!this.rightClickOnArrival(this.gettingTo.getBlock())) {
+                  this.onLostControl();
+                  return new PathingCommand(null, PathingCommandType.CANCEL_AND_SET_GOAL);
+               }
+
+               if (this.rightClick()) {
+                  this.onLostControl();
+                  return new PathingCommand(null, PathingCommandType.CANCEL_AND_SET_GOAL);
+               }
             }
-            // i can't do break; (codacy gets mad), and i can't do if(true){break}; (codacy gets mad)
-            // so i will do this
-            switch (newBlacklist.size()) {
-                default:
-                    break outer;
+
+            return new PathingCommand(goal, PathingCommandType.REVALIDATE_GOAL_AND_PATH);
+         }
+      }
+   }
+
+   @Override
+   public synchronized boolean blacklistClosest() {
+      List<BlockPos> newBlacklist = new ArrayList<>();
+      this.knownLocations.stream().min(Comparator.comparingDouble(this.ctx.feetPos()::distSqr)).ifPresent(newBlacklist::add);
+
+      label32:
+      while (true) {
+         for (BlockPos known : this.knownLocations) {
+            for (BlockPos blacklist : newBlacklist) {
+               if (this.areAdjacent(known, blacklist)) {
+                  newBlacklist.add(known);
+                  this.knownLocations.remove(known);
+                  continue label32;
+               }
             }
-        }
-        baritone.logDebug("Blacklisting unreachable locations " + newBlacklist);
-        blacklist.addAll(newBlacklist);
-        return !newBlacklist.isEmpty();
-    }
+         }
 
-    // safer than direct double comparison from distanceSq
-    private boolean areAdjacent(BlockPos posA, BlockPos posB) {
-        int diffX = Math.abs(posA.getX() - posB.getX());
-        int diffY = Math.abs(posA.getY() - posB.getY());
-        int diffZ = Math.abs(posA.getZ() - posB.getZ());
-        return (diffX + diffY + diffZ) == 1;
-    }
+         switch (newBlacklist.size()) {
+            default:
+               this.baritone.logDebug("Blacklisting unreachable locations " + newBlacklist);
+               this.blacklist.addAll(newBlacklist);
+               return !newBlacklist.isEmpty();
+         }
+      }
+   }
 
-    @Override
-    public synchronized void onLostControl() {
-        gettingTo = null;
-        knownLocations = null;
-        start = null;
-        blacklist = null;
-        baritone.getInputOverrideHandler().clearAllKeys();
-    }
+   private boolean areAdjacent(BlockPos posA, BlockPos posB) {
+      int diffX = Math.abs(posA.getX() - posB.getX());
+      int diffY = Math.abs(posA.getY() - posB.getY());
+      int diffZ = Math.abs(posA.getZ() - posB.getZ());
+      return diffX + diffY + diffZ == 1;
+   }
 
-    @Override
-    public String displayName0() {
-        if (knownLocations.isEmpty()) {
-            return "Exploring randomly to find " + gettingTo + ", no known locations";
-        }
-        return "Get To " + gettingTo + ", " + knownLocations.size() + " known locations";
-    }
+   @Override
+   public synchronized void onLostControl() {
+      this.gettingTo = null;
+      this.knownLocations = null;
+      this.start = null;
+      this.blacklist = null;
+      this.baritone.getInputOverrideHandler().clearAllKeys();
+   }
 
-    private synchronized void rescan(List<BlockPos> known, CalculationContext context) {
-        List<BlockPos> positions = MineProcess.searchWorld(context, new BlockOptionalMetaLookup(gettingTo), 64, known, blacklist, Collections.emptyList());
-        positions.removeIf(blacklist::contains);
-        knownLocations = positions;
-    }
+   @Override
+   public String displayName0() {
+      return this.knownLocations.isEmpty()
+         ? "Exploring randomly to find " + this.gettingTo + ", no known locations"
+         : "Get To " + this.gettingTo + ", " + this.knownLocations.size() + " known locations";
+   }
 
-    private Goal createGoal(BlockPos pos) {
-        if (walkIntoInsteadOfAdjacent(gettingTo.getBlock())) {
-            return new GoalTwoBlocks(pos);
-        }
-        if (blockOnTopMustBeRemoved(gettingTo.getBlock()) && MovementHelper.isBlockNormalCube(baritone.bsi.get0(pos.up()))) { // TODO this should be the check for chest openability
-            return new GoalBlock(pos.up());
-        }
-        return new GoalGetToBlock(pos);
-    }
+   private synchronized void rescan(List<BlockPos> known, CalculationContext context) {
+      List<BlockPos> positions = MineProcess.searchWorld(
+         context, new BlockOptionalMetaLookup(this.gettingTo), 64, known, this.blacklist, Collections.emptyList()
+      );
+      positions.removeIf(this.blacklist::contains);
+      this.knownLocations = positions;
+   }
 
-    private boolean rightClick() {
-        for (BlockPos pos : knownLocations) {
-            Optional<Rotation> reachable = RotationUtils.reachable(ctx.entity(), pos, ctx.playerController().getBlockReachDistance());
-            if (reachable.isPresent()) {
-                baritone.getLookBehavior().updateTarget(reachable.get(), true);
-                if (knownLocations.contains(ctx.getSelectedBlock().orElse(null))) {
-                    baritone.getInputOverrideHandler().setInputForceState(Input.CLICK_RIGHT, true); // TODO find some way to right click even if we're in an ESC menu
-                }
-                if (arrivalTickCount++ > 20) {
-                    logDirect("Right click timed out");
-                    return true;
-                }
-                return false; // trying to right click, will do it next tick or so
+   private Goal createGoal(BlockPos pos) {
+      if (this.walkIntoInsteadOfAdjacent(this.gettingTo.getBlock())) {
+         return new GoalTwoBlocks(pos);
+      } else {
+         return (Goal)(this.blockOnTopMustBeRemoved(this.gettingTo.getBlock()) && MovementHelper.isBlockNormalCube(this.baritone.bsi.get0(pos.above()))
+            ? new GoalBlock(pos.above())
+            : new GoalGetToBlock(pos));
+      }
+   }
+
+   private boolean rightClick() {
+      for (BlockPos pos : this.knownLocations) {
+         Optional<Rotation> reachable = RotationUtils.reachable(this.ctx.entity(), pos, this.ctx.playerController().getBlockReachDistance());
+         if (reachable.isPresent()) {
+            this.baritone.getLookBehavior().updateTarget(reachable.get(), true);
+            if (this.knownLocations.contains(this.ctx.getSelectedBlock().orElse(null))) {
+               this.baritone.getInputOverrideHandler().setInputForceState(Input.CLICK_RIGHT, true);
             }
-        }
-        logDirect("Arrived but failed to right click open");
-        return true;
-    }
 
-    private boolean walkIntoInsteadOfAdjacent(Block block) {
-        if (!baritone.settings().enterPortal.get()) {
+            if (this.arrivalTickCount++ > 20) {
+               this.logDirect("Right click timed out");
+               return true;
+            }
+
             return false;
-        }
-        return block == Blocks.NETHER_PORTAL;
-    }
+         }
+      }
 
-    private boolean rightClickOnArrival(Block block) {
-        if (!baritone.settings().rightClickContainerOnArrival.get()) {
-            return false;
-        }
-        return block == Blocks.CRAFTING_TABLE || block == Blocks.FURNACE || block == Blocks.ENDER_CHEST || block == Blocks.CHEST || block == Blocks.TRAPPED_CHEST;
-    }
+      this.logDirect("Arrived but failed to right click open");
+      return true;
+   }
 
-    private boolean blockOnTopMustBeRemoved(Block block) {
-        if (!rightClickOnArrival(block)) { // only if we plan to actually open it on arrival
-            return false;
-        }
-        // only these chests; you can open a crafting table or furnace even with a block on top
-        return block == Blocks.ENDER_CHEST || block == Blocks.CHEST || block == Blocks.TRAPPED_CHEST;
-    }
+   private boolean walkIntoInsteadOfAdjacent(Block block) {
+      return !this.baritone.settings().enterPortal.get() ? false : block == Blocks.NETHER_PORTAL;
+   }
+
+   private boolean rightClickOnArrival(Block block) {
+      return !this.baritone.settings().rightClickContainerOnArrival.get()
+         ? false
+         : block == Blocks.CRAFTING_TABLE || block == Blocks.FURNACE || block == Blocks.ENDER_CHEST || block == Blocks.CHEST || block == Blocks.TRAPPED_CHEST;
+   }
+
+   private boolean blockOnTopMustBeRemoved(Block block) {
+      return !this.rightClickOnArrival(block) ? false : block == Blocks.ENDER_CHEST || block == Blocks.CHEST || block == Blocks.TRAPPED_CHEST;
+   }
 }

@@ -3,30 +3,29 @@ package adris.altoclef.trackers;
 import adris.altoclef.AltoClefController;
 
 public abstract class Tracker {
-    protected AltoClefController mod;
+   protected AltoClefController mod;
+   private boolean dirty = true;
 
-    private boolean dirty = true;
+   public Tracker(TrackerManager manager) {
+      manager.addTracker(this);
+   }
 
-    public Tracker(TrackerManager manager) {
-        manager.addTracker(this);
-    }
+   public void setDirty() {
+      this.dirty = true;
+   }
 
-    public void setDirty() {
-        this.dirty = true;
-    }
+   protected boolean isDirty() {
+      return this.dirty;
+   }
 
-    protected boolean isDirty() {
-        return this.dirty;
-    }
+   public void ensureUpdated() {
+      if (this.isDirty()) {
+         this.updateState();
+         this.dirty = false;
+      }
+   }
 
-    public void ensureUpdated() {
-        if (isDirty()) {
-            updateState();
-            this.dirty = false;
-        }
-    }
+   protected abstract void updateState();
 
-    protected abstract void updateState();
-
-    protected abstract void reset();
+   protected abstract void reset();
 }

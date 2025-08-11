@@ -8,45 +8,50 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import net.minecraft.item.Item;
-import net.minecraft.registry.Registries;
-import net.minecraft.util.Identifier;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
 
 public class ItemDeserializer extends StdDeserializer<Object> {
-    public ItemDeserializer() {
-        this(null);
-    }
+   public ItemDeserializer() {
+      this(null);
+   }
 
-    public ItemDeserializer(Class<Object> vc) {
-        super(vc);
-    }
+   public ItemDeserializer(Class<Object> vc) {
+      super(vc);
+   }
 
-    public Object deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
-        List<Item> result = new ArrayList<>();
-        if (p.getCurrentToken() != JsonToken.START_ARRAY)
-            throw new JsonParseException(p, "Start array expected");
-        while (p.nextToken() != JsonToken.END_ARRAY) {
+   @Override
+   public Object deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+      List<Item> result = new ArrayList<>();
+      if (p.getCurrentToken() != JsonToken.START_ARRAY) {
+         throw new JsonParseException(p, "Start array expected");
+      } else {
+         while (p.nextToken() != JsonToken.END_ARRAY) {
             Item item = null;
             if (p.getCurrentToken() == JsonToken.VALUE_NUMBER_INT) {
-                int rawId = p.getIntValue();
-                item = Item.byRawId(rawId);
+               int rawId = p.getIntValue();
+               item = Item.byId(rawId);
             } else {
-                String itemKey = p.getText();
-                itemKey = ItemHelper.trimItemName(itemKey);
-                Identifier identifier = new Identifier(itemKey);
-                if (Registries.ITEM.containsId(identifier)) {
-                    item = (Item) Registries.ITEM.get(identifier);
-                } else {
-                    Debug.logWarning("Invalid item name:" + itemKey + " at " + p.getCurrentLocation().toString());
-                }
+               String itemKey = p.getText();
+               itemKey = ItemHelper.trimItemName(itemKey);
+               ResourceLocation identifier = new ResourceLocation(itemKey);
+               if (BuiltInRegistries.ITEM.containsKey(identifier)) {
+                  item = (Item)BuiltInRegistries.ITEM.get(identifier);
+               } else {
+                  Debug.logWarning("Invalid item name:" + itemKey + " at " + p.getCurrentLocation().toString());
+               }
             }
-            if (item != null)
-                result.add(item);
-        }
-        return result;
-    }
+
+            if (item != null) {
+               result.add(item);
+            }
+         }
+
+         return result;
+      }
+   }
 }

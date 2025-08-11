@@ -1,20 +1,3 @@
-/*
- * This file is part of Baritone.
- *
- * Baritone is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Baritone is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
- */
-
 package baritone;
 
 import baritone.api.IBaritone;
@@ -46,190 +29,158 @@ import baritone.utils.BlockStateInterface;
 import baritone.utils.InputOverrideHandler;
 import baritone.utils.PathingControlManager;
 import baritone.utils.player.EntityContext;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.world.entity.LivingEntity;
 
-/**
- * @author Brady
- * @since 7/31/2018
- */
 public class Baritone implements IBaritone {
+   private final Settings settings;
+   private final GameEventHandler gameEventHandler;
+   private final PathingBehavior pathingBehavior;
+   private final LookBehavior lookBehavior;
+   private final MemoryBehavior memoryBehavior;
+   private final InventoryBehavior inventoryBehavior;
+   private final InputOverrideHandler inputOverrideHandler;
+   private final FollowProcess followProcess;
+   private final MineProcess mineProcess;
+   private final GetToBlockProcess getToBlockProcess;
+   private final CustomGoalProcess customGoalProcess;
+   private final BuilderProcess builderProcess;
+   private final ExploreProcess exploreProcess;
+   private final BackfillProcess backfillProcess;
+   private final FarmProcess farmProcess;
+   private final FishingProcess fishingProcess;
+   private final IBaritoneProcess execControlProcess;
+   private final PathingControlManager pathingControlManager;
+   private final BaritoneCommandManager commandManager;
+   private final IEntityContext playerContext;
+   public BlockStateInterface bsi;
+   public AltoClefSettings altoClefSettings = new AltoClefSettings();
 
-    private final Settings settings;
-    private final GameEventHandler gameEventHandler;
+   public Baritone(LivingEntity player) {
+      this.settings = new Settings();
+      this.gameEventHandler = new GameEventHandler(this);
+      this.playerContext = new EntityContext(player);
+      this.pathingBehavior = new PathingBehavior(this);
+      this.lookBehavior = new LookBehavior(this);
+      this.memoryBehavior = new MemoryBehavior(this);
+      this.inventoryBehavior = new InventoryBehavior(this);
+      this.inputOverrideHandler = new InputOverrideHandler(this);
+      this.pathingControlManager = new PathingControlManager(this);
+      this.pathingControlManager.registerProcess(this.followProcess = new FollowProcess(this));
+      this.pathingControlManager.registerProcess(this.mineProcess = new MineProcess(this));
+      this.pathingControlManager.registerProcess(this.customGoalProcess = new CustomGoalProcess(this));
+      this.pathingControlManager.registerProcess(this.getToBlockProcess = new GetToBlockProcess(this));
+      this.pathingControlManager.registerProcess(this.builderProcess = new BuilderProcess(this));
+      this.pathingControlManager.registerProcess(this.exploreProcess = new ExploreProcess(this));
+      this.pathingControlManager.registerProcess(this.backfillProcess = new BackfillProcess(this));
+      this.pathingControlManager.registerProcess(this.farmProcess = new FarmProcess(this));
+      this.pathingControlManager.registerProcess(this.fishingProcess = new FishingProcess(this));
+      this.commandManager = new BaritoneCommandManager(this);
+      this.execControlProcess = DefaultCommands.controlCommands.registerProcess(this);
+   }
 
-    private final PathingBehavior pathingBehavior;
-    private final LookBehavior lookBehavior;
-    private final MemoryBehavior memoryBehavior;
-    private final InventoryBehavior inventoryBehavior;
-    private final InputOverrideHandler inputOverrideHandler;
+   public PathingControlManager getPathingControlManager() {
+      return this.pathingControlManager;
+   }
 
-    private final FollowProcess followProcess;
-    private final MineProcess mineProcess;
-    private final GetToBlockProcess getToBlockProcess;
-    private final CustomGoalProcess customGoalProcess;
-    private final BuilderProcess builderProcess;
-    private final ExploreProcess exploreProcess;
-    private final BackfillProcess backfillProcess;
-    private final FarmProcess farmProcess;
-    private final FishingProcess fishingProcess;
-    private final IBaritoneProcess execControlProcess;
+   public void registerBehavior(Behavior behavior) {
+      this.gameEventHandler.registerEventListener(behavior);
+   }
 
-    private final PathingControlManager pathingControlManager;
-    private final BaritoneCommandManager commandManager;
+   public InputOverrideHandler getInputOverrideHandler() {
+      return this.inputOverrideHandler;
+   }
 
-    private final IEntityContext playerContext;
+   public CustomGoalProcess getCustomGoalProcess() {
+      return this.customGoalProcess;
+   }
 
-    public BlockStateInterface bsi;
-    public AltoClefSettings altoClefSettings;
+   public GetToBlockProcess getGetToBlockProcess() {
+      return this.getToBlockProcess;
+   }
 
-    public Baritone(LivingEntity player) {
-        this.altoClefSettings = new AltoClefSettings();
-        this.settings = new Settings();
-        this.gameEventHandler = new GameEventHandler(this);
+   @Override
+   public IEntityContext getEntityContext() {
+      return this.playerContext;
+   }
 
-        // Define this before behaviors try and get it, or else it will be null and the builds will fail!
-        this.playerContext = new EntityContext(player);
+   public MemoryBehavior getMemoryBehavior() {
+      return this.memoryBehavior;
+   }
 
-        {
-            // the Behavior constructor calls baritone.registerBehavior(this) so this populates the behaviors arraylist
-            pathingBehavior = new PathingBehavior(this);
-            lookBehavior = new LookBehavior(this);
-            memoryBehavior = new MemoryBehavior(this);
-            inventoryBehavior = new InventoryBehavior(this);
-            inputOverrideHandler = new InputOverrideHandler(this);
-        }
+   public FollowProcess getFollowProcess() {
+      return this.followProcess;
+   }
 
-        this.pathingControlManager = new PathingControlManager(this);
-        {
-            this.pathingControlManager.registerProcess(followProcess = new FollowProcess(this));
-            this.pathingControlManager.registerProcess(mineProcess = new MineProcess(this));
-            this.pathingControlManager.registerProcess(customGoalProcess = new CustomGoalProcess(this)); // very high iq
-            this.pathingControlManager.registerProcess(getToBlockProcess = new GetToBlockProcess(this));
-            this.pathingControlManager.registerProcess(builderProcess = new BuilderProcess(this));
-            this.pathingControlManager.registerProcess(exploreProcess = new ExploreProcess(this));
-            this.pathingControlManager.registerProcess(backfillProcess = new BackfillProcess(this));
-            this.pathingControlManager.registerProcess(farmProcess = new FarmProcess(this));
-            this.pathingControlManager.registerProcess(fishingProcess = new FishingProcess(this));
-        }
+   public BuilderProcess getBuilderProcess() {
+      return this.builderProcess;
+   }
 
-        this.commandManager = new BaritoneCommandManager(this);
-        this.execControlProcess = DefaultCommands.controlCommands.registerProcess(this);
-    }
+   public InventoryBehavior getInventoryBehavior() {
+      return this.inventoryBehavior;
+   }
 
-    @Override
-    public PathingControlManager getPathingControlManager() {
-        return this.pathingControlManager;
-    }
+   public LookBehavior getLookBehavior() {
+      return this.lookBehavior;
+   }
 
-    public void registerBehavior(Behavior behavior) {
-        this.gameEventHandler.registerEventListener(behavior);
-    }
+   public ExploreProcess getExploreProcess() {
+      return this.exploreProcess;
+   }
 
-    @Override
-    public InputOverrideHandler getInputOverrideHandler() {
-        return this.inputOverrideHandler;
-    }
+   public MineProcess getMineProcess() {
+      return this.mineProcess;
+   }
 
-    @Override
-    public CustomGoalProcess getCustomGoalProcess() {
-        return this.customGoalProcess;
-    }
+   public FarmProcess getFarmProcess() {
+      return this.farmProcess;
+   }
 
-    @Override
-    public GetToBlockProcess getGetToBlockProcess() {
-        return this.getToBlockProcess;
-    }
+   public PathingBehavior getPathingBehavior() {
+      return this.pathingBehavior;
+   }
 
-    @Override
-    public IEntityContext getEntityContext() {
-        return this.playerContext;
-    }
+   public WorldProvider getWorldProvider() {
+      return (WorldProvider)IWorldProvider.KEY.get(this.getEntityContext().world());
+   }
 
-    public MemoryBehavior getMemoryBehavior() {
-        return this.memoryBehavior;
-    }
+   @Override
+   public IEventBus getGameEventHandler() {
+      return this.gameEventHandler;
+   }
 
-    @Override
-    public FollowProcess getFollowProcess() {
-        return this.followProcess;
-    }
+   public BaritoneCommandManager getCommandManager() {
+      return this.commandManager;
+   }
 
-    @Override
-    public BuilderProcess getBuilderProcess() {
-        return this.builderProcess;
-    }
+   public IBaritoneProcess getExecControlProcess() {
+      return this.execControlProcess;
+   }
 
-    public InventoryBehavior getInventoryBehavior() {
-        return this.inventoryBehavior;
-    }
+   @Override
+   public boolean isActive() {
+      return this.pathingControlManager.isActive();
+   }
 
-    @Override
-    public LookBehavior getLookBehavior() {
-        return this.lookBehavior;
-    }
+   @Override
+   public Settings settings() {
+      return this.settings;
+   }
 
-    public ExploreProcess getExploreProcess() {
-        return this.exploreProcess;
-    }
+   public AltoClefSettings getExtraBaritoneSettings() {
+      return this.altoClefSettings;
+   }
 
-    @Override
-    public MineProcess getMineProcess() {
-        return this.mineProcess;
-    }
+   @Override
+   public void logDebug(String message) {
+      Automatone.LOGGER.debug(message);
+   }
 
-    public FarmProcess getFarmProcess() {
-        return this.farmProcess;
-    }
+   @Override
+   public void serverTick() {
+      this.getGameEventHandler().onTickServer();
+   }
 
-    @Override
-    public PathingBehavior getPathingBehavior() {
-        return this.pathingBehavior;
-    }
-
-    @Override
-    public WorldProvider getWorldProvider() {
-        return (WorldProvider) IWorldProvider.KEY.get(this.getEntityContext().world());
-    }
-
-    @Override
-    public IEventBus getGameEventHandler() {
-        return this.gameEventHandler;
-    }
-
-    @Override
-    public BaritoneCommandManager getCommandManager() {
-        return this.commandManager;
-    }
-
-    public IBaritoneProcess getExecControlProcess() {
-        return execControlProcess;
-    }
-
-    @Override
-    public boolean isActive() {
-        return this.pathingControlManager.isActive();
-    }
-
-    public Settings settings() {
-        return this.settings;
-    }
-
-    public AltoClefSettings getExtraBaritoneSettings() {
-        return altoClefSettings;
-    }
-
-    @Override
-    public void logDebug(String message) {
-        Automatone.LOGGER.debug(message);
-    }
-
-    @Override
-    public void serverTick() {
-        this.getGameEventHandler().onTickServer();
-    }
-
-    public FishingProcess getFishingProcess() {
-        return this.fishingProcess;
-    }
+   public FishingProcess getFishingProcess() {
+      return this.fishingProcess;
+   }
 }

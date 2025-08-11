@@ -6,143 +6,132 @@ import adris.altoclef.tasks.construction.compound.ConstructNetherPortalObsidianT
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.Dimension;
 import adris.altoclef.util.helpers.WorldHelper;
-import net.minecraft.block.Blocks;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3i;
-
 import java.util.Optional;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
+import net.minecraft.world.level.block.Blocks;
 
-/**
- * Some generic tasks require us to go to the nether/overworld/end.
- * <p>
- * The user should be able to specify how this should be done in settings
- * (ex, craft a new portal from scratch or check particular portal areas first or highway or whatever)
- */
 public class DefaultGoToDimensionTask extends Task {
+   private final Dimension target;
+   private final Task cachedNetherBucketConstructionTask = new ConstructNetherPortalBucketTask();
 
-    private final Dimension target;
-    // Cached to keep build properties alive if this task pauses/resumes.
-    private final Task cachedNetherBucketConstructionTask = new ConstructNetherPortalBucketTask();
+   public DefaultGoToDimensionTask(Dimension target) {
+      this.target = target;
+   }
 
-    public DefaultGoToDimensionTask(Dimension target) {
-        this.target = target;
-    }
+   @Override
+   protected void onStart() {
+   }
 
-    @Override
-    protected void onStart() {
-
-    }
-
-    @Override
-    protected Task onTick() {
-        if (WorldHelper.getCurrentDimension(controller) == target) return null;
-
-        switch (target) {
-            case OVERWORLD:
-                switch (WorldHelper.getCurrentDimension(controller)) {
-                    case NETHER:
-                        return goToOverworldFromNetherTask();
-                    case END:
-                        return goToOverworldFromEndTask();
-                }
-                break;
+   @Override
+   protected Task onTick() {
+      if (WorldHelper.getCurrentDimension(this.controller) == this.target) {
+         return null;
+      } else {
+         label25:
+         switch (this.target) {
             case NETHER:
-                switch (WorldHelper.getCurrentDimension(controller)) {
-                    case OVERWORLD:
-                        return goToNetherFromOverworldTask();
-                    case END:
-                        // First go to the overworld
-                        return goToOverworldFromEndTask();
-                }
-                break;
+               switch (WorldHelper.getCurrentDimension(this.controller)) {
+                  case END:
+                     return this.goToOverworldFromEndTask();
+                  case OVERWORLD:
+                     return this.goToNetherFromOverworldTask();
+                  default:
+                     break label25;
+               }
             case END:
-                switch (WorldHelper.getCurrentDimension(controller)) {
-                    case NETHER:
-                        // First go to the overworld
-                        return goToOverworldFromNetherTask();
-                    case OVERWORLD:
-                        return goToEndTask();
-                }
-                break;
-        }
+               switch (WorldHelper.getCurrentDimension(this.controller)) {
+                  case NETHER:
+                     return this.goToOverworldFromNetherTask();
+                  case OVERWORLD:
+                     return this.goToEndTask();
+                  default:
+                     break label25;
+               }
+            case OVERWORLD:
+               switch (WorldHelper.getCurrentDimension(this.controller)) {
+                  case NETHER:
+                     return this.goToOverworldFromNetherTask();
+                  case END:
+                     return this.goToOverworldFromEndTask();
+               }
+         }
 
-        setDebugState(WorldHelper.getCurrentDimension(controller) + " -> " + target + " is NOT IMPLEMENTED YET!");
-        return null;
-    }
+         this.setDebugState(WorldHelper.getCurrentDimension(this.controller) + " -> " + this.target + " is NOT IMPLEMENTED YET!");
+         return null;
+      }
+   }
 
-    @Override
-    protected void onStop(Task interruptTask) {
+   @Override
+   protected void onStop(Task interruptTask) {
+   }
 
-    }
+   @Override
+   protected boolean isEqual(Task other) {
+      return other instanceof DefaultGoToDimensionTask task ? task.target == this.target : false;
+   }
 
-    @Override
-    protected boolean isEqual(Task other) {
-        if (other instanceof DefaultGoToDimensionTask task) {
-            return task.target == target;
-        }
-        return false;
-    }
+   @Override
+   protected String toDebugString() {
+      return "Going to dimension: " + this.target + " (default version)";
+   }
 
-    @Override
-    protected String toDebugString() {
-        return "Going to dimension: " + target + " (default version)";
-    }
+   @Override
+   public boolean isFinished() {
+      return WorldHelper.getCurrentDimension(this.controller) == this.target;
+   }
 
-    @Override
-    public boolean isFinished() {
-        return WorldHelper.getCurrentDimension(controller) == target;
-    }
-
-    private Task goToOverworldFromNetherTask() {
-
-        if (netherPortalIsClose(controller)) {
-            setDebugState("Going to nether portal");
-            return new EnterNetherPortalTask(Dimension.NETHER);
-        }
-
-        Optional<BlockPos> closest = controller.getMiscBlockTracker().getLastUsedNetherPortal(Dimension.NETHER);
-        if (closest.isPresent()) {
-            setDebugState("Going to last nether portal pos");
+   private Task goToOverworldFromNetherTask() {
+      if (this.netherPortalIsClose(this.controller)) {
+         this.setDebugState("Going to nether portal");
+         return new EnterNetherPortalTask(Dimension.NETHER);
+      } else {
+         Optional<BlockPos> closest = this.controller.getMiscBlockTracker().getLastUsedNetherPortal(Dimension.NETHER);
+         if (closest.isPresent()) {
+            this.setDebugState("Going to last nether portal pos");
             return new GetToBlockTask(closest.get());
-        }
+         } else {
+            this.setDebugState("Constructing nether portal with obsidian");
+            return new ConstructNetherPortalObsidianTask();
+         }
+      }
+   }
 
-        setDebugState("Constructing nether portal with obsidian");
-        return new ConstructNetherPortalObsidianTask();
-    }
+   private Task goToOverworldFromEndTask() {
+      this.setDebugState("TODO: Go to center portal (at 0,0). If it doesn't exist, kill ender dragon lol");
+      return null;
+   }
 
-    private Task goToOverworldFromEndTask() {
-        setDebugState("TODO: Go to center portal (at 0,0). If it doesn't exist, kill ender dragon lol");
-        return null;
-    }
+   private Task goToNetherFromOverworldTask() {
+      if (this.netherPortalIsClose(this.controller)) {
+         this.setDebugState("Going to nether portal");
+         return new EnterNetherPortalTask(Dimension.NETHER);
+      } else {
+         return (Task)(switch (this.controller.getModSettings().getOverworldToNetherBehaviour()) {
+            case BUILD_PORTAL_VANILLA -> this.cachedNetherBucketConstructionTask;
+            case GO_TO_HOME_BASE -> new GetToBlockTask(this.controller.getModSettings().getHomeBasePosition());
+         });
+      }
+   }
 
-    private Task goToNetherFromOverworldTask() {
+   private Task goToEndTask() {
+      this.setDebugState("TODO: Get to End, Same as BeatMinecraft");
+      return null;
+   }
 
-        if (netherPortalIsClose(controller)) {
-            setDebugState("Going to nether portal");
-            return new EnterNetherPortalTask(Dimension.NETHER);
-        }
-        return switch (controller.getModSettings().getOverworldToNetherBehaviour()) {
-            case BUILD_PORTAL_VANILLA -> cachedNetherBucketConstructionTask;
-            case GO_TO_HOME_BASE -> new GetToBlockTask(controller.getModSettings().getHomeBasePosition());
-        };
-    }
+   private boolean netherPortalIsClose(AltoClefController mod) {
+      if (!mod.getBlockScanner().anyFound(Blocks.NETHER_PORTAL)) {
+         return false;
+      } else {
+         Optional<BlockPos> closest = mod.getBlockScanner().getNearestBlock(Blocks.NETHER_PORTAL);
+         return closest.isPresent()
+            && closest.get()
+               .closerThan(new Vec3i((int)mod.getPlayer().position().x, (int)mod.getPlayer().position().y, (int)mod.getPlayer().position().z), 2000.0);
+      }
+   }
 
-    private Task goToEndTask() {
-        // Keep in mind that getting to the end requires going to the nether first.
-        setDebugState("TODO: Get to End, Same as BeatMinecraft");
-        return null;
-    }
-
-    private boolean netherPortalIsClose(AltoClefController mod) {
-        if (mod.getBlockScanner().anyFound(Blocks.NETHER_PORTAL)) {
-            Optional<BlockPos> closest = mod.getBlockScanner().getNearestBlock(Blocks.NETHER_PORTAL);
-            return closest.isPresent() && closest.get().isWithinDistance(new Vec3i((int) mod.getPlayer().getPos().x, (int) mod.getPlayer().getPos().y, (int) mod.getPlayer().getPos().z), 2000);
-        }
-        return false;
-    }
-
-    public enum OVERWORLD_TO_NETHER_BEHAVIOUR {
-        BUILD_PORTAL_VANILLA,
-        GO_TO_HOME_BASE
-    }
+   public static enum OVERWORLD_TO_NETHER_BEHAVIOUR {
+      BUILD_PORTAL_VANILLA,
+      GO_TO_HOME_BASE;
+   }
 }

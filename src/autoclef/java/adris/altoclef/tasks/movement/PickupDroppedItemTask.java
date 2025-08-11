@@ -1,8 +1,3 @@
-//
-// Source code recreated from a .class file by IntelliJ IDEA
-// (powered by FernFlower decompiler)
-//
-
 package adris.altoclef.tasks.movement;
 
 import adris.altoclef.AltoClefController;
@@ -18,253 +13,280 @@ import adris.altoclef.util.helpers.StlHelper;
 import adris.altoclef.util.helpers.StorageHelper;
 import adris.altoclef.util.helpers.WorldHelper;
 import adris.altoclef.util.progresscheck.MovementProgressChecker;
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.DoorBlock;
-import net.minecraft.block.FenceBlock;
-import net.minecraft.block.FenceGateBlock;
-import net.minecraft.block.FlowerBlock;
-import net.minecraft.entity.ItemEntity;
-import net.minecraft.item.Item;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.DoorBlock;
+import net.minecraft.world.level.block.FenceBlock;
+import net.minecraft.world.level.block.FenceGateBlock;
+import net.minecraft.world.level.block.FlowerBlock;
+import net.minecraft.world.phys.Vec3;
 
 public class PickupDroppedItemTask extends AbstractDoToClosestObjectTask<ItemEntity> implements ITaskRequiresGrounded {
-    private static final Task getPickaxeFirstTask;
-    private static boolean isGettingPickaxeFirstFlag;
-    private final TimeoutWanderTask wanderTask;
-    private final MovementProgressChecker stuckCheck;
-    private final MovementProgressChecker progressChecker;
-    private final ItemTarget[] itemTargets;
-    private final Set<ItemEntity> blacklist;
-    private final boolean freeInventoryIfFull;
-    Block[] annoyingBlocks;
-    private Task unstuckTask;
-    private AltoClefController mod;
-    private boolean collectingPickaxeForThisResource;
-    private ItemEntity currentDrop;
+   private static final Task getPickaxeFirstTask = new SatisfyMiningRequirementTask(MiningRequirement.STONE);
+   private static boolean isGettingPickaxeFirstFlag = false;
+   private final TimeoutWanderTask wanderTask = new TimeoutWanderTask(5.0F, true);
+   private final MovementProgressChecker stuckCheck = new MovementProgressChecker();
+   private final MovementProgressChecker progressChecker = new MovementProgressChecker();
+   private final ItemTarget[] itemTargets;
+   private final Set<ItemEntity> blacklist = new HashSet<>();
+   private final boolean freeInventoryIfFull;
+   Block[] annoyingBlocks = new Block[]{
+      Blocks.VINE,
+      Blocks.NETHER_SPROUTS,
+      Blocks.CAVE_VINES,
+      Blocks.CAVE_VINES_PLANT,
+      Blocks.TWISTING_VINES,
+      Blocks.TWISTING_VINES_PLANT,
+      Blocks.WEEPING_VINES_PLANT,
+      Blocks.LADDER,
+      Blocks.BIG_DRIPLEAF,
+      Blocks.BIG_DRIPLEAF_STEM,
+      Blocks.SMALL_DRIPLEAF,
+      Blocks.TALL_GRASS,
+      Blocks.GRASS
+   };
+   private Task unstuckTask = null;
+   private AltoClefController mod;
+   private boolean collectingPickaxeForThisResource = false;
+   private ItemEntity currentDrop = null;
 
-    public PickupDroppedItemTask(ItemTarget[] itemTargets, boolean freeInventoryIfFull) {
-        this.wanderTask = new TimeoutWanderTask(5.0F, true);
-        this.stuckCheck = new MovementProgressChecker();
-        this.progressChecker = new MovementProgressChecker();
-        this.blacklist = new HashSet();
-        this.annoyingBlocks = new Block[]{Blocks.VINE, Blocks.NETHER_SPROUTS, Blocks.CAVE_VINES, Blocks.CAVE_VINES_PLANT, Blocks.TWISTING_VINES, Blocks.TWISTING_VINES_PLANT, Blocks.WEEPING_VINES_PLANT, Blocks.LADDER, Blocks.BIG_DRIPLEAF, Blocks.BIG_DRIPLEAF_STEM, Blocks.SMALL_DRIPLEAF, Blocks.TALL_GRASS, Blocks.GRASS};
-        this.unstuckTask = null;
-        this.collectingPickaxeForThisResource = false;
-        this.currentDrop = null;
-        this.itemTargets = itemTargets;
-        this.freeInventoryIfFull = freeInventoryIfFull;
-    }
+   public PickupDroppedItemTask(ItemTarget[] itemTargets, boolean freeInventoryIfFull) {
+      this.itemTargets = itemTargets;
+      this.freeInventoryIfFull = freeInventoryIfFull;
+   }
 
-    public PickupDroppedItemTask(ItemTarget target, boolean freeInventoryIfFull) {
-        this(new ItemTarget[]{target}, freeInventoryIfFull);
-    }
+   public PickupDroppedItemTask(ItemTarget target, boolean freeInventoryIfFull) {
+      this(new ItemTarget[]{target}, freeInventoryIfFull);
+   }
 
-    public PickupDroppedItemTask(Item item, int targetCount, boolean freeInventoryIfFull) {
-        this(new ItemTarget(item, targetCount), freeInventoryIfFull);
-    }
+   public PickupDroppedItemTask(Item item, int targetCount, boolean freeInventoryIfFull) {
+      this(new ItemTarget(item, targetCount), freeInventoryIfFull);
+   }
 
-    public PickupDroppedItemTask(Item item, int targetCount) {
-        this(item, targetCount, true);
-    }
+   public PickupDroppedItemTask(Item item, int targetCount) {
+      this(item, targetCount, true);
+   }
 
-    private static BlockPos[] generateSides(BlockPos pos) {
-        return new BlockPos[]{pos.add(1, 0, 0), pos.add(-1, 0, 0), pos.add(0, 0, 1), pos.add(0, 0, -1), pos.add(1, 0, -1), pos.add(1, 0, 1), pos.add(-1, 0, -1), pos.add(-1, 0, 1)};
-    }
+   private static BlockPos[] generateSides(BlockPos pos) {
+      return new BlockPos[]{
+         pos.offset(1, 0, 0),
+         pos.offset(-1, 0, 0),
+         pos.offset(0, 0, 1),
+         pos.offset(0, 0, -1),
+         pos.offset(1, 0, -1),
+         pos.offset(1, 0, 1),
+         pos.offset(-1, 0, -1),
+         pos.offset(-1, 0, 1)
+      };
+   }
 
-    public static boolean isIsGettingPickaxeFirst(AltoClefController mod) {
-        return isGettingPickaxeFirstFlag && mod.getModSettings().shouldCollectPickaxeFirst();
-    }
+   public static boolean isIsGettingPickaxeFirst(AltoClefController mod) {
+      return isGettingPickaxeFirstFlag && mod.getModSettings().shouldCollectPickaxeFirst();
+   }
 
-    private boolean isAnnoying(AltoClefController mod, BlockPos pos) {
-        if (this.annoyingBlocks != null) {
-            Block[] var3 = this.annoyingBlocks;
-            int var4 = var3.length;
-            byte var5 = 0;
-            if (var5 < var4) {
-                Block AnnoyingBlocks = var3[var5];
-                return mod.getWorld().getBlockState(pos).getBlock() == AnnoyingBlocks || mod.getWorld().getBlockState(pos).getBlock() instanceof DoorBlock || mod.getWorld().getBlockState(pos).getBlock() instanceof FenceBlock || mod.getWorld().getBlockState(pos).getBlock() instanceof FenceGateBlock || mod.getWorld().getBlockState(pos).getBlock() instanceof FlowerBlock;
+   private boolean isAnnoying(AltoClefController mod, BlockPos pos) {
+      if (this.annoyingBlocks != null) {
+         Block[] var3 = this.annoyingBlocks;
+         int var4 = var3.length;
+         byte var5 = 0;
+         if (var5 < var4) {
+            Block AnnoyingBlocks = var3[var5];
+            return mod.getWorld().getBlockState(pos).getBlock() == AnnoyingBlocks
+               || mod.getWorld().getBlockState(pos).getBlock() instanceof DoorBlock
+               || mod.getWorld().getBlockState(pos).getBlock() instanceof FenceBlock
+               || mod.getWorld().getBlockState(pos).getBlock() instanceof FenceGateBlock
+               || mod.getWorld().getBlockState(pos).getBlock() instanceof FlowerBlock;
+         }
+      }
+
+      return false;
+   }
+
+   private BlockPos stuckInBlock(AltoClefController mod) {
+      BlockPos p = mod.getPlayer().blockPosition();
+      if (this.isAnnoying(mod, p)) {
+         return p;
+      } else if (this.isAnnoying(mod, p.above())) {
+         return p.above();
+      } else {
+         BlockPos[] toCheck = generateSides(p);
+
+         for (BlockPos check : toCheck) {
+            if (this.isAnnoying(mod, check)) {
+               return check;
             }
-        }
+         }
 
-        return false;
-    }
+         BlockPos[] toCheckHigh = generateSides(p.above());
 
-    private BlockPos stuckInBlock(AltoClefController mod) {
-        BlockPos p = mod.getPlayer().getBlockPos();
-        if (this.isAnnoying(mod, p)) {
-            return p;
-        } else if (this.isAnnoying(mod, p.up())) {
-            return p.up();
-        } else {
-            BlockPos[] toCheck = generateSides(p);
-
-            for (BlockPos check : toCheck) {
-                if (this.isAnnoying(mod, check)) {
-                    return check;
-                }
+         for (BlockPos checkx : toCheckHigh) {
+            if (this.isAnnoying(mod, checkx)) {
+               return checkx;
             }
+         }
 
-            BlockPos[] toCheckHigh = generateSides(p.up());
+         return null;
+      }
+   }
 
-            for (BlockPos check : toCheckHigh) {
-                if (this.isAnnoying(mod, check)) {
-                    return check;
-                }
-            }
+   private Task getFenceUnstuckTask() {
+      return new SafeRandomShimmyTask();
+   }
 
-            return null;
-        }
-    }
+   public boolean isCollectingPickaxeForThis() {
+      return this.collectingPickaxeForThisResource;
+   }
 
-    private Task getFenceUnstuckTask() {
-        return new SafeRandomShimmyTask();
-    }
+   @Override
+   protected void onStart() {
+      this.wanderTask.reset();
+      this.progressChecker.reset();
+      this.stuckCheck.reset();
+   }
 
-    public boolean isCollectingPickaxeForThis() {
-        return this.collectingPickaxeForThisResource;
-    }
+   @Override
+   protected void onStop(Task interruptTask) {
+   }
 
-    protected void onStart() {
-        this.wanderTask.reset();
-        this.progressChecker.reset();
-        this.stuckCheck.reset();
-    }
-
-    protected void onStop(Task interruptTask) {
-    }
-
-    protected Task onTick() {
-        if (this.wanderTask.isActive() && !this.wanderTask.isFinished()) {
-            this.setDebugState("Wandering.");
-            return this.wanderTask;
-        } else {
-            AltoClefController mod = controller;
-            if (mod.getBaritone().getPathingBehavior().isPathing()) {
-                this.progressChecker.reset();
-            }
-
-            if (this.unstuckTask != null && this.unstuckTask.isActive() && !this.unstuckTask.isFinished() && this.stuckInBlock(mod) != null) {
-                this.setDebugState("Getting unstuck from block.");
-                this.stuckCheck.reset();
-                mod.getBaritone().getCustomGoalProcess().onLostControl();
-                mod.getBaritone().getExploreProcess().onLostControl();
-                return this.unstuckTask;
-            } else {
-                if (!this.progressChecker.check(mod) || !this.stuckCheck.check(mod)) {
-                    BlockPos blockStuck = this.stuckInBlock(mod);
-                    if (blockStuck != null) {
-                        this.unstuckTask = this.getFenceUnstuckTask();
-                        return this.unstuckTask;
-                    }
-
-                    this.stuckCheck.reset();
-                }
-
-                this.mod = mod;
-                if (isIsGettingPickaxeFirst(mod) && this.collectingPickaxeForThisResource && !StorageHelper.miningRequirementMetInventory(controller, MiningRequirement.STONE)) {
-                    this.progressChecker.reset();
-                    this.setDebugState("Collecting pickaxe first");
-                    return getPickaxeFirstTask;
-                } else {
-                    if (StorageHelper.miningRequirementMetInventory(controller, MiningRequirement.STONE)) {
-                        isGettingPickaxeFirstFlag = false;
-                    }
-
-                    this.collectingPickaxeForThisResource = false;
-                    if (!this.progressChecker.check(mod)) {
-                        mod.getBaritone().getPathingBehavior().forceCancel();
-                        if (this.currentDrop != null && !this.currentDrop.getStack().isEmpty()) {
-                            if (!isGettingPickaxeFirstFlag && mod.getModSettings().shouldCollectPickaxeFirst() && !StorageHelper.miningRequirementMetInventory(controller, MiningRequirement.STONE)) {
-                                Debug.logMessage("Failed to pick up drop, will try to collect a stone pickaxe first and try again!");
-                                this.collectingPickaxeForThisResource = true;
-                                isGettingPickaxeFirstFlag = true;
-                                return getPickaxeFirstTask;
-                            }
-
-                            Debug.logMessage(StlHelper.toString(this.blacklist, (element) -> element == null ? "(null)" : element.getStack().getItem().getTranslationKey()));
-                            Debug.logMessage("Failed to pick up drop, suggesting it's unreachable.");
-                            this.blacklist.add(this.currentDrop);
-                            mod.getEntityTracker().requestEntityUnreachable(this.currentDrop);
-                            return this.wanderTask;
-                        }
-                    }
-
-                    return super.onTick();
-                }
-            }
-        }
-    }
-
-    protected boolean isEqual(Task other) {
-        if (!(other instanceof PickupDroppedItemTask task)) {
-            return false;
-        } else {
-            return Arrays.equals(task.itemTargets, this.itemTargets) && task.freeInventoryIfFull == this.freeInventoryIfFull;
-        }
-    }
-
-    protected String toDebugString() {
-        StringBuilder result = new StringBuilder();
-        result.append("Pickup Dropped Items: [");
-        int c = 0;
-
-        for (ItemTarget target : this.itemTargets) {
-            result.append(target.toString());
-            ++c;
-            if (c != this.itemTargets.length) {
-                result.append(", ");
-            }
-        }
-
-        result.append("]");
-        return result.toString();
-    }
-
-    protected Vec3d getPos(AltoClefController mod, ItemEntity obj) {
-        if (!obj.isOnGround() && !obj.isTouchingWater()) {
-            BlockPos p = obj.getBlockPos();
-            return !WorldHelper.isSolidBlock(controller, p.down(3)) ? obj.getPos().subtract((double) 0.0F, (double) 2.0F, (double) 0.0F) : obj.getPos().subtract((double) 0.0F, (double) 1.0F, (double) 0.0F);
-        } else {
-            return obj.getPos();
-        }
-    }
-
-    protected Optional<ItemEntity> getClosestTo(AltoClefController mod, Vec3d pos) {
-        return mod.getEntityTracker().getClosestItemDrop(pos, this.itemTargets);
-    }
-
-    protected Vec3d getOriginPos(AltoClefController mod) {
-        return mod.getPlayer().getPos();
-    }
-
-    protected Task getGoalTask(ItemEntity itemEntity) {
-        if (!itemEntity.equals(this.currentDrop)) {
-            this.currentDrop = itemEntity;
+   @Override
+   protected Task onTick() {
+      if (this.wanderTask.isActive() && !this.wanderTask.isFinished()) {
+         this.setDebugState("Wandering.");
+         return this.wanderTask;
+      } else {
+         AltoClefController mod = this.controller;
+         if (mod.getBaritone().getPathingBehavior().isPathing()) {
             this.progressChecker.reset();
-            if (isGettingPickaxeFirstFlag && this.collectingPickaxeForThisResource) {
-                Debug.logMessage("New goal, no longer collecting a pickaxe.");
-                this.collectingPickaxeForThisResource = false;
-                isGettingPickaxeFirstFlag = false;
+         }
+
+         if (this.unstuckTask != null && this.unstuckTask.isActive() && !this.unstuckTask.isFinished() && this.stuckInBlock(mod) != null) {
+            this.setDebugState("Getting unstuck from block.");
+            this.stuckCheck.reset();
+            mod.getBaritone().getCustomGoalProcess().onLostControl();
+            mod.getBaritone().getExploreProcess().onLostControl();
+            return this.unstuckTask;
+         } else {
+            if (!this.progressChecker.check(mod) || !this.stuckCheck.check(mod)) {
+               BlockPos blockStuck = this.stuckInBlock(mod);
+               if (blockStuck != null) {
+                  this.unstuckTask = this.getFenceUnstuckTask();
+                  return this.unstuckTask;
+               }
+
+               this.stuckCheck.reset();
             }
-        }
 
-        boolean touching = this.mod.getEntityTracker().isCollidingWithPlayer(itemEntity);
-        return (Task) (touching && this.freeInventoryIfFull && this.mod.getItemStorage().getSlotsThatCanFitInPlayerInventory(itemEntity.getStack(), false).isEmpty() ? new EnsureFreeInventorySlotTask() : new GetToEntityTask(itemEntity));
-    }
+            this.mod = mod;
+            if (isIsGettingPickaxeFirst(mod)
+               && this.collectingPickaxeForThisResource
+               && !StorageHelper.miningRequirementMetInventory(this.controller, MiningRequirement.STONE)) {
+               this.progressChecker.reset();
+               this.setDebugState("Collecting pickaxe first");
+               return getPickaxeFirstTask;
+            } else {
+               if (StorageHelper.miningRequirementMetInventory(this.controller, MiningRequirement.STONE)) {
+                  isGettingPickaxeFirstFlag = false;
+               }
 
-    protected boolean isValid(AltoClefController mod, ItemEntity obj) {
-        return obj.isAlive() && !this.blacklist.contains(obj);
-    }
+               this.collectingPickaxeForThisResource = false;
+               if (!this.progressChecker.check(mod)) {
+                  mod.getBaritone().getPathingBehavior().forceCancel();
+                  if (this.currentDrop != null && !this.currentDrop.getItem().isEmpty()) {
+                     if (!isGettingPickaxeFirstFlag
+                        && mod.getModSettings().shouldCollectPickaxeFirst()
+                        && !StorageHelper.miningRequirementMetInventory(this.controller, MiningRequirement.STONE)) {
+                        Debug.logMessage("Failed to pick up drop, will try to collect a stone pickaxe first and try again!");
+                        this.collectingPickaxeForThisResource = true;
+                        isGettingPickaxeFirstFlag = true;
+                        return getPickaxeFirstTask;
+                     }
 
-    static {
-        getPickaxeFirstTask = new SatisfyMiningRequirementTask(MiningRequirement.STONE);
-        isGettingPickaxeFirstFlag = false;
-    }
+                     Debug.logMessage(
+                        StlHelper.toString(this.blacklist, element -> element == null ? "(null)" : element.getItem().getItem().getDescriptionId())
+                     );
+                     Debug.logMessage("Failed to pick up drop, suggesting it's unreachable.");
+                     this.blacklist.add(this.currentDrop);
+                     mod.getEntityTracker().requestEntityUnreachable(this.currentDrop);
+                     return this.wanderTask;
+                  }
+               }
+
+               return super.onTick();
+            }
+         }
+      }
+   }
+
+   @Override
+   protected boolean isEqual(Task other) {
+      return !(other instanceof PickupDroppedItemTask task)
+         ? false
+         : Arrays.equals((Object[])task.itemTargets, (Object[])this.itemTargets) && task.freeInventoryIfFull == this.freeInventoryIfFull;
+   }
+
+   @Override
+   protected String toDebugString() {
+      StringBuilder result = new StringBuilder();
+      result.append("Pickup Dropped Items: [");
+      int c = 0;
+
+      for (ItemTarget target : this.itemTargets) {
+         result.append(target.toString());
+         if (++c != this.itemTargets.length) {
+            result.append(", ");
+         }
+      }
+
+      result.append("]");
+      return result.toString();
+   }
+
+   protected Vec3 getPos(AltoClefController mod, ItemEntity obj) {
+      if (!obj.onGround() && !obj.isInWater()) {
+         BlockPos p = obj.blockPosition();
+         return !WorldHelper.isSolidBlock(this.controller, p.below(3)) ? obj.position().subtract(0.0, 2.0, 0.0) : obj.position().subtract(0.0, 1.0, 0.0);
+      } else {
+         return obj.position();
+      }
+   }
+
+   @Override
+   protected Optional<ItemEntity> getClosestTo(AltoClefController mod, Vec3 pos) {
+      return mod.getEntityTracker().getClosestItemDrop(pos, this.itemTargets);
+   }
+
+   @Override
+   protected Vec3 getOriginPos(AltoClefController mod) {
+      return mod.getPlayer().position();
+   }
+
+   protected Task getGoalTask(ItemEntity itemEntity) {
+      if (!itemEntity.equals(this.currentDrop)) {
+         this.currentDrop = itemEntity;
+         this.progressChecker.reset();
+         if (isGettingPickaxeFirstFlag && this.collectingPickaxeForThisResource) {
+            Debug.logMessage("New goal, no longer collecting a pickaxe.");
+            this.collectingPickaxeForThisResource = false;
+            isGettingPickaxeFirstFlag = false;
+         }
+      }
+
+      boolean touching = this.mod.getEntityTracker().isCollidingWithPlayer(itemEntity);
+      return (Task)(touching
+            && this.freeInventoryIfFull
+            && this.mod.getItemStorage().getSlotsThatCanFitInPlayerInventory(itemEntity.getItem(), false).isEmpty()
+         ? new EnsureFreeInventorySlotTask()
+         : new GetToEntityTask(itemEntity));
+   }
+
+   protected boolean isValid(AltoClefController mod, ItemEntity obj) {
+      return obj.isAlive() && !this.blacklist.contains(obj);
+   }
 }

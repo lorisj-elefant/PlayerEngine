@@ -1,35 +1,33 @@
 package adris.altoclef.multiversion;
 
-import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.damage.DamageTypes;
-import net.minecraft.registry.tag.DamageTypeTags;
+import net.minecraft.tags.DamageTypeTags;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageTypes;
 
 public class DamageSourceWrapper {
-    private final DamageSource source;
+   private final DamageSource source;
 
-    public static adris.altoclef.multiversion.DamageSourceWrapper of(DamageSource source) {
-        if (source == null)
-            return null;
-        return new adris.altoclef.multiversion.DamageSourceWrapper(source);
-    }
+   public static DamageSourceWrapper of(DamageSource source) {
+      return source == null ? null : new DamageSourceWrapper(source);
+   }
 
-    private DamageSourceWrapper(DamageSource source) {
-        this.source = source;
-    }
+   private DamageSourceWrapper(DamageSource source) {
+      this.source = source;
+   }
 
-    public DamageSource getSource() {
-        return this.source;
-    }
+   public DamageSource getSource() {
+      return this.source;
+   }
 
-    public boolean bypassesArmor() {
-        return this.source.isTypeIn(DamageTypeTags.BYPASSES_ARMOR);
-    }
+   public boolean bypassesArmor() {
+      return this.source.is(DamageTypeTags.BYPASSES_ARMOR);
+   }
 
-    public boolean bypassesShield() {
-        return this.source.isTypeIn(DamageTypeTags.BYPASSES_SHIELD);
-    }
+   public boolean bypassesShield() {
+      return this.source.is(DamageTypeTags.BYPASSES_SHIELD);
+   }
 
-    public boolean isOutOfWorld() {
-        return this.source.isType(DamageTypes.OUT_OF_WORLD);
-    }
+   public boolean isOutOfWorld() {
+      return this.source.is(DamageTypes.FELL_OUT_OF_WORLD);
+   }
 }

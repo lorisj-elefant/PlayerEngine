@@ -9,53 +9,60 @@ import adris.altoclef.util.Dimension;
 import adris.altoclef.util.ItemTarget;
 import adris.altoclef.util.MiningRequirement;
 import adris.altoclef.util.RecipeTarget;
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
-import net.minecraft.item.Item;
-import net.minecraft.item.Items;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Position;
-
 import java.util.Optional;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 
 public class CollectCoarseDirtTask extends ResourceTask {
-    private static final float CLOSE_ENOUGH_COARSE_DIRT = 128.0F;
+   private static final float CLOSE_ENOUGH_COARSE_DIRT = 128.0F;
+   private final int count;
 
-    private final int count;
+   public CollectCoarseDirtTask(int targetCount) {
+      super(Items.COARSE_DIRT, targetCount);
+      this.count = targetCount;
+   }
 
-    public CollectCoarseDirtTask(int targetCount) {
-        super(Items.COARSE_DIRT, targetCount);
-        this.count = targetCount;
-    }
+   @Override
+   protected boolean shouldAvoidPickingUp(AltoClefController mod) {
+      return false;
+   }
 
-    protected boolean shouldAvoidPickingUp(AltoClefController mod) {
-        return false;
-    }
+   @Override
+   protected void onResourceStart(AltoClefController mod) {
+   }
 
-    protected void onResourceStart(AltoClefController mod) {
-    }
+   @Override
+   protected Task onResourceTick(AltoClefController mod) {
+      double c = Math.ceil((this.count - mod.getItemStorage().getItemCount(Items.COARSE_DIRT)) / 4.0) * 2.0;
+      Optional<BlockPos> closest = mod.getBlockScanner().getNearestBlock(Blocks.COARSE_DIRT);
+      if ((mod.getItemStorage().getItemCount(Items.DIRT) < c || mod.getItemStorage().getItemCount(Items.GRAVEL) < c)
+         && closest.isPresent()
+         && closest.get().closerToCenterThan(mod.getPlayer().position(), 128.0)) {
+         return new MineAndCollectTask(new ItemTarget(Items.COARSE_DIRT), new Block[]{Blocks.COARSE_DIRT}, MiningRequirement.HAND)
+            .forceDimension(Dimension.OVERWORLD);
+      } else {
+         int target = this.count;
+         ItemTarget d = new ItemTarget(Items.DIRT, 1);
+         ItemTarget g = new ItemTarget(Items.GRAVEL, 1);
+         return new CraftInInventoryTask(
+            new RecipeTarget(Items.COARSE_DIRT, target, CraftingRecipe.newShapedRecipe("coarse_dirt", new ItemTarget[]{d, g, g, d}, 4))
+         );
+      }
+   }
 
-    protected Task onResourceTick(AltoClefController mod) {
-        double c = Math.ceil((this.count - mod.getItemStorage().getItemCount(new Item[]{Items.COARSE_DIRT})) / 4.0D) * 2.0D;
-        Optional<BlockPos> closest = mod.getBlockScanner().getNearestBlock(new Block[]{Blocks.COARSE_DIRT});
-        if ((mod.getItemStorage().getItemCount(new Item[]{Items.DIRT}) < c || mod
-                .getItemStorage().getItemCount(new Item[]{Items.GRAVEL}) < c) && closest
-                .isPresent() && ((BlockPos) closest.get()).isCenterWithinDistance((Position) mod.getPlayer().getPos(), 128.0D))
-            return (Task) (new MineAndCollectTask(new ItemTarget(Items.COARSE_DIRT), new Block[]{Blocks.COARSE_DIRT}, MiningRequirement.HAND)).forceDimension(Dimension.OVERWORLD);
-        int target = this.count;
-        ItemTarget d = new ItemTarget(Items.DIRT, 1);
-        ItemTarget g = new ItemTarget(Items.GRAVEL, 1);
-        return (Task) new CraftInInventoryTask(new RecipeTarget(Items.COARSE_DIRT, target, CraftingRecipe.newShapedRecipe("coarse_dirt", new ItemTarget[]{d, g, g, d}, 4)));
-    }
+   @Override
+   protected void onResourceStop(AltoClefController mod, Task interruptTask) {
+   }
 
-    protected void onResourceStop(AltoClefController mod, Task interruptTask) {
-    }
+   @Override
+   protected boolean isEqualResource(ResourceTask other) {
+      return other instanceof CollectCoarseDirtTask;
+   }
 
-    protected boolean isEqualResource(ResourceTask other) {
-        return other instanceof adris.altoclef.tasks.resources.CollectCoarseDirtTask;
-    }
-
-    protected String toDebugStringName() {
-        return "Collecting " + this.count + " Coarse Dirt.";
-    }
+   @Override
+   protected String toDebugStringName() {
+      return "Collecting " + this.count + " Coarse Dirt.";
+   }
 }

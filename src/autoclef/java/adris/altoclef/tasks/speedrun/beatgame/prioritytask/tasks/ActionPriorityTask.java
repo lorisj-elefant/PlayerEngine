@@ -4,69 +4,85 @@ import adris.altoclef.AltoClefController;
 import adris.altoclef.tasks.speedrun.beatgame.prioritytask.prioritycalculators.PriorityCalculator;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.Pair;
-
 import java.util.function.Function;
 
 public class ActionPriorityTask extends PriorityTask {
-    private final TaskAndPriorityProvider taskAndPriorityProvider;
+   private final ActionPriorityTask.TaskAndPriorityProvider taskAndPriorityProvider;
+   private Task lastTask = null;
 
-    private Task lastTask = null;
+   public ActionPriorityTask(ActionPriorityTask.TaskProvider taskProvider, PriorityCalculator priorityCalculator) {
+      this(taskProvider, priorityCalculator, a -> true, false, true, false);
+   }
 
-    public ActionPriorityTask(TaskProvider taskProvider, PriorityCalculator priorityCalculator) {
-        this(taskProvider, priorityCalculator, a -> Boolean.valueOf(true), false, true, false);
-    }
+   public ActionPriorityTask(ActionPriorityTask.TaskProvider taskProvider, PriorityCalculator priorityCalculator, Function<AltoClefController, Boolean> canCall) {
+      this(mod -> new Pair<>(taskProvider.getTask(mod), priorityCalculator.getPriority()), canCall);
+   }
 
-    public ActionPriorityTask(TaskProvider taskProvider, PriorityCalculator priorityCalculator, Function<AltoClefController, Boolean> canCall) {
-        this(mod -> new Pair(taskProvider.getTask(mod), Double.valueOf(priorityCalculator.getPriority())), canCall);
-    }
+   public ActionPriorityTask(ActionPriorityTask.TaskAndPriorityProvider taskAndPriorityProvider) {
+      this(taskAndPriorityProvider, a -> true);
+   }
 
-    public ActionPriorityTask(TaskAndPriorityProvider taskAndPriorityProvider) {
-        this(taskAndPriorityProvider, a -> Boolean.valueOf(true));
-    }
+   public ActionPriorityTask(ActionPriorityTask.TaskAndPriorityProvider taskAndPriorityProvider, Function<AltoClefController, Boolean> canCall) {
+      this(taskAndPriorityProvider, canCall, false, true, false);
+   }
 
-    public ActionPriorityTask(TaskAndPriorityProvider taskAndPriorityProvider, Function<AltoClefController, Boolean> canCall) {
-        this(taskAndPriorityProvider, canCall, false, true, false);
-    }
+   public ActionPriorityTask(
+      ActionPriorityTask.TaskProvider taskProvider,
+      PriorityCalculator priorityCalculator,
+      Function<AltoClefController, Boolean> canCall,
+      boolean shouldForce,
+      boolean canCache,
+      boolean bypassForceCooldown
+   ) {
+      this(mod -> new Pair<>(taskProvider.getTask(mod), priorityCalculator.getPriority()), canCall, shouldForce, canCache, bypassForceCooldown);
+   }
 
-    public ActionPriorityTask(TaskProvider taskProvider, PriorityCalculator priorityCalculator, Function<AltoClefController, Boolean> canCall, boolean shouldForce, boolean canCache, boolean bypassForceCooldown) {
-        this(mod -> new Pair(taskProvider.getTask(mod), Double.valueOf(priorityCalculator.getPriority())), canCall, shouldForce, canCache, bypassForceCooldown);
-    }
+   public ActionPriorityTask(
+      ActionPriorityTask.TaskAndPriorityProvider taskAndPriorityProvider,
+      Function<AltoClefController, Boolean> canCall,
+      boolean shouldForce,
+      boolean canCache,
+      boolean bypassForceCooldown
+   ) {
+      super(canCall, shouldForce, canCache, bypassForceCooldown);
+      this.taskAndPriorityProvider = taskAndPriorityProvider;
+   }
 
-    public ActionPriorityTask(TaskAndPriorityProvider taskAndPriorityProvider, Function<AltoClefController, Boolean> canCall, boolean shouldForce, boolean canCache, boolean bypassForceCooldown) {
-        super(canCall, shouldForce, canCache, bypassForceCooldown);
-        this.taskAndPriorityProvider = taskAndPriorityProvider;
-    }
+   @Override
+   public Task getTask(AltoClefController mod) {
+      this.lastTask = this.getTaskAndPriority(mod).getLeft();
+      return this.lastTask;
+   }
 
-    public Task getTask(AltoClefController mod) {
-        this.lastTask = (Task) getTaskAndPriority(mod).getLeft();
-        return this.lastTask;
-    }
+   @Override
+   public String getDebugString() {
+      return "Performing an action: " + this.lastTask;
+   }
 
-    public String getDebugString() {
-        return "Performing an action: " + String.valueOf(this.lastTask);
-    }
+   @Override
+   protected double getPriority(AltoClefController mod) {
+      return this.getTaskAndPriority(mod).getRight();
+   }
 
-    protected double getPriority(AltoClefController mod) {
-        return ((Double) getTaskAndPriority(mod).getRight()).doubleValue();
-    }
+   private Pair<Task, Double> getTaskAndPriority(AltoClefController mod) {
+      Pair<Task, Double> pair = this.taskAndPriorityProvider.getTaskAndPriority(mod);
+      if (pair == null) {
+         pair = new Pair<>(null, 0.0);
+      }
 
-    private Pair<Task, Double> getTaskAndPriority(AltoClefController mod) {
-        Pair<Task, Double> pair = this.taskAndPriorityProvider.getTaskAndPriority(mod);
-        if (pair == null)
-            pair = new Pair(null, Double.valueOf(0.0D));
-        if (((Double) pair.getRight()).doubleValue() <= 0.0D || pair.getLeft() == null) {
-            pair.setLeft(null);
-            pair.setRight(Double.valueOf(Double.NEGATIVE_INFINITY));
-        }
-        return pair;
-    }
+      if (pair.getRight() <= 0.0 || pair.getLeft() == null) {
+         pair.setLeft(null);
+         pair.setRight(Double.NEGATIVE_INFINITY);
+      }
 
-    public interface TaskProvider {
-        Task getTask(AltoClefController mod);
-    }
+      return pair;
+   }
 
+   public interface TaskAndPriorityProvider {
+      Pair<Task, Double> getTaskAndPriority(AltoClefController var1);
+   }
 
-    public interface TaskAndPriorityProvider {
-        Pair<Task, Double> getTaskAndPriority(AltoClefController mod);
-    }
+   public interface TaskProvider {
+      Task getTask(AltoClefController var1);
+   }
 }

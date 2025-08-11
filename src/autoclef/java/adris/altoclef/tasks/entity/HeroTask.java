@@ -8,54 +8,66 @@ import adris.altoclef.tasks.resources.KillAndLootTask;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.ItemTarget;
 import adris.altoclef.util.helpers.ItemHelper;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.ExperienceOrbEntity;
-
 import java.util.Optional;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.ExperienceOrb;
+import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.monster.Slime;
 
 public class HeroTask extends Task {
-    protected void onStart() {
-    }
+   @Override
+   protected void onStart() {
+   }
 
-    protected Task onTick() {
-        AltoClefController mod = controller;
-        if (mod.getFoodChain().needsToEat()) {
-            setDebugState("Eat first.");
-            return null;
-        }
-        Optional<Entity> experienceOrb = mod.getEntityTracker().getClosestEntity(new Class[]{ExperienceOrbEntity.class});
-        if (experienceOrb.isPresent()) {
-            setDebugState("Getting experience.");
-            return (Task) new GetToEntityTask(experienceOrb.get());
-        }
-        assert controller.getWorld() != null;
-        Iterable<Entity> hostiles = controller.getWorld().iterateEntities();
-        if (hostiles != null)
-            for (Entity hostile : hostiles) {
-                if (hostile instanceof net.minecraft.entity.mob.HostileEntity || hostile instanceof net.minecraft.entity.mob.SlimeEntity) {
-                    Optional<Entity> closestHostile = mod.getEntityTracker().getClosestEntity(new Class[]{hostile.getClass()});
-                    if (closestHostile.isPresent()) {
-                        setDebugState("Killing hostiles or picking hostile drops.");
-                        return (Task) new KillAndLootTask(hostile.getClass(), new ItemTarget[]{new ItemTarget(ItemHelper.HOSTILE_MOB_DROPS)});
-                    }
-                }
+   @Override
+   protected Task onTick() {
+      AltoClefController mod = this.controller;
+      if (mod.getFoodChain().needsToEat()) {
+         this.setDebugState("Eat first.");
+         return null;
+      } else {
+         Optional<Entity> experienceOrb = mod.getEntityTracker().getClosestEntity(ExperienceOrb.class);
+         if (experienceOrb.isPresent()) {
+            this.setDebugState("Getting experience.");
+            return new GetToEntityTask(experienceOrb.get());
+         } else {
+            assert this.controller.getWorld() != null;
+
+            Iterable<Entity> hostiles = this.controller.getWorld().getAllEntities();
+            if (hostiles != null) {
+               for (Entity hostile : hostiles) {
+                  if (hostile instanceof Monster || hostile instanceof Slime) {
+                     Optional<Entity> closestHostile = mod.getEntityTracker().getClosestEntity(hostile.getClass());
+                     if (closestHostile.isPresent()) {
+                        this.setDebugState("Killing hostiles or picking hostile drops.");
+                        return new KillAndLootTask(hostile.getClass(), new ItemTarget(ItemHelper.HOSTILE_MOB_DROPS));
+                     }
+                  }
+               }
             }
-        if (mod.getEntityTracker().itemDropped(ItemHelper.HOSTILE_MOB_DROPS)) {
-            setDebugState("Picking hostile drops.");
-            return (Task) new PickupDroppedItemTask(new ItemTarget(ItemHelper.HOSTILE_MOB_DROPS), true);
-        }
-        setDebugState("Searching for hostile mobs.");
-        return (Task) new TimeoutWanderTask();
-    }
 
-    protected void onStop(Task interruptTask) {
-    }
+            if (mod.getEntityTracker().itemDropped(ItemHelper.HOSTILE_MOB_DROPS)) {
+               this.setDebugState("Picking hostile drops.");
+               return new PickupDroppedItemTask(new ItemTarget(ItemHelper.HOSTILE_MOB_DROPS), true);
+            } else {
+               this.setDebugState("Searching for hostile mobs.");
+               return new TimeoutWanderTask();
+            }
+         }
+      }
+   }
 
-    protected boolean isEqual(Task other) {
-        return other instanceof adris.altoclef.tasks.entity.HeroTask;
-    }
+   @Override
+   protected void onStop(Task interruptTask) {
+   }
 
-    protected String toDebugString() {
-        return "Killing all hostile mobs.";
-    }
+   @Override
+   protected boolean isEqual(Task other) {
+      return other instanceof HeroTask;
+   }
+
+   @Override
+   protected String toDebugString() {
+      return "Killing all hostile mobs.";
+   }
 }

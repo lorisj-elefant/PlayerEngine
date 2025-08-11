@@ -8,124 +8,126 @@ import adris.altoclef.tasks.container.UpgradeInSmithingTableTask;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.ItemTarget;
 import adris.altoclef.util.helpers.StorageHelper;
-import org.apache.commons.lang3.ArrayUtils;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.commons.lang3.ArrayUtils;
 
 public class CataloguedResourceTask extends ResourceTask {
-    private final TaskSquasher squasher;
+   private final CataloguedResourceTask.TaskSquasher squasher = new CataloguedResourceTask.TaskSquasher();
+   private final ItemTarget[] targets;
+   private final List<ResourceTask> tasksToComplete;
 
-    private final ItemTarget[] targets;
+   public CataloguedResourceTask(boolean squash, ItemTarget... targets) {
+      super(targets);
+      this.targets = targets;
+      this.tasksToComplete = new ArrayList<>(targets.length);
 
-    private final List<ResourceTask> tasksToComplete;
+      for (ItemTarget target : targets) {
+         if (target != null) {
+            this.tasksToComplete.add(TaskCatalogue.getItemTask(target));
+         }
+      }
 
-    public CataloguedResourceTask(boolean squash, ItemTarget... targets) {
-        super(targets);
-        this.squasher = new TaskSquasher();
-        this.targets = targets;
-        this.tasksToComplete = new ArrayList<>(targets.length);
-        for (ItemTarget target : targets) {
-            if (target != null)
-                this.tasksToComplete.add(TaskCatalogue.getItemTask(target));
-        }
-        if (squash)
-            squashTasks(this.tasksToComplete);
-    }
+      if (squash) {
+         this.squashTasks(this.tasksToComplete);
+      }
+   }
 
-    public CataloguedResourceTask(ItemTarget... targets) {
-        this(true, targets);
-    }
+   public CataloguedResourceTask(ItemTarget... targets) {
+      this(true, targets);
+   }
 
-    protected void onResourceStart(AltoClefController mod) {
-    }
+   @Override
+   protected void onResourceStart(AltoClefController mod) {
+   }
 
-    protected Task onResourceTick(AltoClefController mod) {
-        for (ResourceTask task : this.tasksToComplete) {
-            for (ItemTarget target : task.getItemTargets()) {
-                if (!StorageHelper.itemTargetsMetInventory(mod, new ItemTarget[]{target}))
-                    return (Task) task;
+   @Override
+   protected Task onResourceTick(AltoClefController mod) {
+      for (ResourceTask task : this.tasksToComplete) {
+         for (ItemTarget target : task.getItemTargets()) {
+            if (!StorageHelper.itemTargetsMetInventory(mod, target)) {
+               return task;
             }
-        }
-        return null;
-    }
+         }
+      }
 
-    public boolean isFinished() {
-        for (ResourceTask task : this.tasksToComplete) {
-            for (ItemTarget target : task.getItemTargets()) {
-                if (!StorageHelper.itemTargetsMetInventory(controller, new ItemTarget[]{target}))
-                    return false;
+      return null;
+   }
+
+   @Override
+   public boolean isFinished() {
+      for (ResourceTask task : this.tasksToComplete) {
+         for (ItemTarget target : task.getItemTargets()) {
+            if (!StorageHelper.itemTargetsMetInventory(this.controller, target)) {
+               return false;
             }
-        }
-        return true;
-    }
+         }
+      }
 
-    protected boolean shouldAvoidPickingUp(AltoClefController mod) {
-        return false;
-    }
+      return true;
+   }
 
-    protected void onResourceStop(AltoClefController mod, Task interruptTask) {
-    }
+   @Override
+   protected boolean shouldAvoidPickingUp(AltoClefController mod) {
+      return false;
+   }
 
-    protected boolean isEqualResource(ResourceTask other) {
-        if (other instanceof adris.altoclef.tasks.squashed.CataloguedResourceTask) {
-            adris.altoclef.tasks.squashed.CataloguedResourceTask task = (adris.altoclef.tasks.squashed.CataloguedResourceTask) other;
-            return Arrays.equals(task.targets, this.targets);
-        }
-        return false;
-    }
+   @Override
+   protected void onResourceStop(AltoClefController mod, Task interruptTask) {
+   }
 
-    protected String toDebugStringName() {
-        return "Get catalogued: " + ArrayUtils.toString(this.targets);
-    }
+   @Override
+   protected boolean isEqualResource(ResourceTask other) {
+      return other instanceof CataloguedResourceTask task ? Arrays.equals((Object[])task.targets, (Object[])this.targets) : false;
+   }
 
-    private void squashTasks(List<ResourceTask> tasks) {
-        this.squasher.addTasks(tasks);
-        tasks.clear();
-        tasks.addAll(this.squasher.getSquashed());
-    }
+   @Override
+   protected String toDebugStringName() {
+      return "Get catalogued: " + ArrayUtils.toString(this.targets);
+   }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    static class TaskSquasher {
+   private void squashTasks(List<ResourceTask> tasks) {
+      this.squasher.addTasks(tasks);
+      tasks.clear();
+      tasks.addAll(this.squasher.getSquashed());
+   }
 
-        private final Map<Class, TypeSquasher> squashMap = new HashMap<>();
+   static class TaskSquasher {
+      private final Map<Class, TypeSquasher> squashMap = new HashMap<>();
+      private final List<ResourceTask> unSquashableTasks = new ArrayList<>();
 
-        private final List<ResourceTask> unSquashableTasks = new ArrayList<>();
+      public TaskSquasher() {
+         this.squashMap.put(CraftInTableTask.class, new CraftSquasher());
+         this.squashMap.put(UpgradeInSmithingTableTask.class, new SmithingSquasher());
+      }
 
-        public TaskSquasher() {
-            squashMap.put(CraftInTableTask.class, new CraftSquasher());
-            squashMap.put(UpgradeInSmithingTableTask.class, new SmithingSquasher());
-            //_squashMap.put(MineAndCollectTask.class)
-        }
+      public void addTask(ResourceTask t) {
+         Class type = t.getClass();
+         if (this.squashMap.containsKey(type)) {
+            this.squashMap.get(type).add(t);
+         } else {
+            this.unSquashableTasks.add(t);
+         }
+      }
 
-        public void addTask(ResourceTask t) {
-            Class type = t.getClass();
-            if (squashMap.containsKey(type)) {
-                squashMap.get(type).add(t);
-            } else {
-                //Debug.logMessage("Unsquashable: " + type + ": " + t);
-                unSquashableTasks.add(t);
-            }
-        }
+      public void addTasks(List<ResourceTask> tasks) {
+         for (ResourceTask task : tasks) {
+            this.addTask(task);
+         }
+      }
 
-        public void addTasks(List<ResourceTask> tasks) {
-            for (ResourceTask task : tasks) {
-                addTask(task);
-            }
-        }
+      public List<ResourceTask> getSquashed() {
+         List<ResourceTask> result = new ArrayList<>();
 
-        public List<ResourceTask> getSquashed() {
-            List<ResourceTask> result = new ArrayList<>();
+         for (Class type : this.squashMap.keySet()) {
+            result.addAll(this.squashMap.get(type).getSquashed());
+         }
 
-            for (Class type : squashMap.keySet()) {
-                result.addAll(squashMap.get(type).getSquashed());
-            }
-            result.addAll(unSquashableTasks);
-
-            return result;
-        }
-    }
+         result.addAll(this.unSquashableTasks);
+         return result;
+      }
+   }
 }

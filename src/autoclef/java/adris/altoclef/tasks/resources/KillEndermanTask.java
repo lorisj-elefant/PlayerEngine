@@ -11,75 +11,81 @@ import adris.altoclef.util.Dimension;
 import adris.altoclef.util.ItemTarget;
 import adris.altoclef.util.helpers.WorldHelper;
 import adris.altoclef.util.time.TimerGame;
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.mob.EndermanEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.Items;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Position;
-
 import java.util.Optional;
 import java.util.function.Predicate;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.monster.EnderMan;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Blocks;
 
 public class KillEndermanTask extends ResourceTask {
-    private final int count;
+   private final int count;
+   private final TimerGame lookDelay = new TimerGame(0.2);
 
-    private final TimerGame lookDelay = new TimerGame(0.2D);
+   public KillEndermanTask(int count) {
+      super(new ItemTarget(Items.ENDER_PEARL, count));
+      this.count = count;
+      this.forceDimension(Dimension.NETHER);
+   }
 
-    public KillEndermanTask(int count) {
-        super(new ItemTarget(Items.ENDER_PEARL, count));
-        this.count = count;
-        forceDimension(Dimension.NETHER);
-    }
+   @Override
+   protected boolean shouldAvoidPickingUp(AltoClefController mod) {
+      return false;
+   }
 
-    protected boolean shouldAvoidPickingUp(AltoClefController mod) {
-        return false;
-    }
+   @Override
+   protected void onResourceStart(AltoClefController mod) {
+   }
 
-    protected void onResourceStart(AltoClefController mod) {
-    }
-
-    protected Task onResourceTick(AltoClefController mod) {
-        if (!mod.getEntityTracker().entityFound(new Class[]{EndermanEntity.class})) {
-            if (WorldHelper.getCurrentDimension(mod) != Dimension.NETHER)
-                return getToCorrectDimensionTask(mod);
-            Optional<BlockPos> nearest = mod.getBlockScanner().getNearestBlock(new Block[]{Blocks.TWISTING_VINES, Blocks.TWISTING_VINES_PLANT, Blocks.WARPED_HYPHAE, Blocks.WARPED_NYLIUM});
+   @Override
+   protected Task onResourceTick(AltoClefController mod) {
+      if (!mod.getEntityTracker().entityFound(EnderMan.class)) {
+         if (WorldHelper.getCurrentDimension(mod) != Dimension.NETHER) {
+            return this.getToCorrectDimensionTask(mod);
+         } else {
+            Optional<BlockPos> nearest = mod.getBlockScanner()
+               .getNearestBlock(Blocks.TWISTING_VINES, Blocks.TWISTING_VINES_PLANT, Blocks.WARPED_HYPHAE, Blocks.WARPED_NYLIUM);
             if (nearest.isPresent()) {
-                if (WorldHelper.inRangeXZ(nearest.get(), mod.getPlayer().getBlockPos(), 40.0D)) {
-                    setDebugState("Waiting for endermen to spawn...");
-                    return null;
-                }
-                setDebugState("Getting to warped forest biome");
-                return (Task) new GetWithinRangeOfBlockTask(nearest.get(), 35);
+               if (WorldHelper.inRangeXZ(nearest.get(), mod.getPlayer().blockPosition(), 40.0)) {
+                  this.setDebugState("Waiting for endermen to spawn...");
+                  return null;
+               } else {
+                  this.setDebugState("Getting to warped forest biome");
+                  return new GetWithinRangeOfBlockTask(nearest.get(), 35);
+               }
+            } else {
+               this.setDebugState("Warped forest biome not found");
+               return new TimeoutWanderTask();
             }
-            setDebugState("Warped forest biome not found");
-            return (Task) new TimeoutWanderTask();
-        }
-        Predicate<Entity> belowNetherRoof = entity -> (WorldHelper.getCurrentDimension(mod) != Dimension.NETHER || entity.getY() < 125.0D);
-        int TOO_FAR_AWAY = (WorldHelper.getCurrentDimension(mod) == Dimension.NETHER) ? 10 : 256;
-        for (EndermanEntity entity : mod.getEntityTracker().getTrackedEntities(EndermanEntity.class)) {
-            if (!entity.isAlive())
-                continue;
-            if (belowNetherRoof.test(entity) && entity.isAngry() && entity.getPos().isInRange((Position) mod.getPlayer().getPos(), TOO_FAR_AWAY))
-                return (Task) new KillEntityTask((Entity) entity);
-        }
-        return (Task) new KillEntitiesTask(belowNetherRoof, new Class[]{EndermanEntity.class});
-    }
+         }
+      } else {
+         Predicate<Entity> belowNetherRoof = entityx -> WorldHelper.getCurrentDimension(mod) != Dimension.NETHER || entityx.getY() < 125.0;
+         int TOO_FAR_AWAY = WorldHelper.getCurrentDimension(mod) == Dimension.NETHER ? 10 : 256;
 
-    protected void onResourceStop(AltoClefController mod, Task interruptTask) {
-    }
+         for (EnderMan entity : mod.getEntityTracker().getTrackedEntities(EnderMan.class)) {
+            if (entity.isAlive() && belowNetherRoof.test(entity) && entity.isCreepy() && entity.position().closerThan(mod.getPlayer().position(), TOO_FAR_AWAY)
+               )
+             {
+               return new KillEntityTask(entity);
+            }
+         }
 
-    protected boolean isEqualResource(ResourceTask other) {
-        if (other instanceof adris.altoclef.tasks.resources.KillEndermanTask) {
-            adris.altoclef.tasks.resources.KillEndermanTask task = (adris.altoclef.tasks.resources.KillEndermanTask) other;
-            return (task.count == this.count);
-        }
-        return false;
-    }
+         return new KillEntitiesTask(belowNetherRoof, EnderMan.class);
+      }
+   }
 
-    protected String toDebugStringName() {
-        return "Hunting endermen for pearls - " + controller.getItemStorage().getItemCount(new Item[]{Items.ENDER_PEARL}) + "/" + this.count;
-    }
+   @Override
+   protected void onResourceStop(AltoClefController mod, Task interruptTask) {
+   }
+
+   @Override
+   protected boolean isEqualResource(ResourceTask other) {
+      return other instanceof KillEndermanTask task ? task.count == this.count : false;
+   }
+
+   @Override
+   protected String toDebugStringName() {
+      return "Hunting endermen for pearls - " + this.controller.getItemStorage().getItemCount(Items.ENDER_PEARL) + "/" + this.count;
+   }
 }

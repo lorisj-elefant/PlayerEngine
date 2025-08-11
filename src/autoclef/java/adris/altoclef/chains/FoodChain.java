@@ -11,223 +11,218 @@ import adris.altoclef.util.ItemTarget;
 import adris.altoclef.util.helpers.ConfigHelper;
 import adris.altoclef.util.helpers.WorldHelper;
 import baritone.api.utils.input.Input;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.util.Pair;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.Optional;
+import net.minecraft.core.BlockPos;
+import net.minecraft.util.Tuple;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
 public class FoodChain extends SingleTaskChain {
+   private static FoodChain.FoodChainConfig config;
+   private static boolean hasFood;
+   private final DragonBreathTracker dragonBreathTracker = new DragonBreathTracker();
+   private boolean isTryingToEat = false;
+   private boolean requestFillup = false;
+   private boolean needsToCollectFood = false;
+   private Optional<Item> cachedPerfectFood = Optional.empty();
+   private boolean shouldStop = false;
 
-    private static FoodChainConfig config;
-    private static boolean hasFood;
+   public FoodChain(TaskRunner runner) {
+      super(runner);
+   }
 
-    static {
-        ConfigHelper.loadConfig("configs/food_chain_settings.json", FoodChain.FoodChainConfig::new, FoodChain.FoodChainConfig.class, newConfig -> config = newConfig);
-    }
+   @Override
+   protected void onTaskFinish(AltoClefController controller) {
+   }
 
-    private final DragonBreathTracker dragonBreathTracker = new DragonBreathTracker();
+   private void startEat(AltoClefController controller, Item food) {
+      controller.getSlotHandler().forceEquipItem(new ItemTarget(food), true);
+      controller.getBaritone().getInputOverrideHandler().setInputForceState(Input.CLICK_RIGHT, true);
+      controller.getExtraBaritoneSettings().setInteractionPaused(true);
+      this.isTryingToEat = true;
+      this.requestFillup = true;
+   }
 
-    private boolean isTryingToEat = false;
-    private boolean requestFillup = false;
-    private boolean needsToCollectFood = false;
-    private Optional<Item> cachedPerfectFood = Optional.empty();
-    private boolean shouldStop = false;
+   private void stopEat(AltoClefController controller) {
+      if (this.isTryingToEat) {
+         controller.getBaritone().getInputOverrideHandler().setInputForceState(Input.CLICK_RIGHT, false);
+         controller.getExtraBaritoneSettings().setInteractionPaused(false);
+         this.isTryingToEat = false;
+         this.requestFillup = false;
+         if (controller.getItemStorage().hasItem(Items.SHIELD) && !controller.getItemStorage().hasItemInOffhand(controller, Items.SHIELD)) {
+            controller.getSlotHandler().forceEquipItemToOffhand(Items.SHIELD);
+         }
+      }
+   }
 
-    public FoodChain(TaskRunner runner) {
-        super(runner);
-    }
+   public boolean isTryingToEat() {
+      return this.isTryingToEat;
+   }
 
-    @Override
-    protected void onTaskFinish(AltoClefController controller) {
-        // Nothing to do.
-    }
+   @Override
+   public float getPriority() {
+      if (this.controller == null) {
+         return Float.NEGATIVE_INFINITY;
+      } else if (WorldHelper.isInNetherPortal(this.controller)) {
+         this.stopEat(this.controller);
+         return Float.NEGATIVE_INFINITY;
+      } else if (this.controller.getMobDefenseChain().isShielding()) {
+         this.stopEat(this.controller);
+         return Float.NEGATIVE_INFINITY;
+      } else {
+         this.dragonBreathTracker.updateBreath(this.controller);
 
-    private void startEat(AltoClefController controller, Item food) {
-        // On server, we don't need to check "isBlocking". If another chain wants to shield, it will have a higher priority.
-        controller.getSlotHandler().forceEquipItem(new ItemTarget(food), true);
-        controller.getBaritone().getInputOverrideHandler().setInputForceState(Input.CLICK_RIGHT, true);
-        controller.getExtraBaritoneSettings().setInteractionPaused(true);
-        isTryingToEat = true;
-        requestFillup = true;
-    }
-
-    private void stopEat(AltoClefController controller) {
-        if (isTryingToEat) {
-            controller.getBaritone().getInputOverrideHandler().setInputForceState(Input.CLICK_RIGHT, false);
-            controller.getExtraBaritoneSettings().setInteractionPaused(false);
-            isTryingToEat = false;
-            requestFillup = false;
-
-            // Re-equip shield if we have one and it's not in offhand.
-            if (controller.getItemStorage().hasItem(Items.SHIELD) && !controller.getItemStorage().hasItemInOffhand(controller, Items.SHIELD)) {
-                controller.getSlotHandler().forceEquipItemToOffhand(Items.SHIELD);
+         for (BlockPos playerIn : WorldHelper.getBlocksTouchingPlayer(this.controller.getEntity())) {
+            if (this.dragonBreathTracker.isTouchingDragonBreath(playerIn)) {
+               this.stopEat(this.controller);
+               return Float.NEGATIVE_INFINITY;
             }
-        }
-    }
+         }
 
-    public boolean isTryingToEat() {
-        return isTryingToEat;
-    }
+         if (this.controller.getModSettings().isAutoEat() && !this.controller.getEntity().isInLava() && !this.shouldStop) {
+            if (this.controller.getMLGBucketChain().doneMLG() && !this.controller.getMLGBucketChain().isFalling(this.controller)) {
+               Tuple<Integer, Optional<Item>> calculation = this.calculateFood(this.controller);
+               int foodScore = (Integer)calculation.getA();
+               this.cachedPerfectFood = (Optional<Item>)calculation.getB();
+               hasFood = foodScore > 0;
+               if (this.requestFillup && this.controller.getBaritone().getEntityContext().hungerManager().getFoodLevel() >= 20) {
+                  this.requestFillup = false;
+               }
 
-    @Override
-    public float getPriority() {
-        if (controller == null) return Float.NEGATIVE_INFINITY;
+               if (!hasFood) {
+                  this.requestFillup = false;
+               }
 
-        if (WorldHelper.isInNetherPortal(controller)) {
-            stopEat(controller);
-            return Float.NEGATIVE_INFINITY;
-        }
-        if (controller.getMobDefenseChain().isShielding()) {// || controller.getMobDefenseChain().isDoingAcrobatics()) {
-            stopEat(controller);
-            return Float.NEGATIVE_INFINITY;
-        }
+               if (hasFood && (this.needsToEat() || this.requestFillup) && this.cachedPerfectFood.isPresent()) {
+                  this.startEat(this.controller, this.cachedPerfectFood.get());
+               } else {
+                  this.stopEat(this.controller);
+               }
 
-        dragonBreathTracker.updateBreath(controller);
-        for (BlockPos playerIn : WorldHelper.getBlocksTouchingPlayer(controller.getEntity())) {
-            if (dragonBreathTracker.isTouchingDragonBreath(playerIn)) {
-                stopEat(controller);
-                return Float.NEGATIVE_INFINITY;
+               Settings settings = this.controller.getModSettings();
+               if (this.needsToCollectFood || foodScore < settings.getMinimumFoodAllowed()) {
+                  this.needsToCollectFood = foodScore < settings.getFoodUnitsToCollect();
+                  if (this.needsToCollectFood) {
+                     this.setTask(new CollectFoodTask(settings.getFoodUnitsToCollect()));
+                     return 55.0F;
+                  }
+               }
+
+               this.setTask(null);
+               return Float.NEGATIVE_INFINITY;
+            } else {
+               this.stopEat(this.controller);
+               return Float.NEGATIVE_INFINITY;
             }
-        }
-
-        if (!controller.getModSettings().isAutoEat() || controller.getEntity().isInLava() || shouldStop) {
-            stopEat(controller);
+         } else {
+            this.stopEat(this.controller);
             return Float.NEGATIVE_INFINITY;
-        }
+         }
+      }
+   }
 
-        if (!controller.getMLGBucketChain().doneMLG() || controller.getMLGBucketChain().isFalling(controller)) {
-            stopEat(controller);
-            return Float.NEGATIVE_INFINITY;
-        }
+   @Override
+   public String getName() {
+      return "Food chain";
+   }
 
-        Pair<Integer, Optional<Item>> calculation = calculateFood(controller);
-        int foodScore = calculation.getLeft();
-        cachedPerfectFood = calculation.getRight();
-        hasFood = (foodScore > 0);
+   @Override
+   protected void onStop() {
+      super.onStop();
+      if (this.controller != null) {
+         this.stopEat(this.controller);
+      }
+   }
 
-        if (requestFillup && controller.getBaritone().getEntityContext().hungerManager().getFoodLevel() >= 20) {
-            requestFillup = false;
-        }
-        if (!hasFood) {
-            requestFillup = false;
-        }
-
-        if (hasFood && (needsToEat() || requestFillup) && cachedPerfectFood.isPresent()) {
-            startEat(controller, cachedPerfectFood.get());
-        } else {
-            stopEat(controller);
-        }
-
-        Settings settings = controller.getModSettings();
-        if (needsToCollectFood || foodScore < settings.getMinimumFoodAllowed()) {
-            needsToCollectFood = foodScore < settings.getFoodUnitsToCollect();
-            if (needsToCollectFood) {
-                setTask(new CollectFoodTask(settings.getFoodUnitsToCollect()));
-                return 55.0F;
-            }
-        }
-
-        // No task, so no priority.
-        setTask(null);
-        return Float.NEGATIVE_INFINITY;
-    }
-
-    @Override
-    public String getName() {
-        return "Food chain";
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        if (controller != null) {
-            stopEat(controller);
-        }
-    }
-
-    public boolean needsToEat() {
-        if (!hasFood || shouldStop) return false;
-
-        LivingEntity player = controller.getEntity();
-        int foodLevel = controller.getBaritone().getEntityContext().hungerManager().getFoodLevel();
-        float health = player.getHealth();
-
-        if (foodLevel >= 20) return false;
-        if (health <= 10.0F) return true;
-        if (player.isOnFire() || player.hasStatusEffect(StatusEffects.WITHER) || health < config.alwaysEatWhenWitherOrFireAndHealthBelow)
+   public boolean needsToEat() {
+      if (hasFood && !this.shouldStop) {
+         LivingEntity player = this.controller.getEntity();
+         int foodLevel = this.controller.getBaritone().getEntityContext().hungerManager().getFoodLevel();
+         float health = player.getHealth();
+         if (foodLevel >= 20) {
+            return false;
+         } else if (health <= 10.0F) {
             return true;
-
-        if (foodLevel <= config.alwaysEatWhenBelowHunger) return true;
-        if (health < config.alwaysEatWhenBelowHealth) return true;
-
-        if (foodLevel < config.alwaysEatWhenBelowHungerAndPerfectFit && cachedPerfectFood.isPresent()) {
+         } else if (player.isOnFire() || player.hasEffect(MobEffects.WITHER) || health < config.alwaysEatWhenWitherOrFireAndHealthBelow) {
+            return true;
+         } else if (foodLevel <= config.alwaysEatWhenBelowHunger) {
+            return true;
+         } else if (health < config.alwaysEatWhenBelowHealth) {
+            return true;
+         } else if (foodLevel < config.alwaysEatWhenBelowHungerAndPerfectFit && this.cachedPerfectFood.isPresent()) {
             int need = 20 - foodLevel;
-            Item best = cachedPerfectFood.get();
+            Item best = this.cachedPerfectFood.get();
             int fills = Optional.ofNullable(ItemVer.getFoodComponent(best)).map(FoodComponentWrapper::getHunger).orElse(-1);
-            return (fills > 0 && fills <= need);
-        }
+            return fills > 0 && fills <= need;
+         } else {
+            return false;
+         }
+      } else {
+         return false;
+      }
+   }
 
-        return false;
-    }
+   private Tuple<Integer, Optional<Item>> calculateFood(AltoClefController controller) {
+      Item bestFood = null;
+      double bestFoodScore = Double.NEGATIVE_INFINITY;
+      int foodTotal = 0;
+      LivingEntity player = controller.getEntity();
+      float health = player.getHealth();
+      float hunger = controller.getBaritone().getEntityContext().hungerManager().getFoodLevel();
+      float saturation = controller.getBaritone().getEntityContext().hungerManager().getSaturationLevel();
 
-    private Pair<Integer, Optional<Item>> calculateFood(AltoClefController controller) {
-        Item bestFood = null;
-        double bestFoodScore = Double.NEGATIVE_INFINITY;
-        int foodTotal = 0;
-        LivingEntity player = controller.getEntity();
+      for (ItemStack stack : controller.getItemStorage().getItemStacksPlayerInventory(true)) {
+         if (ItemVer.isFood(stack) && !stack.is(Items.SPIDER_EYE)) {
+            FoodComponentWrapper food = ItemVer.getFoodComponent(stack.getItem());
+            if (food != null) {
+               float hungerIfEaten = Math.min(hunger + food.getHunger(), 20.0F);
+               float saturationIfEaten = Math.min(hungerIfEaten, saturation + food.getSaturationModifier());
+               float gainedSaturation = saturationIfEaten - saturation;
+               float gainedHunger = hungerIfEaten - hunger;
+               float hungerWasted = food.getHunger() - gainedHunger;
+               float score = gainedSaturation * 2.0F - hungerWasted;
+               if (stack.is(Items.ROTTEN_FLESH)) {
+                  score -= 100.0F;
+               }
 
-        float health = player.getHealth();
-        float hunger = controller.getBaritone().getEntityContext().hungerManager().getFoodLevel();
-        float saturation = controller.getBaritone().getEntityContext().hungerManager().getSaturationLevel();
+               if (score > bestFoodScore) {
+                  bestFoodScore = score;
+                  bestFood = stack.getItem();
+               }
 
-        for (ItemStack stack : controller.getItemStorage().getItemStacksPlayerInventory(true)) {
-            if (ItemVer.isFood(stack) && !stack.isOf(Items.SPIDER_EYE)) {
-
-                FoodComponentWrapper food = ItemVer.getFoodComponent(stack.getItem());
-                if (food == null) continue;
-
-                // Simple score: prioritize saturation gain, penalize waste.
-                float hungerIfEaten = Math.min(hunger + food.getHunger(), 20.0f);
-                float saturationIfEaten = Math.min(hungerIfEaten, saturation + food.getSaturationModifier());
-
-                float gainedSaturation = saturationIfEaten - saturation;
-                float gainedHunger = hungerIfEaten - hunger;
-                float hungerWasted = food.getHunger() - gainedHunger;
-
-                float score = gainedSaturation * 2 - hungerWasted;
-                if (stack.isOf(Items.ROTTEN_FLESH)) score -= 100; // Heavily penalize rotten flesh
-
-                if (score > bestFoodScore) {
-                    bestFoodScore = score;
-                    bestFood = stack.getItem();
-                }
-                foodTotal += food.getHunger() * stack.getCount();
+               foodTotal += food.getHunger() * stack.getCount();
             }
-        }
-        return new Pair<>(foodTotal, Optional.ofNullable(bestFood));
-    }
+         }
+      }
 
-    public boolean hasFood() {
-        return hasFood;
-    }
+      return new Tuple(foodTotal, Optional.ofNullable(bestFood));
+   }
 
-    public void shouldStop(boolean shouldStopInput) {
-        this.shouldStop = shouldStopInput;
-    }
+   public boolean hasFood() {
+      return hasFood;
+   }
 
-    public boolean isShouldStop() {
-        return shouldStop;
-    }
+   public void shouldStop(boolean shouldStopInput) {
+      this.shouldStop = shouldStopInput;
+   }
 
-    static class FoodChainConfig {
-        public int alwaysEatWhenWitherOrFireAndHealthBelow = 6;
-        public int alwaysEatWhenBelowHunger = 10;
-        public int alwaysEatWhenBelowHealth = 14;
-        public int alwaysEatWhenBelowHungerAndPerfectFit = 20 - 5;
-    }
+   public boolean isShouldStop() {
+      return this.shouldStop;
+   }
+
+   static {
+      ConfigHelper.loadConfig(
+         "configs/food_chain_settings.json", FoodChain.FoodChainConfig::new, FoodChain.FoodChainConfig.class, newConfig -> config = newConfig
+      );
+   }
+
+   static class FoodChainConfig {
+      public int alwaysEatWhenWitherOrFireAndHealthBelow = 6;
+      public int alwaysEatWhenBelowHunger = 10;
+      public int alwaysEatWhenBelowHealth = 14;
+      public int alwaysEatWhenBelowHungerAndPerfectFit = 15;
+   }
 }

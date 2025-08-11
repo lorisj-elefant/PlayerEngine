@@ -1,48 +1,49 @@
 package adris.altoclef.tasks.movement;
 
 import adris.altoclef.tasksystem.Task;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3i;
+import net.minecraft.core.BlockPos;
 
 public class GetCloseToBlockTask extends Task {
-    private final BlockPos toApproach;
+   private final BlockPos toApproach;
+   private int currentRange;
 
-    private int currentRange;
+   public GetCloseToBlockTask(BlockPos toApproach) {
+      this.toApproach = toApproach;
+   }
 
-    public GetCloseToBlockTask(BlockPos toApproach) {
-        this.toApproach = toApproach;
-    }
+   @Override
+   protected void onStart() {
+      this.currentRange = Integer.MAX_VALUE;
+   }
 
-    protected void onStart() {
-        this.currentRange = Integer.MAX_VALUE;
-    }
+   @Override
+   protected Task onTick() {
+      if (this.inRange()) {
+         this.currentRange = this.getCurrentDistance() - 1;
+      }
 
-    protected Task onTick() {
-        if (inRange())
-            this.currentRange = getCurrentDistance() - 1;
-        return (Task) new GetWithinRangeOfBlockTask(this.toApproach, this.currentRange);
-    }
+      return new GetWithinRangeOfBlockTask(this.toApproach, this.currentRange);
+   }
 
-    protected void onStop(Task interruptTask) {
-    }
+   @Override
+   protected void onStop(Task interruptTask) {
+   }
 
-    private int getCurrentDistance() {
-        return (int) Math.sqrt(controller.getPlayer().getBlockPos().getSquaredDistance((Vec3i) this.toApproach));
-    }
+   private int getCurrentDistance() {
+      return (int)Math.sqrt(this.controller.getPlayer().blockPosition().distSqr(this.toApproach));
+   }
 
-    private boolean inRange() {
-        return (controller.getPlayer().getBlockPos().getSquaredDistance((Vec3i) this.toApproach) <= (this.currentRange * this.currentRange));
-    }
+   private boolean inRange() {
+      return this.controller.getPlayer().blockPosition().distSqr(this.toApproach) <= this.currentRange * this.currentRange;
+   }
 
-    protected boolean isEqual(Task other) {
-        if (other instanceof adris.altoclef.tasks.movement.GetCloseToBlockTask) {
-            adris.altoclef.tasks.movement.GetCloseToBlockTask task = (adris.altoclef.tasks.movement.GetCloseToBlockTask) other;
-            return task.toApproach.equals(this.toApproach);
-        }
-        return false;
-    }
+   @Override
+   protected boolean isEqual(Task other) {
+      return other instanceof GetCloseToBlockTask task ? task.toApproach.equals(this.toApproach) : false;
+   }
 
-    protected String toDebugString() {
-        return "Approaching " + this.toApproach.toShortString();
-    }
+   @Override
+   protected String toDebugString() {
+      return "Approaching " + this.toApproach.toShortString();
+   }
 }

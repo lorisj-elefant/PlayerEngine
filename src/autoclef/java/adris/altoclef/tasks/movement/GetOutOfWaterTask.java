@@ -8,97 +8,111 @@ import adris.altoclef.util.time.TimerGame;
 import baritone.api.pathing.goals.Goal;
 import baritone.api.utils.input.Input;
 import baritone.pathing.movement.MovementHelper;
-import net.minecraft.block.Blocks;
-import net.minecraft.item.Item;
-import net.minecraft.util.math.BlockPos;
-
-import java.util.List;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.level.block.Blocks;
 
 public class GetOutOfWaterTask extends CustomBaritoneGoalTask {
-    private boolean startedShimmying = false;
+   private boolean startedShimmying = false;
+   private final TimerGame shimmyTaskTimer = new TimerGame(5.0);
 
-    private final TimerGame shimmyTaskTimer = new TimerGame(5.0D);
+   @Override
+   protected void onStart() {
+   }
 
-    protected void onStart() {
-    }
+   @Override
+   protected Task onTick() {
+      AltoClefController mod = this.controller;
+      if (mod.getPlayer().getAirSupply() >= mod.getPlayer().getMaxAirSupply() && !mod.getPlayer().isUnderWater()) {
+         boolean hasBlockBelow = false;
 
-    protected Task onTick() {
-        AltoClefController mod = controller;
-        if (mod.getPlayer().getAir() < mod.getPlayer().getMaxAir() || mod.getPlayer().isSubmergedInWater())
-            return super.onTick();
-        boolean hasBlockBelow = false;
-        for (int i = 0; i < 3; i++) {
-            if (mod.getWorld().getBlockState(mod.getPlayer().getSteppingPosition().down(i)).getBlock() != Blocks.WATER)
-                hasBlockBelow = true;
-        }
-        boolean hasAirAbove = mod.getWorld().getBlockState(mod.getPlayer().getBlockPos().up(2)).getBlock().equals(Blocks.AIR);
-        if (hasAirAbove && hasBlockBelow && StorageHelper.getNumberOfThrowawayBlocks(mod) > 0) {
+         for (int i = 0; i < 3; i++) {
+            if (mod.getWorld().getBlockState(mod.getPlayer().getOnPos().below(i)).getBlock() != Blocks.WATER) {
+               hasBlockBelow = true;
+            }
+         }
+
+         boolean hasAirAbove = mod.getWorld().getBlockState(mod.getPlayer().blockPosition().above(2)).getBlock().equals(Blocks.AIR);
+         if (hasAirAbove && hasBlockBelow && StorageHelper.getNumberOfThrowawayBlocks(mod) > 0) {
             mod.getInputControls().tryPress(Input.JUMP);
-            if (mod.getPlayer().isOnGround()) {
-                if (!this.startedShimmying) {
-                    this.startedShimmying = true;
-                    this.shimmyTaskTimer.reset();
-                }
-                return (Task) new SafeRandomShimmyTask();
+            if (mod.getPlayer().onGround()) {
+               if (!this.startedShimmying) {
+                  this.startedShimmying = true;
+                  this.shimmyTaskTimer.reset();
+               }
+
+               return new SafeRandomShimmyTask();
             }
-            mod.getSlotHandler().forceEquipItem((Item[]) ((List) (mod.getBaritoneSettings()).acceptableThrowawayItems.get()).toArray(new Item[0]));
-            LookHelper.lookAt(mod, mod.getPlayer().getSteppingPosition().down());
+
+            mod.getSlotHandler().forceEquipItem(mod.getBaritoneSettings().acceptableThrowawayItems.get().toArray(new Item[0]));
+            LookHelper.lookAt(mod, mod.getPlayer().getOnPos().below());
             mod.getInputControls().tryPress(Input.CLICK_RIGHT);
-        }
-        return super.onTick();
-    }
+         }
 
-    protected void onStop(Task interruptTask) {
-    }
+         return super.onTick();
+      } else {
+         return super.onTick();
+      }
+   }
 
-    protected Goal newGoal(AltoClefController mod) {
-        return (Goal) new EscapeFromWaterGoal(mod);
-    }
+   @Override
+   protected void onStop(Task interruptTask) {
+   }
 
-    protected boolean isEqual(Task other) {
-        return false;
-    }
+   @Override
+   protected Goal newGoal(AltoClefController mod) {
+      return new GetOutOfWaterTask.EscapeFromWaterGoal(mod);
+   }
 
-    protected String toDebugString() {
-        return "";
-    }
+   @Override
+   protected boolean isEqual(Task other) {
+      return false;
+   }
 
-    public boolean isFinished() {
-        return (!controller.getPlayer().isTouchingWater() && controller.getPlayer().isOnGround());
-    }
+   @Override
+   protected String toDebugString() {
+      return "";
+   }
 
-    private class EscapeFromWaterGoal implements Goal {
-        private AltoClefController mod;
+   @Override
+   public boolean isFinished() {
+      return !this.controller.getPlayer().isInWater() && this.controller.getPlayer().onGround();
+   }
 
-        private EscapeFromWaterGoal(AltoClefController mod) {
-            this.mod = mod;
-        }
+   private class EscapeFromWaterGoal implements Goal {
+      private AltoClefController mod;
 
-        private boolean isWater(int x, int y, int z) {
-            if (mod.getWorld() == null) return false;
-            return MovementHelper.isWater(mod.getWorld().getBlockState(new BlockPos(x, y, z)));
-        }
+      private EscapeFromWaterGoal(AltoClefController mod) {
+         this.mod = mod;
+      }
 
-        private boolean isWaterAdjacent(int x, int y, int z) {
-            return isWater(x + 1, y, z) || isWater(x - 1, y, z) || isWater(x, y, z + 1) || isWater(x, y, z - 1)
-                    || isWater(x + 1, y, z - 1) || isWater(x + 1, y, z + 1) || isWater(x - 1, y, z - 1)
-                    || isWater(x - 1, y, z + 1);
-        }
+      private boolean isWater(int x, int y, int z) {
+         return this.mod.getWorld() == null ? false : MovementHelper.isWater(this.mod.getWorld().getBlockState(new BlockPos(x, y, z)));
+      }
 
-        @Override
-        public boolean isInGoal(int x, int y, int z) {
-            return !isWater(x, y, z) && !isWaterAdjacent(x, y, z);
-        }
+      private boolean isWaterAdjacent(int x, int y, int z) {
+         return this.isWater(x + 1, y, z)
+            || this.isWater(x - 1, y, z)
+            || this.isWater(x, y, z + 1)
+            || this.isWater(x, y, z - 1)
+            || this.isWater(x + 1, y, z - 1)
+            || this.isWater(x + 1, y, z + 1)
+            || this.isWater(x - 1, y, z - 1)
+            || this.isWater(x - 1, y, z + 1);
+      }
 
-        @Override
-        public double heuristic(int x, int y, int z) {
-            if (isWater(x, y, z)) {
-                return 1;
-            } else if (isWaterAdjacent(x, y, z)) {
-                return 0.5f;
-            }
+      @Override
+      public boolean isInGoal(int x, int y, int z) {
+         return !this.isWater(x, y, z) && !this.isWaterAdjacent(x, y, z);
+      }
 
-            return 0;
-        }
-    }
+      @Override
+      public double heuristic(int x, int y, int z) {
+         if (this.isWater(x, y, z)) {
+            return 1.0;
+         } else {
+            return this.isWaterAdjacent(x, y, z) ? 0.5 : 0.0;
+         }
+      }
+   }
 }

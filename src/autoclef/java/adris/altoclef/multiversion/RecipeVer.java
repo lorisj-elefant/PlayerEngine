@@ -1,11 +1,11 @@
 package adris.altoclef.multiversion;
 
-import net.minecraft.item.ItemStack;
-import net.minecraft.recipe.Recipe;
-import net.minecraft.world.World;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.level.Level;
 
 public class RecipeVer {
-    public static ItemStack getOutput(Recipe<?> recipe, World world) {
-        return recipe.getResult(world.getRegistryManager());
-    }
+   public static ItemStack getOutput(Recipe<?> recipe, Level world) {
+      return recipe.getResultItem(world.registryAccess());
+   }
 }

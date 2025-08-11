@@ -5,43 +5,40 @@ import adris.altoclef.Debug;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.baritone.GoalDirectionXZ;
 import baritone.api.pathing.goals.Goal;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.phys.Vec3;
 
 public class GoInDirectionXZTask extends CustomBaritoneGoalTask {
-    private final Vec3d origin;
+   private final Vec3 origin;
+   private final Vec3 delta;
+   private final double sidePenalty;
 
-    private final Vec3d delta;
+   public GoInDirectionXZTask(Vec3 origin, Vec3 delta, double sidePenalty) {
+      this.origin = origin;
+      this.delta = delta;
+      this.sidePenalty = sidePenalty;
+   }
 
-    private final double sidePenalty;
+   private static boolean closeEnough(Vec3 a, Vec3 b) {
+      return a.distanceToSqr(b) < 0.001;
+   }
 
-    public GoInDirectionXZTask(Vec3d origin, Vec3d delta, double sidePenalty) {
-        this.origin = origin;
-        this.delta = delta;
-        this.sidePenalty = sidePenalty;
-    }
+   @Override
+   protected Goal newGoal(AltoClefController mod) {
+      try {
+         return new GoalDirectionXZ(this.origin, this.delta, this.sidePenalty);
+      } catch (Exception var3) {
+         Debug.logMessage("Invalid goal direction XZ (probably zero distance)");
+         return null;
+      }
+   }
 
-    private static boolean closeEnough(Vec3d a, Vec3d b) {
-        return (a.squaredDistanceTo(b) < 0.001D);
-    }
+   @Override
+   protected boolean isEqual(Task other) {
+      return !(other instanceof GoInDirectionXZTask task) ? false : closeEnough(task.origin, this.origin) && closeEnough(task.delta, this.delta);
+   }
 
-    protected Goal newGoal(AltoClefController mod) {
-        try {
-            return (Goal) new GoalDirectionXZ(this.origin, this.delta, this.sidePenalty);
-        } catch (Exception e) {
-            Debug.logMessage("Invalid goal direction XZ (probably zero distance)");
-            return null;
-        }
-    }
-
-    protected boolean isEqual(Task other) {
-        if (other instanceof adris.altoclef.tasks.movement.GoInDirectionXZTask) {
-            adris.altoclef.tasks.movement.GoInDirectionXZTask task = (adris.altoclef.tasks.movement.GoInDirectionXZTask) other;
-            return (closeEnough(task.origin, this.origin) && closeEnough(task.delta, this.delta));
-        }
-        return false;
-    }
-
-    protected String toDebugString() {
-        return "Going in direction: <" + this.origin.x + "," + this.origin.z + "> direction: <" + this.delta.x + "," + this.delta.z + ">";
-    }
+   @Override
+   protected String toDebugString() {
+      return "Going in direction: <" + this.origin.x + "," + this.origin.z + "> direction: <" + this.delta.x + "," + this.delta.z + ">";
+   }
 }

@@ -1,116 +1,98 @@
-/*
- * This file is part of Baritone.
- *
- * Baritone is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Baritone is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
- */
-
 package baritone.utils.player;
 
 import baritone.api.entity.IInteractionManagerProvider;
 import baritone.api.entity.LivingEntityInteractionManager;
 import baritone.api.utils.IInteractionController;
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket.Action;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
 
-
-/**
- * Implementation of {@link IInteractionController} that chains to the primary player controller's methods
- *
- * @author Brady
- * @since 12/14/2018
- */
 public class EntityInteractionController implements IInteractionController {
-    private final LivingEntity player;
-    private int sequence;
+   private final LivingEntity player;
+   private int sequence;
 
-    public EntityInteractionController(LivingEntity player) {
-        this.player = player;
-    }
+   public EntityInteractionController(LivingEntity player) {
+      this.player = player;
+   }
 
-    @Override
-    public boolean hasBrokenBlock() {
-        return getInteractionManager().hasBrokenBlock();
-    }
+   @Override
+   public boolean hasBrokenBlock() {
+      return this.getInteractionManager().hasBrokenBlock();
+   }
 
-    @Override
-    public boolean onPlayerDamageBlock(BlockPos pos, Direction side) {
-        LivingEntityInteractionManager interactionManager = getInteractionManager();
-        if (interactionManager.isMining()) {
-            int progress = interactionManager.getBlockBreakingProgress();
-            if (progress >= 10) {
-                getInteractionManager().processBlockBreakingAction(interactionManager.getMiningPos(), PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, side, this.player.getWorld().getTopY(), sequence++);
-            }
-            return true;
-        }
-        return false;
-    }
+   @Override
+   public boolean onPlayerDamageBlock(BlockPos pos, Direction side) {
+      LivingEntityInteractionManager interactionManager = this.getInteractionManager();
+      if (interactionManager.isMining()) {
+         int progress = interactionManager.getBlockBreakingProgress();
+         if (progress >= 10) {
+            this.getInteractionManager()
+               .processBlockBreakingAction(
+                  interactionManager.getMiningPos(), Action.STOP_DESTROY_BLOCK, side, this.player.level().getMaxBuildHeight(), this.sequence++
+               );
+         }
 
-    @Override
-    public void resetBlockRemoving() {
-        LivingEntityInteractionManager interactionManager = getInteractionManager();
-        if (interactionManager.isMining()) {
-            getInteractionManager().processBlockBreakingAction(interactionManager.getMiningPos(), PlayerActionC2SPacket.Action.ABORT_DESTROY_BLOCK, Direction.UP, this.player.getWorld().getTopY(), sequence++);
-        }
-    }
+         return true;
+      } else {
+         return false;
+      }
+   }
 
-    @Override
-    public GameMode getGameType() {
-        return GameMode.SURVIVAL;
-    }
+   @Override
+   public void resetBlockRemoving() {
+      LivingEntityInteractionManager interactionManager = this.getInteractionManager();
+      if (interactionManager.isMining()) {
+         this.getInteractionManager()
+            .processBlockBreakingAction(
+               interactionManager.getMiningPos(), Action.ABORT_DESTROY_BLOCK, Direction.UP, this.player.level().getMaxBuildHeight(), this.sequence++
+            );
+      }
+   }
 
-    @Override
-    public ActionResult processRightClickBlock(LivingEntity player, World world, Hand hand, BlockHitResult result) {
-        return getInteractionManager().interactBlock(this.player, this.player.getWorld(), this.player.getStackInHand(hand), hand, result);
-    }
+   @Override
+   public GameType getGameType() {
+      return GameType.SURVIVAL;
+   }
 
-    @Override
-    public ActionResult processRightClick(LivingEntity player, World world, Hand hand) {
-        return getInteractionManager().interactItem(this.player, this.player.getWorld(), this.player.getStackInHand(hand), hand);
-    }
+   @Override
+   public InteractionResult processRightClickBlock(LivingEntity player, Level world, InteractionHand hand, BlockHitResult result) {
+      return this.getInteractionManager().interactBlock(this.player, this.player.level(), this.player.getItemInHand(hand), hand, result);
+   }
 
-    @Override
-    public boolean clickBlock(BlockPos loc, Direction face) {
-        BlockState state = this.player.getWorld().getBlockState(loc);
-        if (state.isAir()) return false;
+   @Override
+   public InteractionResult processRightClick(LivingEntity player, Level world, InteractionHand hand) {
+      return this.getInteractionManager().interactItem(this.player, this.player.level(), this.player.getItemInHand(hand), hand);
+   }
 
-        getInteractionManager().processBlockBreakingAction(loc, PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, face, this.player.getWorld().getTopY(), sequence++);
-        // Success = starting the mining process or insta-mining
-        return (getInteractionManager()).isMining() || this.player.getWorld().isAir(loc);
-    }
+   @Override
+   public boolean clickBlock(BlockPos loc, Direction face) {
+      BlockState state = this.player.level().getBlockState(loc);
+      if (state.isAir()) {
+         return false;
+      } else {
+         this.getInteractionManager()
+            .processBlockBreakingAction(loc, Action.START_DESTROY_BLOCK, face, this.player.level().getMaxBuildHeight(), this.sequence++);
+         return this.getInteractionManager().isMining() || this.player.level().isEmptyBlock(loc);
+      }
+   }
 
-    public LivingEntityInteractionManager getInteractionManager() {
-        if (player instanceof IInteractionManagerProvider managerProvider)
-            return managerProvider.getInteractionManager();
-        return null;
-    }
+   public LivingEntityInteractionManager getInteractionManager() {
+      return this.player instanceof IInteractionManagerProvider managerProvider ? managerProvider.getInteractionManager() : null;
+   }
 
-    @Override
-    public void setHittingBlock(boolean hittingBlock) {
-        // NO-OP
-    }
+   @Override
+   public void setHittingBlock(boolean hittingBlock) {
+   }
 
-    @Override
-    public double getBlockReachDistance() {
-        return 4.5;
-    }
+   @Override
+   public double getBlockReachDistance() {
+      return 4.5;
+   }
 }

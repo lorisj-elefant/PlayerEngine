@@ -1,20 +1,3 @@
-/*
- * This file is part of Baritone.
- *
- * Baritone is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Baritone is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
- */
-
 package baritone;
 
 import baritone.api.IBaritone;
@@ -27,58 +10,53 @@ import baritone.cache.WorldScanner;
 import baritone.command.CommandSystem;
 import baritone.utils.SettingsLoader;
 import baritone.utils.schematic.SchematicSystem;
-import net.minecraft.entity.LivingEntity;
-
 import java.util.function.Function;
+import net.minecraft.world.entity.LivingEntity;
 
-/**
- * @author Brady
- * @since 9/29/2018
- */
 public final class BaritoneProvider implements IBaritoneProvider {
+   public static final BaritoneProvider INSTANCE = new BaritoneProvider();
+   private final Settings settings = new Settings();
 
-    public static final BaritoneProvider INSTANCE = new BaritoneProvider();
+   public BaritoneProvider() {
+      SettingsLoader.readAndApply(this.settings);
+   }
 
-    private final Settings settings;
+   @Override
+   public IBaritone getBaritone(LivingEntity entity) {
+      if (entity.level().isClientSide()) {
+         throw new IllegalStateException("Lol we only support servers now");
+      } else {
+         return IBaritone.KEY.get(entity);
+      }
+   }
 
-    public BaritoneProvider() {
-        this.settings = new Settings();
-        SettingsLoader.readAndApply(settings);
-    }
+   public boolean isPathing(LivingEntity entity) {
+      IBaritone baritone = IBaritone.KEY.getNullable(entity);
+      return baritone != null && baritone.isActive();
+   }
 
-    @Override
-    public IBaritone getBaritone(LivingEntity entity) {
-        if (entity.getWorld().isClient()) throw new IllegalStateException("Lol we only support servers now");
-        return IBaritone.KEY.get(entity);
-    }
+   @Override
+   public IWorldScanner getWorldScanner() {
+      return WorldScanner.INSTANCE;
+   }
 
-    public boolean isPathing(LivingEntity entity) {
-        IBaritone baritone = IBaritone.KEY.getNullable(entity);
-        return baritone != null && baritone.isActive();
-    }
+   @Override
+   public ICommandSystem getCommandSystem() {
+      return CommandSystem.INSTANCE;
+   }
 
-    @Override
-    public IWorldScanner getWorldScanner() {
-        return WorldScanner.INSTANCE;
-    }
+   @Override
+   public ISchematicSystem getSchematicSystem() {
+      return SchematicSystem.INSTANCE;
+   }
 
-    @Override
-    public ICommandSystem getCommandSystem() {
-        return CommandSystem.INSTANCE;
-    }
+   @Override
+   public Settings getGlobalSettings() {
+      return this.settings;
+   }
 
-    @Override
-    public ISchematicSystem getSchematicSystem() {
-        return SchematicSystem.INSTANCE;
-    }
-
-    @Override
-    public Settings getGlobalSettings() {
-        return this.settings;
-    }
-
-    @Override
-    public <E extends LivingEntity> Function<E, IBaritone> componentFactory() {
-        return Baritone::new;
-    }
+   @Override
+   public <E extends LivingEntity> Function<E, IBaritone> componentFactory() {
+      return Baritone::new;
+   }
 }

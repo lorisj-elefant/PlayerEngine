@@ -6,12 +6,12 @@ import adris.altoclef.commandsystem.Command;
 import adris.altoclef.tasks.movement.IdleTask;
 
 public class IdleCommand extends Command {
-    public IdleCommand() {
-        super("idle", "Stand still");
-    }
+   public IdleCommand() {
+      super("idle", "Stand still");
+   }
 
-    @Override
-    protected void call(AltoClefController mod, ArgParser parser) {
-        mod.runUserTask(new IdleTask(), this::finish);
-    }
+   @Override
+   protected void call(AltoClefController mod, ArgParser parser) {
+      mod.runUserTask(new IdleTask(), () -> this.finish());
+   }
 }

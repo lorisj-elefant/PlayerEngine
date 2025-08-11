@@ -2,87 +2,86 @@ package adris.altoclef.tasksystem;
 
 import adris.altoclef.AltoClefController;
 import adris.altoclef.Debug;
-
 import java.util.ArrayList;
 
 public class TaskRunner {
+   private final ArrayList<TaskChain> chains = new ArrayList<>();
+   private final AltoClefController mod;
+   private boolean active;
+   private TaskChain cachedCurrentTaskChain = null;
+   public String statusReport = " (no chain running) ";
 
-    private final ArrayList<TaskChain> chains = new ArrayList<>();
-    private final AltoClefController mod;
-    private boolean active;
+   public TaskRunner(AltoClefController mod) {
+      this.mod = mod;
+      this.active = false;
+   }
 
-    private TaskChain cachedCurrentTaskChain = null;
+   public void tick() {
+      if (this.active && AltoClefController.inGame()) {
+         TaskChain maxChain = null;
+         float maxPriority = Float.NEGATIVE_INFINITY;
 
-    public String statusReport = " (no chain running) ";
-
-    public TaskRunner(AltoClefController mod) {
-        this.mod = mod;
-        active = false;
-    }
-
-    public void tick() {
-        if (!active || !AltoClefController.inGame()) {
-            statusReport = " (no chain running) ";
-            return;
-        }
-
-        // Get highest priority chain and run
-        TaskChain maxChain = null;
-        float maxPriority = Float.NEGATIVE_INFINITY;
-        for (TaskChain chain : chains) {
-            if (!chain.isActive()) continue;
-            float priority = chain.getPriority();
-            if (priority > maxPriority) {
-                maxPriority = priority;
-                maxChain = chain;
+         for (TaskChain chain : this.chains) {
+            if (chain.isActive()) {
+               float priority = chain.getPriority();
+               if (priority > maxPriority) {
+                  maxPriority = priority;
+                  maxChain = chain;
+               }
             }
-        }
-        if (cachedCurrentTaskChain != null && maxChain != cachedCurrentTaskChain) {
-            cachedCurrentTaskChain.onInterrupt(maxChain);
-        }
-        cachedCurrentTaskChain = maxChain;
-        if (maxChain != null) {
-            statusReport = "Chain: " + maxChain.getName() + ", priority: " + maxPriority;
+         }
+
+         if (this.cachedCurrentTaskChain != null && maxChain != this.cachedCurrentTaskChain) {
+            this.cachedCurrentTaskChain.onInterrupt(maxChain);
+         }
+
+         this.cachedCurrentTaskChain = maxChain;
+         if (maxChain != null) {
+            this.statusReport = "Chain: " + maxChain.getName() + ", priority: " + maxPriority;
             maxChain.tick();
-        } else {
-            statusReport = " (no chain running) ";
-        }
-    }
+         } else {
+            this.statusReport = " (no chain running) ";
+         }
+      } else {
+         this.statusReport = " (no chain running) ";
+      }
+   }
 
-    public void addTaskChain(TaskChain chain) {
-        chains.add(chain);
-    }
+   public void addTaskChain(TaskChain chain) {
+      this.chains.add(chain);
+   }
 
-    public void enable() {
-        if (!active) {
-            mod.getBehaviour().push();
-            mod.getBehaviour().setPauseOnLostFocus(false);
-        }
-        active = true;
-    }
+   public void enable() {
+      if (!this.active) {
+         this.mod.getBehaviour().push();
+         this.mod.getBehaviour().setPauseOnLostFocus(false);
+      }
 
-    public void disable() {
-        if (active) {
-            mod.getBehaviour().pop();
-        }
-        for (TaskChain chain : chains) {
-            chain.stop();
-        }
-        active = false;
+      this.active = true;
+   }
 
-        Debug.logMessage("Stopped");
-    }
+   public void disable() {
+      if (this.active) {
+         this.mod.getBehaviour().pop();
+      }
 
-    public boolean isActive() {
-        return active;
-    }
+      for (TaskChain chain : this.chains) {
+         chain.stop();
+      }
 
-    public TaskChain getCurrentTaskChain() {
-        return cachedCurrentTaskChain;
-    }
+      this.active = false;
+      Debug.logMessage("Stopped");
+   }
 
-    // Kinda jank ngl
-    public AltoClefController getMod() {
-        return mod;
-    }
+   public boolean isActive() {
+      return this.active;
+   }
+
+   public TaskChain getCurrentTaskChain() {
+      return this.cachedCurrentTaskChain;
+   }
+
+   public AltoClefController getMod() {
+      return this.mod;
+   }
 }

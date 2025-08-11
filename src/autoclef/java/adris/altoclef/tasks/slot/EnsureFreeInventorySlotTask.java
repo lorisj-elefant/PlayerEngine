@@ -5,41 +5,44 @@ import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.helpers.LookHelper;
 import adris.altoclef.util.helpers.StorageHelper;
 import adris.altoclef.util.slots.Slot;
-import net.minecraft.item.ItemStack;
-import net.minecraft.screen.slot.SlotActionType;
-
 import java.util.Optional;
+import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.item.ItemStack;
 
 public class EnsureFreeInventorySlotTask extends Task {
-    protected void onStart() {
-    }
+   @Override
+   protected void onStart() {
+   }
 
-    protected Task onTick() {
-        AltoClefController mod = controller;
-        ItemStack cursorStack = StorageHelper.getItemStackInCursorSlot(controller);
-        Optional<Slot> garbage = StorageHelper.getGarbageSlot(mod);
-        if (cursorStack.isEmpty() &&
-                garbage.isPresent()) {
-            mod.getSlotHandler().clickSlot(garbage.get(), 0, SlotActionType.PICKUP);
-            return null;
-        }
-        if (!cursorStack.isEmpty()) {
-            LookHelper.randomOrientation(controller);
-            mod.getSlotHandler().clickSlot(Slot.UNDEFINED, 0, SlotActionType.PICKUP);
-            return null;
-        }
-        setDebugState("All items are protected.");
-        return null;
-    }
+   @Override
+   protected Task onTick() {
+      AltoClefController mod = this.controller;
+      ItemStack cursorStack = StorageHelper.getItemStackInCursorSlot(this.controller);
+      Optional<Slot> garbage = StorageHelper.getGarbageSlot(mod);
+      if (cursorStack.isEmpty() && garbage.isPresent()) {
+         mod.getSlotHandler().clickSlot(garbage.get(), 0, ClickType.PICKUP);
+         return null;
+      } else if (!cursorStack.isEmpty()) {
+         LookHelper.randomOrientation(this.controller);
+         mod.getSlotHandler().clickSlot(Slot.UNDEFINED, 0, ClickType.PICKUP);
+         return null;
+      } else {
+         this.setDebugState("All items are protected.");
+         return null;
+      }
+   }
 
-    protected void onStop(Task interruptTask) {
-    }
+   @Override
+   protected void onStop(Task interruptTask) {
+   }
 
-    protected boolean isEqual(Task obj) {
-        return obj instanceof adris.altoclef.tasks.slot.EnsureFreeInventorySlotTask;
-    }
+   @Override
+   protected boolean isEqual(Task obj) {
+      return obj instanceof EnsureFreeInventorySlotTask;
+   }
 
-    protected String toDebugString() {
-        return "Ensuring inventory is free";
-    }
+   @Override
+   protected String toDebugString() {
+      return "Ensuring inventory is free";
+   }
 }

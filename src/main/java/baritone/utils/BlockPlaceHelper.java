@@ -1,66 +1,49 @@
-/*
- * This file is part of Baritone.
- *
- * Baritone is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Baritone is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
- */
-
 package baritone.utils;
 
 import baritone.api.BaritoneAPI;
 import baritone.api.entity.IInventoryProvider;
 import baritone.api.utils.IEntityContext;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.vehicle.BoatEntity;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.hit.HitResult;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.vehicle.Boat;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.HitResult.Type;
 
 public class BlockPlaceHelper {
+   private final IEntityContext ctx;
+   private int rightClickTimer;
 
-    private final IEntityContext ctx;
-    private int rightClickTimer;
+   BlockPlaceHelper(IEntityContext playerContext) {
+      this.ctx = playerContext;
+   }
 
-    BlockPlaceHelper(IEntityContext playerContext) {
-        this.ctx = playerContext;
-    }
+   public void tick(boolean rightClickRequested) {
+      if (this.rightClickTimer > 0) {
+         this.rightClickTimer--;
+      } else {
+         HitResult mouseOver = this.ctx.objectMouseOver();
+         boolean isRowingBoat = this.ctx.entity().getVehicle() != null && this.ctx.entity().getVehicle() instanceof Boat;
+         if (rightClickRequested && this.ctx.entity() instanceof IInventoryProvider && !isRowingBoat && mouseOver != null && mouseOver.getType() == Type.BLOCK) {
+            this.rightClickTimer = BaritoneAPI.getGlobalSettings().rightClickSpeed.get();
+            LivingEntity player = this.ctx.entity();
 
-    public void tick(boolean rightClickRequested) {
-        if (rightClickTimer > 0) {
-            rightClickTimer--;
-            return;
-        }
-        HitResult mouseOver = ctx.objectMouseOver();
-        boolean isRowingBoat = ctx.entity().getVehicle() != null && ctx.entity().getVehicle() instanceof BoatEntity;
-        if (!rightClickRequested || !(ctx.entity() instanceof IInventoryProvider) || isRowingBoat || mouseOver == null || mouseOver.getType() != HitResult.Type.BLOCK) {
-            return;
-        }
+            for (InteractionHand hand : InteractionHand.values()) {
+               InteractionResult actionResult = this.ctx.playerController().processRightClickBlock(player, this.ctx.world(), hand, (BlockHitResult)mouseOver);
+               if (actionResult.consumesAction()) {
+                  if (actionResult.shouldSwing()) {
+                     player.swing(hand);
+                  }
 
-        rightClickTimer = BaritoneAPI.getGlobalSettings().rightClickSpeed.get();
-        LivingEntity player = ctx.entity();
+                  return;
+               }
 
-        for (Hand hand : Hand.values()) {
-            ActionResult actionResult = ctx.playerController().processRightClickBlock(player, ctx.world(), hand, (BlockHitResult) mouseOver);
-            if (actionResult.isAccepted()) {
-                if (actionResult.shouldSwingHand()) {
-                    player.swingHand(hand);
-                }
-                return;
+               if (!player.getItemInHand(hand).isEmpty() && this.ctx.playerController().processRightClick(player, this.ctx.world(), hand).consumesAction()) {
+                  return;
+               }
             }
-            if (!player.getStackInHand(hand).isEmpty() && ctx.playerController().processRightClick(player, ctx.world(), hand).isAccepted()) {
-                return;
-            }
-        }
-    }
+         }
+      }
+   }
 }

@@ -1,20 +1,3 @@
-/*
- * This file is part of Baritone.
- *
- * Baritone is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Baritone is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
- */
-
 package baritone.command.manager;
 
 import baritone.api.command.argument.ICommandArgument;
@@ -28,7 +11,6 @@ import com.mojang.brigadier.arguments.ArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
-
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -36,46 +18,37 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
 public class BaritoneArgumentType implements ArgumentType<String> {
-    public static BaritoneArgumentType baritone() {
-        return new BaritoneArgumentType();
-    }
+   public static BaritoneArgumentType baritone() {
+      return new BaritoneArgumentType();
+   }
 
-    public static String getCommand(final CommandContext<?> context, final String name) {
-        return context.getArgument(name, String.class);
-    }
+   public static String getCommand(CommandContext<?> context, String name) {
+      return (String)context.getArgument(name, String.class);
+   }
 
-    @Override
-    public String parse(StringReader reader) {
-        final String text = reader.getRemaining();
-        reader.setCursor(reader.getTotalLength());
-        return text;
-    }
+   public String parse(StringReader reader) {
+      String text = reader.getRemaining();
+      reader.setCursor(reader.getTotalLength());
+      return text;
+   }
 
-    public Stream<String> tabComplete(ICommandManager manager, String msg) {
-        try {
-            List<ICommandArgument> args = CommandArguments.from(msg, true);
-            ArgConsumer argc = new ArgConsumer(manager, args, manager.getBaritone());
-            if (argc.hasAtMost(2)) {
-                if (argc.hasExactly(1)) {
-                    return new TabCompleteHelper()
-                            .addCommands()
-                            .filterPrefix(argc.getString())
-                            .stream();
-                }
-            }
-            return manager.tabComplete(msg);
-        } catch (CommandNotEnoughArgumentsException ignored) { // Shouldn't happen, the operation is safe
-            return Stream.empty();
-        }
-    }
+   public Stream<String> tabComplete(ICommandManager manager, String msg) {
+      try {
+         List<ICommandArgument> args = CommandArguments.from(msg, true);
+         ArgConsumer argc = new ArgConsumer(manager, args, manager.getBaritone());
+         return argc.hasAtMost(2) && argc.hasExactly(1)
+            ? new TabCompleteHelper().addCommands().filterPrefix(argc.getString()).stream()
+            : manager.tabComplete(msg);
+      } catch (CommandNotEnoughArgumentsException var5) {
+         return Stream.empty();
+      }
+   }
 
-    @Override
-    public <S> CompletableFuture<Suggestions> listSuggestions(CommandContext<S> context, SuggestionsBuilder builder) {
-        return Suggestions.empty();
-    }
+   public <S> CompletableFuture<Suggestions> listSuggestions(CommandContext<S> context, SuggestionsBuilder builder) {
+      return Suggestions.empty();
+   }
 
-    @Override
-    public Collection<String> getExamples() {
-        return Arrays.asList("goto x y z", "click");
-    }
+   public Collection<String> getExamples() {
+      return Arrays.asList("goto x y z", "click");
+   }
 }

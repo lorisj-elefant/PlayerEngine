@@ -3,91 +3,88 @@ package adris.altoclef.util.helpers;
 import adris.altoclef.AltoClefController;
 import adris.altoclef.multiversion.DamageSourceWrapper;
 import adris.altoclef.multiversion.MethodWrapper;
-import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.entity.DamageUtil;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.entity.mob.EndermanEntity;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.entity.mob.PiglinEntity;
-import net.minecraft.entity.mob.SlimeEntity;
-import net.minecraft.entity.mob.ZombifiedPiglinEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
+import net.minecraft.world.damagesource.CombatRules;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.monster.EnderMan;
+import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.monster.Slime;
+import net.minecraft.world.entity.monster.ZombifiedPiglin;
+import net.minecraft.world.entity.monster.piglin.Piglin;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
 
 public class EntityHelper {
-    public static final double ENTITY_GRAVITY = 0.08D;
+   public static final double ENTITY_GRAVITY = 0.08;
 
-    public static boolean isAngryAtPlayer(AltoClefController mod, Entity mob) {
-        boolean hostile = isProbablyHostileToPlayer(mod, mob);
-        if (mob instanceof MobEntity entity) {
-            return (hostile && entity.getTarget() == mod.getPlayer());
-        }
-        return hostile;
-    }
+   public static boolean isAngryAtPlayer(AltoClefController mod, Entity mob) {
+      boolean hostile = isProbablyHostileToPlayer(mod, mob);
+      return !(mob instanceof Mob entity) ? hostile : hostile && entity.getTarget() == mod.getPlayer();
+   }
 
-    public static boolean isProbablyHostileToPlayer(AltoClefController mod, Entity entity) {
-        if (entity instanceof MobEntity) {
-            MobEntity mob = (MobEntity) entity;
-            if (mob instanceof SlimeEntity) {
-                SlimeEntity slime = (SlimeEntity) mob;
-                return (slime.getAttributeValue(EntityAttributes.GENERIC_ATTACK_DAMAGE) > 0.0D);
-            }
-            if (mob instanceof PiglinEntity) {
-                PiglinEntity piglin = (PiglinEntity) mob;
-                return (piglin.isAttacking() && !isTradingPiglin((Entity) mob) && piglin.isAdult());
-            }
-            if (mob instanceof EndermanEntity) {
-                EndermanEntity enderman = (EndermanEntity) mob;
-                return enderman.isAngry();
-            }
-            if (mob instanceof ZombifiedPiglinEntity) {
-                ZombifiedPiglinEntity zombifiedPiglin = (ZombifiedPiglinEntity) mob;
-                return zombifiedPiglin.isAttacking();
-            }
-            return (mob.isAttacking() || mob instanceof net.minecraft.entity.mob.HostileEntity);
-        }
-        return false;
-    }
+   public static boolean isProbablyHostileToPlayer(AltoClefController mod, Entity entity) {
+      if (entity instanceof Mob mob) {
+         if (mob instanceof Slime slime) {
+            return slime.getAttributeValue(Attributes.ATTACK_DAMAGE) > 0.0;
+         } else if (mob instanceof Piglin piglin) {
+            return piglin.isAggressive() && !isTradingPiglin(mob) && piglin.isAdult();
+         } else if (mob instanceof EnderMan enderman) {
+            return enderman.isCreepy();
+         } else {
+            return mob instanceof ZombifiedPiglin zombifiedPiglin ? zombifiedPiglin.isAggressive() : mob.isAggressive() || mob instanceof Monster;
+         }
+      } else {
+         return false;
+      }
+   }
 
-    public static boolean isTradingPiglin(Entity entity) {
-        if (entity instanceof PiglinEntity) {
-            PiglinEntity pig = (PiglinEntity) entity;
-            if (pig.getItemsHand() != null)
-                for (ItemStack stack : pig.getItemsHand()) {
-                    if (stack.getItem().equals(Items.GOLD_INGOT))
-                        return true;
-                }
-        }
-        return false;
-    }
-
-    public static double calculateResultingPlayerDamage(LivingEntity player, DamageSource src, double damageAmount) {
-        DamageSourceWrapper source = DamageSourceWrapper.of(src);
-        if (player.isInvulnerableTo(src))
-            return 0.0D;
-        if (!source.bypassesArmor())
-            damageAmount = MethodWrapper.getDamageLeft((LivingEntity) player, damageAmount, src, player.getArmor(), player.getAttributeValue(EntityAttributes.GENERIC_ARMOR_TOUGHNESS));
-        if (!source.bypassesShield()) {
-            if (player.hasStatusEffect(StatusEffects.RESISTANCE) && source.isOutOfWorld()) {
-                float k = ((player.getStatusEffect(StatusEffects.RESISTANCE).getAmplifier() + 1) * 5);
-                float j = 25.0F - k;
-                double f = damageAmount * j;
-                double g = damageAmount;
-                damageAmount = Math.max(f / 25.0D, 0.0D);
+   public static boolean isTradingPiglin(Entity entity) {
+      if (entity instanceof Piglin pig && pig.getHandSlots() != null) {
+         for (ItemStack stack : pig.getHandSlots()) {
+            if (stack.getItem().equals(Items.GOLD_INGOT)) {
+               return true;
             }
-            if (damageAmount <= 0.0D) {
-                damageAmount = 0.0D;
+         }
+      }
+
+      return false;
+   }
+
+   public static double calculateResultingPlayerDamage(LivingEntity player, DamageSource src, double damageAmount) {
+      DamageSourceWrapper source = DamageSourceWrapper.of(src);
+      if (player.isInvulnerableTo(src)) {
+         return 0.0;
+      } else {
+         if (!source.bypassesArmor()) {
+            damageAmount = MethodWrapper.getDamageLeft(
+               player, damageAmount, src, (double)player.getArmorValue(), player.getAttributeValue(Attributes.ARMOR_TOUGHNESS)
+            );
+         }
+
+         if (!source.bypassesShield()) {
+            if (player.hasEffect(MobEffects.DAMAGE_RESISTANCE) && source.isOutOfWorld()) {
+               float k = (player.getEffect(MobEffects.DAMAGE_RESISTANCE).getAmplifier() + 1) * 5;
+               float j = 25.0F - k;
+               double f = damageAmount * j;
+               damageAmount = Math.max(f / 25.0, 0.0);
+            }
+
+            if (damageAmount <= 0.0) {
+               damageAmount = 0.0;
             } else {
-                float k = EnchantmentHelper.getProtectionAmount(player.getArmorItems(), src);
-                if (k > 0.0F)
-                    damageAmount = DamageUtil.getInflictedDamage((float) damageAmount, k);
+               float k = EnchantmentHelper.getDamageProtection(player.getArmorSlots(), src);
+               if (k > 0.0F) {
+                  damageAmount = CombatRules.getDamageAfterMagicAbsorb((float)damageAmount, k);
+               }
             }
-        }
-        damageAmount = Math.max(damageAmount - player.getAbsorptionAmount(), 0.0D);
-        return damageAmount;
-    }
+         }
+
+         return Math.max(damageAmount - player.getAbsorptionAmount(), 0.0);
+      }
+   }
 }

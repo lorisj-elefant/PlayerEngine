@@ -1,216 +1,213 @@
-/*
- * This file is part of Baritone.
- *
- * Baritone is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Baritone is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
- */
-
 package baritone.behavior;
 
 import baritone.Baritone;
 import baritone.api.entity.IInventoryProvider;
 import baritone.api.entity.LivingEntityInventory;
 import baritone.utils.ToolSet;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemPlacementContext;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.ItemUsageContext;
-import net.minecraft.item.Items;
-import net.minecraft.item.PickaxeItem;
-import net.minecraft.item.ToolItem;
-import net.minecraft.registry.tag.TagKey;
-import net.minecraft.util.Hand;
-import net.minecraft.util.collection.DefaultedList;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
-
 import java.util.ArrayList;
 import java.util.OptionalInt;
 import java.util.Random;
 import java.util.function.Predicate;
+import net.minecraft.core.Direction;
+import net.minecraft.core.NonNullList;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.PickaxeItem;
+import net.minecraft.world.item.TieredItem;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 
 public final class InventoryBehavior extends Behavior {
+   public InventoryBehavior(Baritone baritone) {
+      super(baritone);
+   }
 
-    public InventoryBehavior(Baritone baritone) {
-        super(baritone);
-    }
-
-    @Override
-    public void onTickServer() {
-        if (!baritone.settings().allowInventory.get()) {
-            return;
-        }
-        if (!(ctx.entity() instanceof IInventoryProvider player)) {
-            return;
-        }
-        if (firstValidThrowaway(player.getLivingInventory()) >= 9) { // aka there are none on the hotbar, but there are some in main inventory
-            swapWithHotBar(firstValidThrowaway(player.getLivingInventory()), 8, player.getLivingInventory());
-        }
-        int pick = bestToolAgainst(Blocks.STONE, PickaxeItem.class);
-        if (pick >= 9) {
-            for(int i=0;i<9;i++){
-                if(player.getLivingInventory().getStack(i).getItem()!= Items.BUCKET){
-                    swapWithHotBar(pick, i, player.getLivingInventory());
-                    break;
-                }
+   @Override
+   public void onTickServer() {
+      if (this.baritone.settings().allowInventory.get()) {
+         if (this.ctx.entity() instanceof IInventoryProvider player) {
+            if (this.firstValidThrowaway(player.getLivingInventory()) >= 9) {
+               this.swapWithHotBar(this.firstValidThrowaway(player.getLivingInventory()), 8, player.getLivingInventory());
             }
-        }
-    }
 
-    public void attemptToPutOnHotbar(int inMainInvy, Predicate<Integer> disallowedHotbar, LivingEntityInventory inventory) {
-        OptionalInt destination = getTempHotbarSlot(disallowedHotbar);
-        if (destination.isPresent()) {
-            swapWithHotBar(inMainInvy, destination.getAsInt(), inventory);
-        }
-    }
-
-    public OptionalInt getTempHotbarSlot(Predicate<Integer> disallowedHotbar) {
-        LivingEntityInventory inventory = ctx.inventory();
-        if (inventory == null) return OptionalInt.empty();
-
-        // we're using 0 and 8 for pickaxe and throwaway
-        ArrayList<Integer> candidates = new ArrayList<>();
-        for (int i = 1; i < 8; i++) {
-            if (inventory.main.get(i).isEmpty() && !disallowedHotbar.test(i)) {
-                candidates.add(i);
+            int pick = this.bestToolAgainst(Blocks.STONE, PickaxeItem.class);
+            if (pick >= 9) {
+               for (int i = 0; i < 9; i++) {
+                  if (player.getLivingInventory().getItem(i).getItem() != Items.BUCKET) {
+                     this.swapWithHotBar(pick, i, player.getLivingInventory());
+                     break;
+                  }
+               }
             }
-        }
+         }
+      }
+   }
 
-        if (candidates.isEmpty()) {
-            for (int i = 1; i < 8; i++) {
-                if (!disallowedHotbar.test(i)) {
-                    candidates.add(i);
-                }
+   public void attemptToPutOnHotbar(int inMainInvy, Predicate<Integer> disallowedHotbar, LivingEntityInventory inventory) {
+      OptionalInt destination = this.getTempHotbarSlot(disallowedHotbar);
+      if (destination.isPresent()) {
+         this.swapWithHotBar(inMainInvy, destination.getAsInt(), inventory);
+      }
+   }
+
+   public OptionalInt getTempHotbarSlot(Predicate<Integer> disallowedHotbar) {
+      LivingEntityInventory inventory = this.ctx.inventory();
+      if (inventory == null) {
+         return OptionalInt.empty();
+      } else {
+         ArrayList<Integer> candidates = new ArrayList<>();
+
+         for (int i = 1; i < 8; i++) {
+            if (((ItemStack)inventory.main.get(i)).isEmpty() && !disallowedHotbar.test(i)) {
+               candidates.add(i);
             }
-        }
+         }
 
-        if (candidates.isEmpty()) {
-            return OptionalInt.empty();
-        }
-
-        return OptionalInt.of(candidates.get(new Random().nextInt(candidates.size())));
-    }
-
-    private void swapWithHotBar(int inInventory, int inHotbar, LivingEntityInventory inventory) {
-        ItemStack h = inventory.getStack(inHotbar);
-        inventory.setStack(inHotbar, inventory.getStack(inInventory));
-        inventory.setStack(inInventory, h);
-    }
-
-    private int firstValidThrowaway(LivingEntityInventory inventory) { // TODO offhand idk
-        DefaultedList<ItemStack> invy = inventory.main;
-        for (int i = 0; i < invy.size(); i++) {
-            if (baritone.settings().acceptableThrowawayItems.get().contains(invy.get(i).getItem())) {
-                return i;
+         if (candidates.isEmpty()) {
+            for (int ix = 1; ix < 8; ix++) {
+               if (!disallowedHotbar.test(ix)) {
+                  candidates.add(ix);
+               }
             }
-        }
-        return -1;
-    }
+         }
 
-    private int bestToolAgainst(Block against, Class<? extends ToolItem> cla$$) {
-        DefaultedList<ItemStack> invy = ctx.inventory().main;
-        int bestInd = -1;
-        double bestSpeed = -1;
-        for (int i = 0; i < invy.size(); i++) {
-            ItemStack stack = invy.get(i);
-            if (stack.isEmpty()) {
-                continue;
+         return candidates.isEmpty() ? OptionalInt.empty() : OptionalInt.of(candidates.get(new Random().nextInt(candidates.size())));
+      }
+   }
+
+   private void swapWithHotBar(int inInventory, int inHotbar, LivingEntityInventory inventory) {
+      ItemStack h = inventory.getItem(inHotbar);
+      inventory.setItem(inHotbar, inventory.getItem(inInventory));
+      inventory.setItem(inInventory, h);
+   }
+
+   private int firstValidThrowaway(LivingEntityInventory inventory) {
+      NonNullList<ItemStack> invy = inventory.main;
+
+      for (int i = 0; i < invy.size(); i++) {
+         if (this.baritone.settings().acceptableThrowawayItems.get().contains(((ItemStack)invy.get(i)).getItem())) {
+            return i;
+         }
+      }
+
+      return -1;
+   }
+
+   private int bestToolAgainst(Block against, Class<? extends TieredItem> cla$$) {
+      NonNullList<ItemStack> invy = this.ctx.inventory().main;
+      int bestInd = -1;
+      double bestSpeed = -1.0;
+
+      for (int i = 0; i < invy.size(); i++) {
+         ItemStack stack = (ItemStack)invy.get(i);
+         if (!stack.isEmpty()
+            && (!this.baritone.settings().itemSaver.get() || stack.getDamageValue() < stack.getMaxDamage() || stack.getMaxDamage() <= 1)
+            && cla$$.isInstance(stack.getItem())) {
+            double speed = ToolSet.calculateSpeedVsBlock(stack, against.defaultBlockState());
+            if (speed > bestSpeed) {
+               bestSpeed = speed;
+               bestInd = i;
             }
-            if (baritone.settings().itemSaver.get() && stack.getDamage() >= stack.getMaxDamage() && stack.getMaxDamage() > 1) {
-                continue;
-            }
-            if (cla$$.isInstance(stack.getItem())) {
-                double speed = ToolSet.calculateSpeedVsBlock(stack, against.getDefaultState()); // takes into account enchants
-                if (speed > bestSpeed) {
-                    bestSpeed = speed;
-                    bestInd = i;
-                }
-            }
-        }
-        return bestInd;
-    }
+         }
+      }
 
-    public boolean hasGenericThrowaway() {
-        return throwaway(false,
-                stack -> baritone.settings().acceptableThrowawayItems.get().contains(stack.getItem()));
-    }
+      return bestInd;
+   }
 
-    public boolean selectThrowawayForLocation(boolean select, int x, int y, int z) {
-        BlockState maybe = baritone.getBuilderProcess().placeAt(x, y, z, baritone.bsi.get0(x, y, z));
-        if (maybe != null && throwaway(select, stack -> stack.getItem() instanceof BlockItem && maybe.equals(((BlockItem) stack.getItem()).getBlock().getPlacementState(new ItemPlacementContext(new ItemUsageContext(ctx.world(), null, Hand.MAIN_HAND, stack, new BlockHitResult(new Vec3d(ctx.entity().getX(), ctx.entity().getY(), ctx.entity().getZ()), Direction.UP, ctx.feetPos(), false)) {
-            @Override
-            public boolean shouldCancelInteraction() {
-                return false;
-            }
-        }))))) {
-            return true; // gotem
-        }
-        if (maybe != null && throwaway(select, stack -> stack.getItem() instanceof BlockItem && ((BlockItem) stack.getItem()).getBlock().equals(maybe.getBlock()))) {
-            return true;
-        }
-        return throwaway(select,
-                stack -> baritone.settings().acceptableThrowawayItems.get().contains(stack.getItem()));
-    }
+   public boolean hasGenericThrowaway() {
+      return this.throwaway(false, stack -> this.baritone.settings().acceptableThrowawayItems.get().contains(stack.getItem()));
+   }
 
-    public boolean throwaway(boolean select, Predicate<? super ItemStack> desired) {
-        if (!(ctx.entity() instanceof IInventoryProvider p)) return false;
+   public boolean selectThrowawayForLocation(boolean select, int x, int y, int z) {
+      BlockState maybe = this.baritone.getBuilderProcess().placeAt(x, y, z, this.baritone.bsi.get0(x, y, z));
+      if (maybe != null
+         && this.throwaway(
+            select,
+            stack -> stack.getItem() instanceof BlockItem
+               && maybe.equals(
+                  ((BlockItem)stack.getItem())
+                     .getBlock()
+                     .getStateForPlacement(
+                        new BlockPlaceContext(
+                           new UseOnContext(
+                              this.ctx.world(),
+                              null,
+                              InteractionHand.MAIN_HAND,
+                              stack,
+                              new BlockHitResult(
+                                 new Vec3(this.ctx.entity().getX(), this.ctx.entity().getY(), this.ctx.entity().getZ()),
+                                 Direction.UP,
+                                 this.ctx.feetPos(),
+                                 false
+                              )
+                           ) {
+                              public boolean isSecondaryUseActive() {
+                                 return false;
+                              }
+                           }
+                        )
+                     )
+               )
+         )) {
+         return true;
+      } else {
+         return maybe != null
+               && this.throwaway(select, stack -> stack.getItem() instanceof BlockItem && ((BlockItem)stack.getItem()).getBlock().equals(maybe.getBlock()))
+            ? true
+            : this.throwaway(select, stack -> this.baritone.settings().acceptableThrowawayItems.get().contains(stack.getItem()));
+      }
+   }
 
-        DefaultedList<ItemStack> inv = p.getLivingInventory().main;
-        for (int i = 0; i < 9; i++) {
-            ItemStack item = inv.get(i);
-            // this usage of settings() is okay because it's only called once during pathing
-            // (while creating the CalculationContext at the very beginning)
-            // and then it's called during execution
-            // since this function is never called during cost calculation, we don't need to migrate
-            // acceptableThrowawayItems to the CalculationContext
+   public boolean throwaway(boolean select, Predicate<? super ItemStack> desired) {
+      if (!(this.ctx.entity() instanceof IInventoryProvider p)) {
+         return false;
+      } else {
+         NonNullList var7 = p.getLivingInventory().main;
+
+         for (int i = 0; i < 9; i++) {
+            ItemStack item = (ItemStack)var7.get(i);
             if (desired.test(item)) {
-                if (select) {
-                    p.getLivingInventory().selectedSlot = i;
-                }
-                return true;
-            }
-        }
-        if (desired.test(p.getLivingInventory().offHand.get(0))) {
-            // main hand takes precedence over off hand
-            // that means that if we have block A selected in main hand and block B in off hand, right clicking places block B
-            // we've already checked above ^ and the main hand can't possible have an acceptablethrowawayitem
-            // so we need to select in the main hand something that doesn't right click
-            // so not a shovel, not a hoe, not a block, etc
-            for (int i = 0; i < 9; i++) {
-                ItemStack item = inv.get(i);
-                if (item.isEmpty() || item.getItem() instanceof PickaxeItem) {
-                    if (select) {
-                        p.getLivingInventory().selectedSlot = i;
-                    }
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
+               if (select) {
+                  p.getLivingInventory().selectedSlot = i;
+               }
 
-    public static int getSlotWithStack(LivingEntityInventory inv, TagKey<Item> tag) {
-        for (int i = 0; i < inv.main.size(); ++i) {
-            if (!inv.main.get(i).isEmpty() && inv.main.get(i).isIn(tag)) {
-                return i;
+               return true;
             }
-        }
+         }
 
-        return -1;
-    }
+         if (desired.test((ItemStack)p.getLivingInventory().offHand.get(0))) {
+            for (int ix = 0; ix < 9; ix++) {
+               ItemStack item = (ItemStack)var7.get(ix);
+               if (item.isEmpty() || item.getItem() instanceof PickaxeItem) {
+                  if (select) {
+                     p.getLivingInventory().selectedSlot = ix;
+                  }
+
+                  return true;
+               }
+            }
+         }
+
+         return false;
+      }
+   }
+
+   public static int getSlotWithStack(LivingEntityInventory inv, TagKey<Item> tag) {
+      for (int i = 0; i < inv.main.size(); i++) {
+         if (!((ItemStack)inv.main.get(i)).isEmpty() && ((ItemStack)inv.main.get(i)).is(tag)) {
+            return i;
+         }
+      }
+
+      return -1;
+   }
 }

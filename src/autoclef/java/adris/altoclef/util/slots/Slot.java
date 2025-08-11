@@ -1,78 +1,75 @@
 package adris.altoclef.util.slots;
 
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.collection.DefaultedList;
-
 import java.util.Objects;
+import net.minecraft.core.NonNullList;
+import net.minecraft.world.item.ItemStack;
 
 public class Slot {
+   public static final int CURSOR_SLOT_INDEX = -1;
+   private static final int UNDEFINED_SLOT_INDEX = -999;
+   public static final Slot UNDEFINED = new Slot(null, -999);
+   private final NonNullList<ItemStack> inventory;
+   private final int index;
 
-    public static final int CURSOR_SLOT_INDEX = -1;
-    private static final int UNDEFINED_SLOT_INDEX = -999;
+   public Slot(NonNullList<ItemStack> inventory, int index) {
+      this.inventory = inventory;
+      this.index = index;
+   }
 
-    @SuppressWarnings("StaticInitializerReferencesSubClass")
-    public static final Slot UNDEFINED = new Slot(null, UNDEFINED_SLOT_INDEX);
+   public NonNullList<ItemStack> getInventory() {
+      return this.inventory;
+   }
 
-    private final DefaultedList<ItemStack> inventory;
-    private final int index;
+   public int getIndex() {
+      return this.index;
+   }
 
-    public Slot(DefaultedList<ItemStack> inventory, int index) {
-        this.inventory = inventory;
-        this.index = index;
-    }
+   public static boolean isCursor(Slot slot) {
+      return slot instanceof CursorSlot;
+   }
 
-    public DefaultedList<ItemStack> getInventory() {
-        return inventory;
-    }
+   public ItemStack getStack() {
+      return this.inventory != null && this.index >= 0 && this.index < this.inventory.size() ? (ItemStack)this.inventory.get(this.index) : ItemStack.EMPTY;
+   }
 
-    public int getIndex() {
-        return index;
-    }
+   @Deprecated
+   public int getInventorySlot() {
+      return this.index;
+   }
 
-    public static boolean isCursor(Slot slot) {
-        return slot instanceof CursorSlot;
-    }
+   @Deprecated
+   public int getWindowSlot() {
+      return -1;
+   }
 
-    public ItemStack getStack() {
-        if (inventory == null || index < 0 || index >= inventory.size()) {
-            return ItemStack.EMPTY;
-        }
-        return inventory.get(index);
-    }
+   protected String getName() {
+      return this.inventory == null ? "Special" : this.inventory.getClass().getSimpleName();
+   }
 
-    @Deprecated
-    public int getInventorySlot() {
-        return index;
-    }
+   @Override
+   public String toString() {
+      return this.getName()
+         + " Slot {inventory="
+         + (this.inventory != null ? this.inventory.getClass().getSimpleName() : "null")
+         + ", index="
+         + this.index
+         + "}";
+   }
 
-    @Deprecated
-    public int getWindowSlot() {
-        return -1;
-    }
+   @Override
+   public boolean equals(Object o) {
+      if (this == o) {
+         return true;
+      } else if (o != null && this.getClass() == o.getClass()) {
+         Slot slot = (Slot)o;
+         return this.index == slot.index && Objects.equals(this.inventory, slot.inventory);
+      } else {
+         return false;
+      }
+   }
 
-    protected String getName() {
-        if (inventory == null) return "Special";
-        return inventory.getClass().getSimpleName();
-    }
-
-    @Override
-    public String toString() {
-        return getName() + " Slot {" +
-                "inventory=" + (inventory != null ? inventory.getClass().getSimpleName() : "null") +
-                ", index=" + index +
-                '}';
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Slot slot = (Slot) o;
-        return index == slot.index && Objects.equals(inventory, slot.inventory);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(inventory, index);
-    }
+   @Override
+   public int hashCode() {
+      return Objects.hash(this.inventory, this.index);
+   }
 }

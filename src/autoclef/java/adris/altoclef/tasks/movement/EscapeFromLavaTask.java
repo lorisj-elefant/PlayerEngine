@@ -11,229 +11,245 @@ import baritone.api.pathing.goals.Goal;
 import baritone.api.utils.Rotation;
 import baritone.api.utils.input.Input;
 import baritone.pathing.movement.MovementHelper;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.RaycastContext;
-
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.ClipContext.Block;
+import net.minecraft.world.level.ClipContext.Fluid;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.HitResult.Type;
 
 public class EscapeFromLavaTask extends CustomBaritoneGoalTask {
-    private final float strength;
+   private final float strength;
+   private int ticks = 0;
+   private final Predicate<BlockPos> avoidPlacingRiskyBlock;
 
-    private int ticks = 0;
+   public EscapeFromLavaTask(AltoClefController mod, float strength) {
+      this.strength = strength;
+      this.avoidPlacingRiskyBlock = blockPos -> mod.getPlayer().getBoundingBox().intersects(new AABB(blockPos))
+         && (mod.getWorld().getBlockState(mod.getPlayer().blockPosition().below()).getBlock() == Blocks.LAVA || mod.getPlayer().isInLava());
+   }
 
-    private final Predicate<BlockPos> avoidPlacingRiskyBlock;
+   public EscapeFromLavaTask(AltoClefController mod) {
+      this(mod, 100.0F);
+   }
 
-    public EscapeFromLavaTask(AltoClefController mod, float strength) {
-        this.strength = strength;
-        this.avoidPlacingRiskyBlock = (blockPos -> (mod.getPlayer().getBoundingBox().intersects(new Box(blockPos)) && (mod.getWorld().getBlockState(mod.getPlayer().getBlockPos().down()).getBlock() == Blocks.LAVA || mod.getPlayer().isInLava())));
-    }
+   @Override
+   protected void onStart() {
+      AltoClefController mod = this.controller;
+      mod.getBehaviour().push();
+      mod.getBaritone().getExploreProcess().onLostControl();
+      mod.getBaritone().getCustomGoalProcess().onLostControl();
+      mod.getBehaviour().allowSwimThroughLava(true);
+      mod.getBehaviour().setBlockPlacePenalty(0.0);
+      mod.getBehaviour().setBlockBreakAdditionalPenalty(0.0);
+      this.checker = new MovementProgressChecker(Integer.MAX_VALUE);
+      mod.getExtraBaritoneSettings().avoidBlockPlace(this.avoidPlacingRiskyBlock);
+   }
 
-    public EscapeFromLavaTask(AltoClefController mod) {
-        this(mod, 100.0F);
-    }
+   @Override
+   protected Task onTick() {
+      AltoClefController mod = this.controller;
+      mod.getInputControls().hold(Input.JUMP);
+      mod.getInputControls().hold(Input.SPRINT);
+      Optional<Item> food = this.calculateFood(mod);
+      if (food.isPresent() && mod.getBaritone().getEntityContext().hungerManager().getFoodLevel() < 20) {
+         if (mod.getPlayer().isBlocking()) {
+            mod.log("want to eat, trying to stop shielding...");
+            mod.getInputControls().release(Input.CLICK_RIGHT);
+         } else {
+            mod.getSlotHandler().forceEquipItem(new ItemTarget(food.get()), true);
+            mod.getInputControls().hold(Input.CLICK_RIGHT);
+         }
+      }
 
-    protected void onStart() {
-        AltoClefController mod = controller;
-        mod.getBehaviour().push();
-        mod.getBaritone().getExploreProcess().onLostControl();
-        mod.getBaritone().getCustomGoalProcess().onLostControl();
-        mod.getBehaviour().allowSwimThroughLava(true);
-        mod.getBehaviour().setBlockPlacePenalty(0.0D);
-        mod.getBehaviour().setBlockBreakAdditionalPenalty(0.0D);
-        this.checker = new MovementProgressChecker(2147483647);
-        mod.getExtraBaritoneSettings().avoidBlockPlace(this.avoidPlacingRiskyBlock);
-    }
+      if (mod.getPlayer().isInLava() || mod.getWorld().getBlockState(mod.getPlayer().blockPosition().below()).getBlock() == Blocks.LAVA) {
+         this.setDebugState("run away from lava");
+         BlockPos steppingPos = mod.getPlayer().getOnPos();
+         if (!mod.getWorld().getBlockState(steppingPos.east()).getBlock().equals(Blocks.LAVA)
+            || !mod.getWorld().getBlockState(steppingPos.west()).getBlock().equals(Blocks.LAVA)
+            || !mod.getWorld().getBlockState(steppingPos.south()).getBlock().equals(Blocks.LAVA)
+            || !mod.getWorld().getBlockState(steppingPos.north()).getBlock().equals(Blocks.LAVA)
+            || !mod.getWorld().getBlockState(steppingPos.east().north()).getBlock().equals(Blocks.LAVA)
+            || !mod.getWorld().getBlockState(steppingPos.east().south()).getBlock().equals(Blocks.LAVA)
+            || !mod.getWorld().getBlockState(steppingPos.west().north()).getBlock().equals(Blocks.LAVA)
+            || !mod.getWorld().getBlockState(steppingPos.west().south()).getBlock().equals(Blocks.LAVA)) {
+            return super.onTick();
+         }
 
-    protected Task onTick() {
-        AltoClefController mod = controller;
-        mod.getInputControls().hold(Input.JUMP);
-        mod.getInputControls().hold(Input.SPRINT);
-        Optional<Item> food = calculateFood(mod);
-        if (food.isPresent() && mod.getBaritone().getEntityContext().hungerManager().getFoodLevel() < 20)
-            if (mod.getPlayer().isBlocking()) {
-                mod.log("want to eat, trying to stop shielding...");
-                mod.getInputControls().release(Input.CLICK_RIGHT);
-            } else {
-                mod.getSlotHandler().forceEquipItem(new ItemTarget(food.get()), true);
-                mod.getInputControls().hold(Input.CLICK_RIGHT);
-            }
-        if (mod.getPlayer().isInLava() || mod.getWorld().getBlockState(mod.getPlayer().getBlockPos().down()).getBlock() == Blocks.LAVA) {
-            setDebugState("run away from lava");
-            BlockPos steppingPos = mod.getPlayer().getSteppingPosition();
-            if (!mod.getWorld().getBlockState(steppingPos.east()).getBlock().equals(Blocks.LAVA) ||
-                    !mod.getWorld().getBlockState(steppingPos.west()).getBlock().equals(Blocks.LAVA) ||
-                    !mod.getWorld().getBlockState(steppingPos.south()).getBlock().equals(Blocks.LAVA) ||
-                    !mod.getWorld().getBlockState(steppingPos.north()).getBlock().equals(Blocks.LAVA) ||
-                    !mod.getWorld().getBlockState(steppingPos.east().north()).getBlock().equals(Blocks.LAVA) ||
-                    !mod.getWorld().getBlockState(steppingPos.east().south()).getBlock().equals(Blocks.LAVA) ||
-                    !mod.getWorld().getBlockState(steppingPos.west().north()).getBlock().equals(Blocks.LAVA) ||
-                    !mod.getWorld().getBlockState(steppingPos.west().south()).getBlock().equals(Blocks.LAVA))
-                return super.onTick();
-            if (mod.getPlayer().isBlocking()) {
-                mod.log("want to place block, trying to stop shielding...");
-                mod.getInputControls().release(Input.CLICK_RIGHT);
-            }
-            float pitch;
-            for (pitch = 25.0F; pitch < 90.0F; pitch++) {
-                float yaw;
-                for (yaw = -180.0F; yaw < 180.0F; yaw++) {
-                    HitResult result = raycast(mod, 4.0D, pitch, yaw);
-                    if (result.getType() == HitResult.Type.BLOCK) {
-                        BlockHitResult blockHitResult = (BlockHitResult) result;
-                        BlockPos pos = blockHitResult.getBlockPos();
-                        if (pos.getY() <= mod.getPlayer().getSteppingPosition().getY()) {
-                            Direction facing = blockHitResult.getSide();
-                            if (facing != Direction.UP) {
-                                LookHelper.lookAt(controller, new Rotation(yaw, pitch));
-                                if (mod.getItemStorage().hasItem(new Item[]{Items.NETHERRACK})) {
-                                    mod.getSlotHandler().forceEquipItem(Items.NETHERRACK);
-                                } else {
-                                    mod.getSlotHandler().forceEquipItem((Item[]) ((List) (mod.getBaritoneSettings()).acceptableThrowawayItems.get()).toArray(new Item[0]));
-                                }
-                                mod.log(String.valueOf(pos));
-                                mod.log(String.valueOf(facing));
-                                mod.getInputControls().tryPress(Input.CLICK_RIGHT);
-                                return null;
-                            }
+         if (mod.getPlayer().isBlocking()) {
+            mod.log("want to place block, trying to stop shielding...");
+            mod.getInputControls().release(Input.CLICK_RIGHT);
+         }
+
+         for (float pitch = 25.0F; pitch < 90.0F; pitch++) {
+            for (float yaw = -180.0F; yaw < 180.0F; yaw++) {
+               HitResult result = this.raycast(mod, 4.0, pitch, yaw);
+               if (result.getType() == Type.BLOCK) {
+                  BlockHitResult blockHitResult = (BlockHitResult)result;
+                  BlockPos pos = blockHitResult.getBlockPos();
+                  if (pos.getY() <= mod.getPlayer().getOnPos().getY()) {
+                     Direction facing = blockHitResult.getDirection();
+                     if (facing != Direction.UP) {
+                        LookHelper.lookAt(this.controller, new Rotation(yaw, pitch));
+                        if (mod.getItemStorage().hasItem(Items.NETHERRACK)) {
+                           mod.getSlotHandler().forceEquipItem(Items.NETHERRACK);
+                        } else {
+                           mod.getSlotHandler().forceEquipItem(mod.getBaritoneSettings().acceptableThrowawayItems.get().toArray(new Item[0]));
                         }
-                    }
-                }
+
+                        mod.log(String.valueOf(pos));
+                        mod.log(String.valueOf(facing));
+                        mod.getInputControls().tryPress(Input.CLICK_RIGHT);
+                        return null;
+                     }
+                  }
+               }
             }
-        }
-        return super.onTick();
-    }
+         }
+      }
 
-    private Optional<Item> calculateFood(AltoClefController mod) {
-        Item bestFood = null;
-        double bestFoodScore = Double.NEGATIVE_INFINITY;
-        LivingEntity player = mod.getPlayer();
-        float hunger = (player != null) ? mod.getBaritone().getEntityContext().hungerManager().getFoodLevel() : 20.0F;
-        float saturation = (player != null) ? mod.getBaritone().getEntityContext().hungerManager().getSaturationLevel() : 20.0F;
-        for (ItemStack stack : mod.getItemStorage().getItemStacksPlayerInventory(true)) {
-            if (ItemVer.isFood(stack)) {
-                if (stack.getItem() == Items.SPIDER_EYE)
-                    continue;
-                float score = getScore(stack, hunger, saturation);
-                if (score > bestFoodScore) {
-                    bestFoodScore = score;
-                    bestFood = stack.getItem();
-                }
+      return super.onTick();
+   }
+
+   private Optional<Item> calculateFood(AltoClefController mod) {
+      Item bestFood = null;
+      double bestFoodScore = Double.NEGATIVE_INFINITY;
+      LivingEntity player = mod.getPlayer();
+      float hunger = player != null ? mod.getBaritone().getEntityContext().hungerManager().getFoodLevel() : 20.0F;
+      float saturation = player != null ? mod.getBaritone().getEntityContext().hungerManager().getSaturationLevel() : 20.0F;
+
+      for (ItemStack stack : mod.getItemStorage().getItemStacksPlayerInventory(true)) {
+         if (ItemVer.isFood(stack) && stack.getItem() != Items.SPIDER_EYE) {
+            float score = getScore(stack, hunger, saturation);
+            if (score > bestFoodScore) {
+               bestFoodScore = score;
+               bestFood = stack.getItem();
             }
-        }
-        return Optional.ofNullable(bestFood);
-    }
+         }
+      }
 
-    private static float getScore(ItemStack stack, float hunger, float saturation) {
-        FoodComponentWrapper food = ItemVer.getFoodComponent(stack.getItem());
-        assert food != null;
-        float hungerIfEaten = Math.min(hunger + food.getHunger(), 20.0F);
-        float saturationIfEaten = Math.min(hungerIfEaten, saturation + food.getSaturationModifier());
-        float gainedSaturation = saturationIfEaten - saturation;
-        float hungerNotFilled = 20.0F - hungerIfEaten;
-        float saturationGoodScore = gainedSaturation * 10.0F;
-        float hungerNotFilledPenalty = hungerNotFilled * 2.0F;
-        float score = saturationGoodScore - hungerNotFilledPenalty;
-        if (stack.getItem() == Items.ROTTEN_FLESH)
-            score = 0.0F;
-        return score;
-    }
+      return Optional.ofNullable(bestFood);
+   }
 
-    public HitResult raycast(AltoClefController mod, double maxDistance, float pitch, float yaw) {
-        Vec3d cameraPos = mod.getPlayer().getCameraPosVec(0);
-        Vec3d rotationVector = getRotationVector(pitch, yaw);
-        Vec3d vec3d3 = cameraPos.add(rotationVector.x * maxDistance, rotationVector.y * maxDistance, rotationVector.z * maxDistance);
-        return (HitResult) mod.getPlayer().getWorld()
-                .raycast(new RaycastContext(cameraPos, vec3d3, RaycastContext.ShapeType.OUTLINE, RaycastContext.FluidHandling.NONE, (Entity) mod
+   private static float getScore(ItemStack stack, float hunger, float saturation) {
+      FoodComponentWrapper food = ItemVer.getFoodComponent(stack.getItem());
 
-                        .getPlayer()));
-    }
+      assert food != null;
 
-    protected final Vec3d getRotationVector(float pitch, float yaw) {
-        float f = pitch * 0.017453292F;
-        float g = -yaw * 0.017453292F;
-        float h = MathHelper.cos(g);
-        float i = MathHelper.sin(g);
-        float j = MathHelper.cos(f);
-        float k = MathHelper.sin(f);
-        return new Vec3d((i * j), -k, (h * j));
-    }
+      float hungerIfEaten = Math.min(hunger + food.getHunger(), 20.0F);
+      float saturationIfEaten = Math.min(hungerIfEaten, saturation + food.getSaturationModifier());
+      float gainedSaturation = saturationIfEaten - saturation;
+      float hungerNotFilled = 20.0F - hungerIfEaten;
+      float saturationGoodScore = gainedSaturation * 10.0F;
+      float hungerNotFilledPenalty = hungerNotFilled * 2.0F;
+      float score = saturationGoodScore - hungerNotFilledPenalty;
+      if (stack.getItem() == Items.ROTTEN_FLESH) {
+         score = 0.0F;
+      }
 
-    protected void onStop(Task interruptTask) {
-        AltoClefController mod = controller;
-        mod.getBehaviour().pop();
-        mod.getInputControls().release(Input.JUMP);
-        mod.getInputControls().release(Input.SPRINT);
-        mod.getInputControls().release(Input.CLICK_RIGHT);
-        synchronized (mod.getExtraBaritoneSettings().getPlaceMutex()) {
-            mod.getExtraBaritoneSettings().getPlaceAvoiders().remove(this.avoidPlacingRiskyBlock);
-        }
-    }
+      return score;
+   }
 
-    protected Goal newGoal(AltoClefController mod) {
-        return (Goal) new EscapeFromLavaGoal();
-    }
+   public HitResult raycast(AltoClefController mod, double maxDistance, float pitch, float yaw) {
+      Vec3 cameraPos = mod.getPlayer().getEyePosition(0.0F);
+      Vec3 rotationVector = this.getRotationVector(pitch, yaw);
+      Vec3 vec3d3 = cameraPos.add(rotationVector.x * maxDistance, rotationVector.y * maxDistance, rotationVector.z * maxDistance);
+      return mod.getPlayer().level().clip(new ClipContext(cameraPos, vec3d3, Block.OUTLINE, Fluid.NONE, mod.getPlayer()));
+   }
 
-    protected boolean isEqual(Task other) {
-        return other instanceof adris.altoclef.tasks.movement.EscapeFromLavaTask;
-    }
+   protected final Vec3 getRotationVector(float pitch, float yaw) {
+      float f = pitch * (float) (Math.PI / 180.0);
+      float g = -yaw * (float) (Math.PI / 180.0);
+      float h = Mth.cos(g);
+      float i = Mth.sin(g);
+      float j = Mth.cos(f);
+      float k = Mth.sin(f);
+      return new Vec3(i * j, -k, h * j);
+   }
 
-    public boolean isFinished() {
-        LivingEntity player = controller.getPlayer();
-        return (!player.isInLava() && !player.isOnFire());
-    }
+   @Override
+   protected void onStop(Task interruptTask) {
+      AltoClefController mod = this.controller;
+      mod.getBehaviour().pop();
+      mod.getInputControls().release(Input.JUMP);
+      mod.getInputControls().release(Input.SPRINT);
+      mod.getInputControls().release(Input.CLICK_RIGHT);
+      synchronized (mod.getExtraBaritoneSettings().getPlaceMutex()) {
+         mod.getExtraBaritoneSettings().getPlaceAvoiders().remove(this.avoidPlacingRiskyBlock);
+      }
+   }
 
-    protected String toDebugString() {
-        return "Escaping lava";
-    }
+   @Override
+   protected Goal newGoal(AltoClefController mod) {
+      return new EscapeFromLavaTask.EscapeFromLavaGoal();
+   }
 
-    private class EscapeFromLavaGoal implements Goal {
+   @Override
+   protected boolean isEqual(Task other) {
+      return other instanceof EscapeFromLavaTask;
+   }
 
-        private boolean isLava(int x, int y, int z) {
-            if (controller.getWorld() == null) return false;
-            return MovementHelper.isLava(controller.getWorld().getBlockState(new BlockPos(x, y, z)));
-        }
+   @Override
+   public boolean isFinished() {
+      LivingEntity player = this.controller.getPlayer();
+      return !player.isInLava() && !player.isOnFire();
+   }
 
-        private boolean isLavaAdjacent(int x, int y, int z) {
-            return isLava(x + 1, y, z) || isLava(x - 1, y, z) || isLava(x, y, z + 1) || isLava(x, y, z - 1)
-                    || isLava(x + 1, y, z - 1) || isLava(x + 1, y, z + 1) || isLava(x - 1, y, z - 1)
-                    || isLava(x - 1, y, z + 1);
-        }
+   @Override
+   protected String toDebugString() {
+      return "Escaping lava";
+   }
 
-        private boolean isWater(int x, int y, int z) {
-            if (controller.getWorld() == null) return false;
-            return MovementHelper.isWater(controller.getWorld().getBlockState(new BlockPos(x, y, z)));
-        }
+   private class EscapeFromLavaGoal implements Goal {
+      private boolean isLava(int x, int y, int z) {
+         return EscapeFromLavaTask.this.controller.getWorld() == null
+            ? false
+            : MovementHelper.isLava(EscapeFromLavaTask.this.controller.getWorld().getBlockState(new BlockPos(x, y, z)));
+      }
 
-        @Override
-        public boolean isInGoal(int x, int y, int z) {
-            return !isLava(x, y, z) && !isLavaAdjacent(x, y, z);
-        }
+      private boolean isLavaAdjacent(int x, int y, int z) {
+         return this.isLava(x + 1, y, z)
+            || this.isLava(x - 1, y, z)
+            || this.isLava(x, y, z + 1)
+            || this.isLava(x, y, z - 1)
+            || this.isLava(x + 1, y, z - 1)
+            || this.isLava(x + 1, y, z + 1)
+            || this.isLava(x - 1, y, z - 1)
+            || this.isLava(x - 1, y, z + 1);
+      }
 
-        @Override
-        public double heuristic(int x, int y, int z) {
-            if (isLava(x, y, z)) {
-                return strength;
-            } else if (isLavaAdjacent(x, y, z)) {
-                return strength * 0.5f;
-            }
-            if (isWater(x, y, z)) {
-                return -100;
-            }
-            return 0;
-        }
-    }
+      private boolean isWater(int x, int y, int z) {
+         return EscapeFromLavaTask.this.controller.getWorld() == null
+            ? false
+            : MovementHelper.isWater(EscapeFromLavaTask.this.controller.getWorld().getBlockState(new BlockPos(x, y, z)));
+      }
+
+      @Override
+      public boolean isInGoal(int x, int y, int z) {
+         return !this.isLava(x, y, z) && !this.isLavaAdjacent(x, y, z);
+      }
+
+      @Override
+      public double heuristic(int x, int y, int z) {
+         if (this.isLava(x, y, z)) {
+            return EscapeFromLavaTask.this.strength;
+         } else if (this.isLavaAdjacent(x, y, z)) {
+            return EscapeFromLavaTask.this.strength * 0.5F;
+         } else {
+            return this.isWater(x, y, z) ? -100.0 : 0.0;
+         }
+      }
+   }
 }

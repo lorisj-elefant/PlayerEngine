@@ -9,92 +9,97 @@ import adris.altoclef.util.helpers.WorldHelper;
 import adris.altoclef.util.time.TimerGame;
 import baritone.api.pathing.goals.Goal;
 import baritone.api.pathing.goals.GoalBlock;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
 
 public class GetToBlockTask extends CustomBaritoneGoalTask implements ITaskRequiresGrounded {
-    private final BlockPos position;
+   private final BlockPos position;
+   private final boolean preferStairs;
+   private final Dimension dimension;
+   private int finishedTicks = 0;
+   private final TimerGame wanderTimer = new TimerGame(2.0);
 
-    private final boolean preferStairs;
+   public GetToBlockTask(BlockPos position, boolean preferStairs) {
+      this(position, preferStairs, null);
+   }
 
-    private final Dimension dimension;
+   public GetToBlockTask(BlockPos position, Dimension dimension) {
+      this(position, false, dimension);
+   }
 
-    private int finishedTicks = 0;
+   public GetToBlockTask(BlockPos position, boolean preferStairs, Dimension dimension) {
+      this.dimension = dimension;
+      this.position = position;
+      this.preferStairs = preferStairs;
+   }
 
-    private final TimerGame wanderTimer = new TimerGame(2.0D);
+   public GetToBlockTask(BlockPos position) {
+      this(position, false);
+   }
 
-    public GetToBlockTask(BlockPos position, boolean preferStairs) {
-        this(position, preferStairs, null);
-    }
-
-    public GetToBlockTask(BlockPos position, Dimension dimension) {
-        this(position, false, dimension);
-    }
-
-    public GetToBlockTask(BlockPos position, boolean preferStairs, Dimension dimension) {
-        this.dimension = dimension;
-        this.position = position;
-        this.preferStairs = preferStairs;
-    }
-
-    public GetToBlockTask(BlockPos position) {
-        this(position, false);
-    }
-
-    protected Task onTick() {
-        if (this.dimension != null && WorldHelper.getCurrentDimension(controller) != this.dimension)
-            return (Task) new DefaultGoToDimensionTask(this.dimension);
-        if (isFinished()) {
+   @Override
+   protected Task onTick() {
+      if (this.dimension != null && WorldHelper.getCurrentDimension(this.controller) != this.dimension) {
+         return new DefaultGoToDimensionTask(this.dimension);
+      } else {
+         if (this.isFinished()) {
             this.finishedTicks++;
-        } else {
+         } else {
             this.finishedTicks = 0;
-        }
-        if (this.finishedTicks > 200) {
+         }
+
+         if (this.finishedTicks > 200) {
             this.wanderTimer.reset();
             Debug.logWarning("GetToBlock was finished for 10 seconds yet is still being called, wandering");
             this.finishedTicks = 0;
-            return (Task) new TimeoutWanderTask();
-        }
-        if (!this.wanderTimer.elapsed())
-            return (Task) new TimeoutWanderTask();
-        return super.onTick();
-    }
+            return new TimeoutWanderTask();
+         } else {
+            return (Task)(!this.wanderTimer.elapsed() ? new TimeoutWanderTask() : super.onTick());
+         }
+      }
+   }
 
-    protected void onStart() {
-        super.onStart();
-        if (this.preferStairs) {
-            controller.getBehaviour().push();
-            controller.getBehaviour().setPreferredStairs(true);
-        }
-    }
+   @Override
+   protected void onStart() {
+      super.onStart();
+      if (this.preferStairs) {
+         this.controller.getBehaviour().push();
+         this.controller.getBehaviour().setPreferredStairs(true);
+      }
+   }
 
-    protected void onStop(Task interruptTask) {
-        super.onStop(interruptTask);
-        if (this.preferStairs)
-            controller.getBehaviour().pop();
-    }
+   @Override
+   protected void onStop(Task interruptTask) {
+      super.onStop(interruptTask);
+      if (this.preferStairs) {
+         this.controller.getBehaviour().pop();
+      }
+   }
 
-    protected boolean isEqual(Task other) {
-        if (other instanceof adris.altoclef.tasks.movement.GetToBlockTask) {
-            adris.altoclef.tasks.movement.GetToBlockTask task = (adris.altoclef.tasks.movement.GetToBlockTask) other;
-            return (task.position.equals(this.position) && task.preferStairs == this.preferStairs && task.dimension == this.dimension);
-        }
-        return false;
-    }
+   @Override
+   protected boolean isEqual(Task other) {
+      return !(other instanceof GetToBlockTask task)
+         ? false
+         : task.position.equals(this.position) && task.preferStairs == this.preferStairs && task.dimension == this.dimension;
+   }
 
-    public boolean isFinished() {
-        return (super.isFinished() && (this.dimension == null || this.dimension == WorldHelper.getCurrentDimension(controller)));
-    }
+   @Override
+   public boolean isFinished() {
+      return super.isFinished() && (this.dimension == null || this.dimension == WorldHelper.getCurrentDimension(this.controller));
+   }
 
-    protected String toDebugString() {
-        return "Getting to block " + String.valueOf(this.position) + ((this.dimension != null) ? (" in dimension " + String.valueOf(this.dimension)) : "");
-    }
+   @Override
+   protected String toDebugString() {
+      return "Getting to block " + this.position + (this.dimension != null ? " in dimension " + this.dimension : "");
+   }
 
-    protected Goal newGoal(AltoClefController mod) {
-        return (Goal) new GoalBlock(this.position);
-    }
+   @Override
+   protected Goal newGoal(AltoClefController mod) {
+      return new GoalBlock(this.position);
+   }
 
-    protected void onWander(AltoClefController mod) {
-        super.onWander(mod);
-        mod.getBlockScanner().requestBlockUnreachable(this.position);
-    }
+   @Override
+   protected void onWander(AltoClefController mod) {
+      super.onWander(mod);
+      mod.getBlockScanner().requestBlockUnreachable(this.position);
+   }
 }

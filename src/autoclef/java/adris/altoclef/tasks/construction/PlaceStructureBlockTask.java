@@ -1,9 +1,10 @@
 package adris.altoclef.tasks.construction;
 
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.Block;
 
 public class PlaceStructureBlockTask extends PlaceBlockTask {
-    public PlaceStructureBlockTask(BlockPos target) {
-        super(target, new net.minecraft.block.Block[0], true, true);
-    }
+   public PlaceStructureBlockTask(BlockPos target) {
+      super(target, new Block[0], true, true);
+   }
 }

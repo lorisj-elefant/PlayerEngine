@@ -1,16 +1,7 @@
 package adris.altoclef;
 
-import baritone.api.Settings;
 import baritone.api.utils.RayTraceUtils;
 import baritone.autoclef.AltoClefSettings;
-import baritone.utils.Debug;
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.Entity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.RaycastContext;
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -21,397 +12,331 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.ClipContext.Fluid;
+import net.minecraft.world.level.block.state.BlockState;
 
-/**
- * Represents the current behaviour/"on the fly settings" of the bot.
- * <p>
- * Use this to change how the bot works for the duration of a task.
- * <p>
- * (for example, "Build this bridge and avoid mining any blocks nearby")
- */
 public class BotBehaviour {
+   private final AltoClefController mod;
+   Deque<BotBehaviour.State> states = new ArrayDeque<>();
 
-    private final AltoClefController mod;
-    Deque<State> states = new ArrayDeque<>();
+   public BotBehaviour(AltoClefController mod) {
+      this.mod = mod;
+      this.push();
+   }
 
-    public BotBehaviour(AltoClefController mod) {
-        this.mod = mod;
+   public boolean shouldEscapeLava() {
+      return this.current().escapeLava;
+   }
 
-        // Start with one state.
-        push();
-    }
+   public void setEscapeLava(boolean allow) {
+      this.current().escapeLava = allow;
+      this.current().applyState();
+   }
 
-    // Getter(s)
+   public void setFollowDistance(double distance) {
+      this.current().followOffsetDistance = distance;
+      this.current().applyState();
+   }
 
-    /**
-     * Returns the current state of Behaviour for escapeLava
-     *
-     * @return The current state of Behaviour for escapeLava
-     */
-    public boolean shouldEscapeLava() {
-        return current().escapeLava;
-    }
+   public void setMineScanDroppedItems(boolean value) {
+      this.current().mineScanDroppedItems = value;
+      this.current().applyState();
+   }
 
-    /// Parameters
+   public boolean exclusivelyMineLogs() {
+      return this.current().exclusivelyMineLogs;
+   }
 
-    /**
-     * If the bot should escape lava or not, part of WorldSurvivalChain
-     *
-     * @param allow True if the bot should escape lava
-     */
-    public void setEscapeLava(boolean allow) {
-        current().escapeLava = allow;
-        current().applyState();
-    }
+   public void setExclusivelyMineLogs(boolean value) {
+      this.current().exclusivelyMineLogs = value;
+      this.current().applyState();
+   }
 
-    public void setFollowDistance(double distance) {
-        current().followOffsetDistance = distance;
-        current().applyState();
-    }
-
-    public void setMineScanDroppedItems(boolean value) {
-        current().mineScanDroppedItems = value;
-        current().applyState();
-    }
-
-
-    public boolean exclusivelyMineLogs() {
-        return current().exclusivelyMineLogs;
-    }
-
-    public void setExclusivelyMineLogs(boolean value) {
-        current().exclusivelyMineLogs = value;
-        current().applyState();
-    }
-
-    public boolean shouldExcludeFromForcefield(Entity entity) {
-        if (!current().excludeFromForceField.isEmpty()) {
-            for (Predicate<Entity> pred : current().excludeFromForceField) {
-                if (pred.test(entity)) return true;
+   public boolean shouldExcludeFromForcefield(Entity entity) {
+      if (!this.current().excludeFromForceField.isEmpty()) {
+         for (Predicate<Entity> pred : this.current().excludeFromForceField) {
+            if (pred.test(entity)) {
+               return true;
             }
-        }
-        return false;
-    }
+         }
+      }
 
-    public void addForceFieldExclusion(Predicate<Entity> pred) {
-        current().excludeFromForceField.add(pred);
-        // Not needed, as excludeFromForceField isn't applied anywhere else.
-        // current.applyState();
-    }
+      return false;
+   }
 
-//    public List<Pair<Slot, Predicate<ItemStack>>> getConversionSlots() {
-//        return current().conversionSlots;
-//    }
-//
-//    public void markSlotAsConversionSlot(Slot slot, Predicate<ItemStack> itemBelongsHere) {
-//        current().conversionSlots.add(new Pair<>(slot, itemBelongsHere));
-//        // apply not needed
-//    }
+   public void addForceFieldExclusion(Predicate<Entity> pred) {
+      this.current().excludeFromForceField.add(pred);
+   }
 
-    public void avoidBlockBreaking(BlockPos pos) {
-        current().blocksToAvoidBreaking.add(pos);
-        current().applyState();
-    }
+   public void avoidBlockBreaking(BlockPos pos) {
+      this.current().blocksToAvoidBreaking.add(pos);
+      this.current().applyState();
+   }
 
-    public void avoidBlockBreaking(Predicate<BlockPos> pred) {
-        current().toAvoidBreaking.add(pred);
-        current().applyState();
-    }
+   public void avoidBlockBreaking(Predicate<BlockPos> pred) {
+      this.current().toAvoidBreaking.add(pred);
+      this.current().applyState();
+   }
 
-    public void avoidBlockPlacing(Predicate<BlockPos> pred) {
-        current().toAvoidPlacing.add(pred);
-        current().applyState();
-    }
+   public void avoidBlockPlacing(Predicate<BlockPos> pred) {
+      this.current().toAvoidPlacing.add(pred);
+      this.current().applyState();
+   }
 
-    public void allowWalkingOn(Predicate<BlockPos> pred) {
-        current().allowWalking.add(pred);
-        current().applyState();
-    }
+   public void allowWalkingOn(Predicate<BlockPos> pred) {
+      this.current().allowWalking.add(pred);
+      this.current().applyState();
+   }
 
-    public void avoidWalkingThrough(Predicate<BlockPos> pred) {
-        current().avoidWalkingThrough.add(pred);
-        current().applyState();
-    }
+   public void avoidWalkingThrough(Predicate<BlockPos> pred) {
+      this.current().avoidWalkingThrough.add(pred);
+      this.current().applyState();
+   }
 
+   public void forceUseTool(BiPredicate<BlockState, ItemStack> pred) {
+      this.current().forceUseTools.add(pred);
+      this.current().applyState();
+   }
 
-    public void forceUseTool(BiPredicate<BlockState, ItemStack> pred) {
-        current().forceUseTools.add(pred);
-        current().applyState();
-    }
+   public void setRayTracingFluidHandling(Fluid fluidHandling) {
+      this.current().rayFluidHandling = fluidHandling;
+      this.current().applyState();
+   }
 
-    public void setRayTracingFluidHandling(RaycastContext.FluidHandling fluidHandling) {
-        current().rayFluidHandling = fluidHandling;
-        //Debug.logMessage("OOF: " + fluidHandling);
-        current().applyState();
-    }
+   public void setAllowWalkThroughFlowingWater(boolean value) {
+      this.current().allowWalkThroughFlowingWater = value;
+      this.current().applyState();
+   }
 
-    public void setAllowWalkThroughFlowingWater(boolean value) {
-        current().allowWalkThroughFlowingWater = value;
-        current().applyState();
-    }
+   public void setPauseOnLostFocus(boolean pauseOnLostFocus) {
+      this.current().pauseOnLostFocus = pauseOnLostFocus;
+      this.current().applyState();
+   }
 
-    public void setPauseOnLostFocus(boolean pauseOnLostFocus) {
-        current().pauseOnLostFocus = pauseOnLostFocus;
-        current().applyState();
-    }
+   public void addProtectedItems(Item... items) {
+      Collections.addAll(this.current().protectedItems, items);
+      this.current().applyState();
+   }
 
-    public void addProtectedItems(Item... items) {
-        Collections.addAll(current().protectedItems, items);
-        current().applyState();
-    }
+   public void removeProtectedItems(Item... items) {
+      this.current().protectedItems.removeAll(Arrays.asList(items));
+      this.current().applyState();
+   }
 
-    public void removeProtectedItems(Item... items) {
-        current().protectedItems.removeAll(Arrays.asList(items));
-        current().applyState();
-    }
+   public boolean isProtected(Item item) {
+      return this.current().protectedItems.contains(item);
+   }
 
-    public boolean isProtected(Item item) {
-        // For now nothing is protected.
-        return current().protectedItems.contains(item);
-    }
+   public boolean shouldForceFieldPlayers() {
+      return this.current().forceFieldPlayers;
+   }
 
-    public boolean shouldForceFieldPlayers() {
-        return current().forceFieldPlayers;
-    }
+   public void setForceFieldPlayers(boolean forceFieldPlayers) {
+      this.current().forceFieldPlayers = forceFieldPlayers;
+   }
 
-    public void setForceFieldPlayers(boolean forceFieldPlayers) {
-        current().forceFieldPlayers = forceFieldPlayers;
-        // Not needed, nothing changes.
-        // current.applyState()
-    }
+   public void allowSwimThroughLava(boolean allow) {
+      this.current().swimThroughLava = allow;
+      this.current().applyState();
+   }
 
-    public void allowSwimThroughLava(boolean allow) {
-        current().swimThroughLava = allow;
-        current().applyState();
-    }
+   public void setPreferredStairs(boolean allow) {
+      this.current().applyState();
+   }
 
-    public void setPreferredStairs(boolean allow) {
-        //current().preferredStairs = allow;
-        current().applyState();
-    }
+   public void setAllowDiagonalAscend(boolean allow) {
+      this.current().allowDiagonalAscend = allow;
+      this.current().applyState();
+   }
 
-    public void setAllowDiagonalAscend(boolean allow) {
-        current().allowDiagonalAscend = allow;
-        current().applyState();
-    }
+   public void setBlockPlacePenalty(double penalty) {
+      this.current().blockPlacePenalty = penalty;
+      this.current().applyState();
+   }
 
-    public void setBlockPlacePenalty(double penalty) {
-        current().blockPlacePenalty = penalty;
-        current().applyState();
-    }
+   public void setBlockBreakAdditionalPenalty(double penalty) {
+      this.current().blockBreakAdditionalPenalty = penalty;
+      this.current().applyState();
+   }
 
-    public void setBlockBreakAdditionalPenalty(double penalty) {
-        current().blockBreakAdditionalPenalty = penalty;
-        current().applyState();
-    }
+   public void avoidDodgingProjectile(Predicate<Entity> whenToDodge) {
+      this.current().avoidDodgingProjectile.add(whenToDodge);
+   }
 
-    public void avoidDodgingProjectile(Predicate<Entity> whenToDodge) {
-        current().avoidDodgingProjectile.add(whenToDodge);
-        // Not needed, nothing changes.
-        // current().applyState();
-    }
+   public void addGlobalHeuristic(BiFunction<Double, BlockPos, Double> heuristic) {
+      this.current().globalHeuristics.add(heuristic);
+      this.current().applyState();
+   }
 
-    public void addGlobalHeuristic(BiFunction<Double, BlockPos, Double> heuristic) {
-        current().globalHeuristics.add(heuristic);
-        current().applyState();
-    }
-
-    public boolean shouldAvoidDodgingProjectile(Entity entity) {
-        if (!current().avoidDodgingProjectile.isEmpty()) {
-            for (Predicate<Entity> test : current().avoidDodgingProjectile) {
-                if (test.test(entity)) return true;
+   public boolean shouldAvoidDodgingProjectile(Entity entity) {
+      if (!this.current().avoidDodgingProjectile.isEmpty()) {
+         for (Predicate<Entity> test : this.current().avoidDodgingProjectile) {
+            if (test.test(entity)) {
+               return true;
             }
-        }
-        return false;
-    }
+         }
+      }
 
-    /// Stack management
-    public void push() {
-        if (states.isEmpty()) {
-            states.push(new State());
-        } else {
-            // Make copy and push that
-            states.push(new State(current()));
-        }
-    }
+      return false;
+   }
 
-    public void push(State customState) {
-        states.push(customState);
-    }
+   public void push() {
+      if (this.states.isEmpty()) {
+         this.states.push(new BotBehaviour.State());
+      } else {
+         this.states.push(new BotBehaviour.State(this.current()));
+      }
+   }
 
-    public State pop() {
-        if (states.isEmpty()) {
-            Debug.logError("State stack is empty. This shouldn't be happening.");
+   public void push(BotBehaviour.State customState) {
+      this.states.push(customState);
+   }
+
+   public BotBehaviour.State pop() {
+      if (this.states.isEmpty()) {
+         baritone.utils.Debug.logError("State stack is empty. This shouldn't be happening.");
+         return null;
+      } else {
+         BotBehaviour.State popped = this.states.pop();
+         if (this.states.isEmpty()) {
+            baritone.utils.Debug.logError("State stack is empty after pop. This shouldn't be happening.");
             return null;
-        }
-        State popped = states.pop();
-        if (states.isEmpty()) {
-            Debug.logError("State stack is empty after pop. This shouldn't be happening.");
-            return null;
-        }
-        states.peek().applyState();
-        return popped;
-    }
+         } else {
+            this.states.peek().applyState();
+            return popped;
+         }
+      }
+   }
 
-    private State current() {
-        if (states.isEmpty()) {
-            Debug.logError("STATE EMPTY, UNEMPTIED!");
-            push();
-        }
-        return states.peek();
-    }
+   private BotBehaviour.State current() {
+      if (this.states.isEmpty()) {
+         baritone.utils.Debug.logError("STATE EMPTY, UNEMPTIED!");
+         this.push();
+      }
 
-    private class State {
-        /// Baritone Params
-        public double followOffsetDistance;
-        public HashSet<Item> protectedItems = new HashSet<>();
-        public boolean mineScanDroppedItems;
-        public boolean swimThroughLava;
-        public boolean allowDiagonalAscend;
-        //public boolean preferredStairs;
-        public double blockPlacePenalty;
-        public double blockBreakAdditionalPenalty;
+      return this.states.peek();
+   }
 
-        // Alto Clef params
-        public boolean exclusivelyMineLogs;
-        public boolean forceFieldPlayers;
-        public List<Predicate<Entity>> avoidDodgingProjectile = new ArrayList<>();
-        public List<Predicate<Entity>> excludeFromForceField = new ArrayList<>();
-        //public List<Pair<Slot, Predicate<ItemStack>>> conversionSlots = new ArrayList<>();
+   private class State {
+      public double followOffsetDistance;
+      public HashSet<Item> protectedItems = new HashSet<>();
+      public boolean mineScanDroppedItems;
+      public boolean swimThroughLava;
+      public boolean allowDiagonalAscend;
+      public double blockPlacePenalty;
+      public double blockBreakAdditionalPenalty;
+      public boolean exclusivelyMineLogs;
+      public boolean forceFieldPlayers;
+      public List<Predicate<Entity>> avoidDodgingProjectile = new ArrayList<>();
+      public List<Predicate<Entity>> excludeFromForceField = new ArrayList<>();
+      public HashSet<BlockPos> blocksToAvoidBreaking = new HashSet<>();
+      public List<Predicate<BlockPos>> toAvoidBreaking = new ArrayList<>();
+      public List<Predicate<BlockPos>> toAvoidPlacing = new ArrayList<>();
+      public List<Predicate<BlockPos>> allowWalking = new ArrayList<>();
+      public List<Predicate<BlockPos>> avoidWalkingThrough = new ArrayList<>();
+      public List<BiPredicate<BlockState, ItemStack>> forceUseTools = new ArrayList<>();
+      public List<BiFunction<Double, BlockPos, Double>> globalHeuristics = new ArrayList<>();
+      public boolean allowWalkThroughFlowingWater = false;
+      public boolean pauseOnLostFocus = true;
+      public Fluid rayFluidHandling;
+      public boolean escapeLava = true;
 
-        // Extra Baritone Settings
-        public HashSet<BlockPos> blocksToAvoidBreaking = new HashSet<>();
-        public List<Predicate<BlockPos>> toAvoidBreaking = new ArrayList<>();
-        public List<Predicate<BlockPos>> toAvoidPlacing = new ArrayList<>();
-        public List<Predicate<BlockPos>> allowWalking = new ArrayList<>();
-        public List<Predicate<BlockPos>> avoidWalkingThrough = new ArrayList<>();
-        public List<BiPredicate<BlockState, ItemStack>> forceUseTools = new ArrayList<>();
-        public List<BiFunction<Double, BlockPos, Double>> globalHeuristics = new ArrayList<>();
-        public boolean allowWalkThroughFlowingWater = false;
+      public State() {
+         this(null);
+      }
 
-        // Minecraft config
-        public boolean pauseOnLostFocus = true;
+      public State(BotBehaviour.State toCopy) {
+         this.readState(BotBehaviour.this.mod.getBaritoneSettings());
+         this.readExtraState(BotBehaviour.this.mod.getExtraBaritoneSettings());
+         this.readMinecraftState();
+         if (toCopy != null) {
+            this.exclusivelyMineLogs = toCopy.exclusivelyMineLogs;
+            this.avoidDodgingProjectile.addAll(toCopy.avoidDodgingProjectile);
+            this.excludeFromForceField.addAll(toCopy.excludeFromForceField);
+            this.forceFieldPlayers = toCopy.forceFieldPlayers;
+            this.escapeLava = toCopy.escapeLava;
+         }
+      }
 
-        // Hard coded stuff
-        public RaycastContext.FluidHandling rayFluidHandling;
+      public void applyState() {
+         this.applyState(BotBehaviour.this.mod.getBaritoneSettings(), BotBehaviour.this.mod.getExtraBaritoneSettings());
+      }
 
-        // Other necessary stuff
-        public boolean escapeLava = true;
+      private void readState(baritone.api.Settings s) {
+         this.followOffsetDistance = s.followOffsetDistance.get();
+         this.mineScanDroppedItems = s.mineScanDroppedItems.get();
+         this.swimThroughLava = s.assumeWalkOnLava.get();
+         this.allowDiagonalAscend = s.allowDiagonalAscend.get();
+         this.blockPlacePenalty = s.blockPlacementPenalty.get();
+         this.blockBreakAdditionalPenalty = s.blockBreakAdditionalPenalty.get();
+      }
 
-        public State() {
-            this(null);
-        }
-
-        public State(State toCopy) {
-            // Read in current state
-            readState(mod.getBaritoneSettings());
-
-            readExtraState(mod.getExtraBaritoneSettings());
-
-            readMinecraftState();
-
-            if (toCopy != null) {
-                // Copy over stuff from old one
-                exclusivelyMineLogs = toCopy.exclusivelyMineLogs;
-                avoidDodgingProjectile.addAll(toCopy.avoidDodgingProjectile);
-                excludeFromForceField.addAll(toCopy.excludeFromForceField);
-                //conversionSlots.addAll(toCopy.conversionSlots);
-                forceFieldPlayers = toCopy.forceFieldPlayers;
-                escapeLava = toCopy.escapeLava;
+      private void readExtraState(AltoClefSettings settings) {
+         synchronized (settings.getBreakMutex()) {
+            synchronized (settings.getPlaceMutex()) {
+               this.blocksToAvoidBreaking = new HashSet<>(settings.getBlocksToAvoidBreaking());
+               this.toAvoidBreaking = new ArrayList<>(settings.getBreakAvoiders());
+               this.toAvoidPlacing = new ArrayList<>(settings.getPlaceAvoiders());
+               this.protectedItems = new HashSet<>(settings.getProtectedItems());
+               synchronized (settings.getPropertiesMutex()) {
+                  this.allowWalking = new ArrayList<>(settings.getForceWalkOnPredicates());
+                  this.avoidWalkingThrough = new ArrayList<>(settings.getForceAvoidWalkThroughPredicates());
+                  this.forceUseTools = new ArrayList<>(settings.getForceUseToolPredicates());
+               }
             }
-        }
+         }
 
-        /**
-         * Make the current state match our copy
-         */
-        public void applyState() {
-            applyState(mod.getBaritoneSettings(), mod.getExtraBaritoneSettings());
-        }
+         synchronized (settings.getGlobalHeuristicMutex()) {
+            this.globalHeuristics = new ArrayList<>(settings.getGlobalHeuristics());
+         }
 
-        /**
-         * Read in a copy of the current state
-         */
-        private void readState(Settings s) {
-            followOffsetDistance = s.followOffsetDistance.get();
-            mineScanDroppedItems = s.mineScanDroppedItems.get();
-            swimThroughLava = s.assumeWalkOnLava.get();
-            allowDiagonalAscend = s.allowDiagonalAscend.get();
-            blockPlacePenalty = s.blockPlacementPenalty.get();
-            blockBreakAdditionalPenalty = s.blockBreakAdditionalPenalty.get();
-            //preferredStairs = s.allowDownward.value;
-        }
+         this.allowWalkThroughFlowingWater = settings.isFlowingWaterPassAllowed();
+         this.rayFluidHandling = RayTraceUtils.fluidHandling;
+      }
 
-        private void readExtraState(AltoClefSettings settings) {
-            synchronized (settings.getBreakMutex()) {
-                synchronized (settings.getPlaceMutex()) {
-                    blocksToAvoidBreaking = new HashSet<>(settings.getBlocksToAvoidBreaking());
-                    toAvoidBreaking = new ArrayList<>(settings.getBreakAvoiders());
-                    toAvoidPlacing = new ArrayList<>(settings.getPlaceAvoiders());
-                    protectedItems = new HashSet<>(settings.getProtectedItems());
-                    synchronized (settings.getPropertiesMutex()) {
-                        allowWalking = new ArrayList<>(settings.getForceWalkOnPredicates());
-                        avoidWalkingThrough = new ArrayList<>(settings.getForceAvoidWalkThroughPredicates());
-                        forceUseTools = new ArrayList<>(settings.getForceUseToolPredicates());
-                    }
-                }
+      private void readMinecraftState() {
+         this.pauseOnLostFocus = false;
+      }
+
+      private void applyState(baritone.api.Settings s, AltoClefSettings sa) {
+         s.followOffsetDistance.set(this.followOffsetDistance);
+         s.mineScanDroppedItems.set(this.mineScanDroppedItems);
+         s.allowDiagonalAscend.set(this.allowDiagonalAscend);
+         s.blockPlacementPenalty.set(this.blockPlacePenalty);
+         s.blockBreakAdditionalPenalty.set(this.blockBreakAdditionalPenalty);
+         synchronized (sa.getBreakMutex()) {
+            synchronized (sa.getPlaceMutex()) {
+               sa.getBreakAvoiders().clear();
+               sa.getBreakAvoiders().addAll(this.toAvoidBreaking);
+               sa.getBlocksToAvoidBreaking().clear();
+               sa.getBlocksToAvoidBreaking().addAll(this.blocksToAvoidBreaking);
+               sa.getPlaceAvoiders().clear();
+               sa.getPlaceAvoiders().addAll(this.toAvoidPlacing);
+               sa.getProtectedItems().clear();
+               sa.getProtectedItems().addAll(this.protectedItems);
+               synchronized (sa.getPropertiesMutex()) {
+                  sa.getForceWalkOnPredicates().clear();
+                  sa.getForceWalkOnPredicates().addAll(this.allowWalking);
+                  sa.getForceAvoidWalkThroughPredicates().clear();
+                  sa.getForceAvoidWalkThroughPredicates().addAll(this.avoidWalkingThrough);
+                  sa.getForceUseToolPredicates().clear();
+                  sa.getForceUseToolPredicates().addAll(this.forceUseTools);
+               }
             }
-            synchronized (settings.getGlobalHeuristicMutex()) {
-                globalHeuristics = new ArrayList<>(settings.getGlobalHeuristics());
-            }
-            allowWalkThroughFlowingWater = settings.isFlowingWaterPassAllowed();
+         }
 
-            rayFluidHandling = RayTraceUtils.fluidHandling;
-        }
+         synchronized (sa.getGlobalHeuristicMutex()) {
+            sa.getGlobalHeuristics().clear();
+            sa.getGlobalHeuristics().addAll(this.globalHeuristics);
+         }
 
-        private void readMinecraftState() {
-            pauseOnLostFocus = false;
-        }
-
-        /**
-         * Make the current state match our copy
-         */
-        private void applyState(Settings s, AltoClefSettings sa) {
-            s.followOffsetDistance.set(followOffsetDistance);
-            s.mineScanDroppedItems.set(mineScanDroppedItems);
-            s.allowDiagonalAscend.set(allowDiagonalAscend);
-            s.blockPlacementPenalty.set(blockPlacePenalty);
-            s.blockBreakAdditionalPenalty.set(blockBreakAdditionalPenalty);
-
-            // We need an alternrative method to handle this, this method makes navigation much less reliable.
-            //s.allowDownward.value = preferredStairs;
-
-            // Kinda jank but it works.
-            synchronized (sa.getBreakMutex()) {
-                synchronized (sa.getPlaceMutex()) {
-                    sa.getBreakAvoiders().clear();
-                    sa.getBreakAvoiders().addAll(toAvoidBreaking);
-                    sa.getBlocksToAvoidBreaking().clear();
-                    sa.getBlocksToAvoidBreaking().addAll(blocksToAvoidBreaking);
-                    sa.getPlaceAvoiders().clear();
-                    sa.getPlaceAvoiders().addAll(toAvoidPlacing);
-                    sa.getProtectedItems().clear();
-                    sa.getProtectedItems().addAll(protectedItems);
-                    synchronized (sa.getPropertiesMutex()) {
-                        sa.getForceWalkOnPredicates().clear();
-                        sa.getForceWalkOnPredicates().addAll(allowWalking);
-                        sa.getForceAvoidWalkThroughPredicates().clear();
-                        sa.getForceAvoidWalkThroughPredicates().addAll(avoidWalkingThrough);
-                        sa.getForceUseToolPredicates().clear();
-                        sa.getForceUseToolPredicates().addAll(forceUseTools);
-                    }
-                }
-            }
-            synchronized (sa.getGlobalHeuristicMutex()) {
-                sa.getGlobalHeuristics().clear();
-                sa.getGlobalHeuristics().addAll(globalHeuristics);
-            }
-
-
-            sa.setFlowingWaterPass(allowWalkThroughFlowingWater);
-            sa.allowSwimThroughLava(swimThroughLava);
-
-            // Extra / hard coded
-            RayTraceUtils.fluidHandling = rayFluidHandling;
-        }
-    }
+         sa.setFlowingWaterPass(this.allowWalkThroughFlowingWater);
+         sa.allowSwimThroughLava(this.swimThroughLava);
+         RayTraceUtils.fluidHandling = this.rayFluidHandling;
+      }
+   }
 }

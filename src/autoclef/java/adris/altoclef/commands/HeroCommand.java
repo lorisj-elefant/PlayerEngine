@@ -7,12 +7,12 @@ import adris.altoclef.commandsystem.CommandException;
 import adris.altoclef.tasks.entity.HeroTask;
 
 public class HeroCommand extends Command {
-    public HeroCommand() {
-        super("hero", "Kill all hostile mobs");
-    }
+   public HeroCommand() {
+      super("hero", "Kill all hostile mobs");
+   }
 
-    @Override
-    protected void call(AltoClefController mod, ArgParser parser) throws CommandException {
-        mod.runUserTask(new HeroTask(), this::finish);
-    }
+   @Override
+   protected void call(AltoClefController mod, ArgParser parser) throws CommandException {
+      mod.runUserTask(new HeroTask(), () -> this.finish());
+   }
 }

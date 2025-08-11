@@ -7,76 +7,82 @@ import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.ItemTarget;
 import adris.altoclef.util.MiningRequirement;
 import adris.altoclef.util.helpers.ItemHelper;
-import net.minecraft.block.Block;
-import net.minecraft.entity.passive.SheepEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.Items;
-import net.minecraft.util.DyeColor;
-
 import java.util.Arrays;
 import java.util.HashSet;
+import net.minecraft.world.entity.animal.Sheep;
+import net.minecraft.world.item.DyeColor;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Block;
 
 public class CollectWoolTask extends ResourceTask {
-    private final int count;
+   private final int count;
+   private final HashSet<DyeColor> colors;
+   private final Item[] wools;
 
-    private final HashSet<DyeColor> colors;
+   public CollectWoolTask(DyeColor[] colors, int count) {
+      super(new ItemTarget(ItemHelper.WOOL, count));
+      this.colors = new HashSet<>(Arrays.asList(colors));
+      this.count = count;
+      this.wools = getWoolColorItems(colors);
+   }
 
-    private final Item[] wools;
+   public CollectWoolTask(DyeColor color, int count) {
+      this(new DyeColor[]{color}, count);
+   }
 
-    public CollectWoolTask(DyeColor[] colors, int count) {
-        super(new ItemTarget(ItemHelper.WOOL, count));
-        this.colors = new HashSet<>(Arrays.asList(colors));
-        this.count = count;
-        this.wools = getWoolColorItems(colors);
-    }
+   public CollectWoolTask(int count) {
+      this(DyeColor.values(), count);
+   }
 
-    public CollectWoolTask(DyeColor color, int count) {
-        this(new DyeColor[]{color}, count);
-    }
+   private static Item[] getWoolColorItems(DyeColor[] colors) {
+      Item[] result = new Item[colors.length];
 
-    public CollectWoolTask(int count) {
-        this(DyeColor.values(), count);
-    }
+      for (int i = 0; i < result.length; i++) {
+         result[i] = ItemHelper.getColorfulItems(colors[i]).wool;
+      }
 
-    private static Item[] getWoolColorItems(DyeColor[] colors) {
-        Item[] result = new Item[colors.length];
-        for (int i = 0; i < result.length; i++)
-            result[i] = (ItemHelper.getColorfulItems(colors[i])).wool;
-        return result;
-    }
+      return result;
+   }
 
-    protected boolean shouldAvoidPickingUp(AltoClefController mod) {
-        return false;
-    }
+   @Override
+   protected boolean shouldAvoidPickingUp(AltoClefController mod) {
+      return false;
+   }
 
-    protected void onResourceStart(AltoClefController mod) {
-    }
+   @Override
+   protected void onResourceStart(AltoClefController mod) {
+   }
 
-    protected Task onResourceTick(AltoClefController mod) {
-        Block[] woolBlocks = ItemHelper.itemsToBlocks(this.wools);
-        if (mod.getBlockScanner().anyFound(woolBlocks))
-            return (Task) new MineAndCollectTask(new ItemTarget(this.wools), woolBlocks, MiningRequirement.HAND);
-        if (isInWrongDimension(mod) && !mod.getEntityTracker().entityFound(new Class[]{SheepEntity.class}))
-            return getToCorrectDimensionTask(mod);
-        if (mod.getItemStorage().hasItem(new Item[]{Items.SHEARS}))
-            return (Task) new ShearSheepTask();
-        return (Task) new KillAndLootTask(SheepEntity.class, entity -> {
-            if (entity instanceof SheepEntity) {
-                SheepEntity sheep = (SheepEntity) entity;
-                return (this.colors.contains(sheep.getColor()) && !sheep.isSheared());
-            }
-            return false;
-        }, new ItemTarget[]{new ItemTarget(this.wools, this.count)});
-    }
+   @Override
+   protected Task onResourceTick(AltoClefController mod) {
+      Block[] woolBlocks = ItemHelper.itemsToBlocks(this.wools);
+      if (mod.getBlockScanner().anyFound(woolBlocks)) {
+         return new MineAndCollectTask(new ItemTarget(this.wools), woolBlocks, MiningRequirement.HAND);
+      } else if (this.isInWrongDimension(mod) && !mod.getEntityTracker().entityFound(Sheep.class)) {
+         return this.getToCorrectDimensionTask(mod);
+      } else {
+         return (Task)(mod.getItemStorage().hasItem(Items.SHEARS)
+            ? new ShearSheepTask()
+            : new KillAndLootTask(
+               Sheep.class,
+               entity -> !(entity instanceof Sheep sheep) ? false : this.colors.contains(sheep.getColor()) && !sheep.isSheared(),
+               new ItemTarget(this.wools, this.count)
+            ));
+      }
+   }
 
-    protected void onResourceStop(AltoClefController mod, Task interruptTask) {
-    }
+   @Override
+   protected void onResourceStop(AltoClefController mod, Task interruptTask) {
+   }
 
-    protected boolean isEqualResource(ResourceTask other) {
-        return (other instanceof adris.altoclef.tasks.resources.CollectWoolTask && ((adris.altoclef.tasks.resources.CollectWoolTask) other).count == this.count);
-    }
+   @Override
+   protected boolean isEqualResource(ResourceTask other) {
+      return other instanceof CollectWoolTask && ((CollectWoolTask)other).count == this.count;
+   }
 
-    protected String toDebugStringName() {
-        return "Collect " + this.count + " wool.";
-    }
+   @Override
+   protected String toDebugStringName() {
+      return "Collect " + this.count + " wool.";
+   }
 }

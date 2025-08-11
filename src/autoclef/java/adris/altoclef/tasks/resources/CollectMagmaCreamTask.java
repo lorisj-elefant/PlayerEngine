@@ -8,33 +8,35 @@ import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.Dimension;
 import adris.altoclef.util.ItemTarget;
 import adris.altoclef.util.helpers.WorldHelper;
-import net.minecraft.entity.mob.MagmaCubeEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.Items;
+import net.minecraft.world.entity.monster.MagmaCube;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
 
 public class CollectMagmaCreamTask extends ResourceTask {
-    private final int count;
+   private final int count;
 
-    public CollectMagmaCreamTask(int count) {
-        super(Items.MAGMA_CREAM, count);
-        this.count = count;
-    }
+   public CollectMagmaCreamTask(int count) {
+      super(Items.MAGMA_CREAM, count);
+      this.count = count;
+   }
 
-    protected boolean shouldAvoidPickingUp(AltoClefController mod) {
-        return false;
-    }
+   @Override
+   protected boolean shouldAvoidPickingUp(AltoClefController mod) {
+      return false;
+   }
 
-    protected void onResourceStart(AltoClefController mod) {
-    }
+   @Override
+   protected void onResourceStart(AltoClefController mod) {
+   }
 
     protected Task onResourceTick(AltoClefController mod) {
         int currentBlazePowderPotential, currentSlime, currentCream = mod.getItemStorage().getItemCount(new Item[]{Items.MAGMA_CREAM});
         int neededCream = this.count - currentCream;
         switch (WorldHelper.getCurrentDimension(controller).ordinal()) {
             case 1:
-                if (mod.getEntityTracker().entityFound(new Class[]{MagmaCubeEntity.class})) {
+                if (mod.getEntityTracker().entityFound(MagmaCube.class)) {
                     setDebugState("Killing Magma cube");
-                    return (Task) new KillAndLootTask(MagmaCubeEntity.class, new ItemTarget[]{new ItemTarget(Items.MAGMA_CREAM)});
+                    return (Task) new KillAndLootTask(MagmaCube.class, new ItemTarget[]{new ItemTarget(Items.MAGMA_CREAM)});
                 }
                 currentBlazePowderPotential = mod.getItemStorage().getItemCount(new Item[]{Items.BLAZE_POWDER}) + mod.getItemStorage().getItemCount(new Item[]{Items.BLAZE_ROD});
                 if (neededCream > currentBlazePowderPotential) {
@@ -59,14 +61,17 @@ public class CollectMagmaCreamTask extends ResourceTask {
         return null;
     }
 
-    protected void onResourceStop(AltoClefController mod, Task interruptTask) {
-    }
+   @Override
+   protected void onResourceStop(AltoClefController mod, Task interruptTask) {
+   }
 
-    protected boolean isEqualResource(ResourceTask other) {
-        return other instanceof adris.altoclef.tasks.resources.CollectMagmaCreamTask;
-    }
+   @Override
+   protected boolean isEqualResource(ResourceTask other) {
+      return other instanceof CollectMagmaCreamTask;
+   }
 
-    protected String toDebugStringName() {
-        return "Collecting " + this.count + " Magma cream.";
-    }
+   @Override
+   protected String toDebugStringName() {
+      return "Collecting " + this.count + " Magma cream.";
+   }
 }

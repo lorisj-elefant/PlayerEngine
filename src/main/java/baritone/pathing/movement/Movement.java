@@ -1,20 +1,3 @@
-/*
- * This file is part of Baritone.
- *
- * Baritone is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Baritone is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
- */
-
 package baritone.pathing.movement;
 
 import baritone.api.IBaritone;
@@ -28,280 +11,265 @@ import baritone.api.utils.VecUtils;
 import baritone.api.utils.input.Input;
 import baritone.behavior.PathingBehavior;
 import baritone.utils.BlockStateInterface;
-import net.minecraft.entity.FallingBlockEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Direction;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.entity.item.FallingBlockEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.AABB;
 
 public abstract class Movement implements IMovement, MovementHelper {
+   public static final Direction[] HORIZONTALS_BUT_ALSO_DOWN_____SO_EVERY_DIRECTION_EXCEPT_UP = new Direction[]{
+      Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST, Direction.DOWN
+   };
+   protected final IBaritone baritone;
+   protected final IEntityContext ctx;
+   private MovementState currentState = new MovementState().setStatus(MovementStatus.PREPPING);
+   protected final BetterBlockPos src;
+   protected final BetterBlockPos dest;
+   protected final BetterBlockPos[] positionsToBreak;
+   protected final BetterBlockPos positionToPlace;
+   private Double cost;
+   public List<BlockPos> toBreakCached = null;
+   public List<BlockPos> toPlaceCached = null;
+   public List<BlockPos> toWalkIntoCached = null;
+   private Set<BetterBlockPos> validPositionsCached = null;
+   private Boolean calculatedWhileLoaded;
 
-    public static final Direction[] HORIZONTALS_BUT_ALSO_DOWN_____SO_EVERY_DIRECTION_EXCEPT_UP = {Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST, Direction.DOWN};
+   protected Movement(IBaritone baritone, BetterBlockPos src, BetterBlockPos dest, BetterBlockPos[] toBreak, BetterBlockPos toPlace) {
+      this.baritone = baritone;
+      this.ctx = baritone.getEntityContext();
+      this.src = src;
+      this.dest = dest;
+      this.positionsToBreak = toBreak;
+      this.positionToPlace = toPlace;
+   }
 
-    protected final IBaritone baritone;
-    protected final IEntityContext ctx;
+   protected Movement(IBaritone baritone, BetterBlockPos src, BetterBlockPos dest, BetterBlockPos[] toBreak) {
+      this(baritone, src, dest, toBreak, null);
+   }
 
-    private MovementState currentState = new MovementState().setStatus(MovementStatus.PREPPING);
+   @Override
+   public double getCost() throws NullPointerException {
+      return this.cost;
+   }
 
-    protected final BetterBlockPos src;
+   public double getCost(CalculationContext context) {
+      if (this.cost == null) {
+         this.cost = this.calculateCost(context);
+      }
 
-    protected final BetterBlockPos dest;
+      return this.cost;
+   }
 
-    /**
-     * The positions that need to be broken before this movement can ensue
-     */
-    protected final BetterBlockPos[] positionsToBreak;
+   public abstract double calculateCost(CalculationContext var1);
 
-    /**
-     * The position where we need to place a block before this movement can ensue
-     */
-    protected final BetterBlockPos positionToPlace;
+   public double recalculateCost(CalculationContext context) {
+      this.cost = null;
+      return this.getCost(context);
+   }
 
-    private Double cost;
+   public void override(double cost) {
+      this.cost = cost;
+   }
 
-    public List<BlockPos> toBreakCached = null;
-    public List<BlockPos> toPlaceCached = null;
-    public List<BlockPos> toWalkIntoCached = null;
+   protected abstract Set<BetterBlockPos> calculateValidPositions();
 
-    private Set<BetterBlockPos> validPositionsCached = null;
+   public Set<BetterBlockPos> getValidPositions() {
+      if (this.validPositionsCached == null) {
+         this.validPositionsCached = this.calculateValidPositions();
+         Objects.requireNonNull(this.validPositionsCached);
+      }
 
-    private Boolean calculatedWhileLoaded;
+      return this.validPositionsCached;
+   }
 
-    protected Movement(IBaritone baritone, BetterBlockPos src, BetterBlockPos dest, BetterBlockPos[] toBreak, BetterBlockPos toPlace) {
-        this.baritone = baritone;
-        this.ctx = baritone.getEntityContext();
-        this.src = src;
-        this.dest = dest;
-        this.positionsToBreak = toBreak;
-        this.positionToPlace = toPlace;
-    }
+   protected boolean playerInValidPosition() {
+      return this.getValidPositions().contains(this.ctx.feetPos())
+         || this.getValidPositions().contains(((PathingBehavior)this.baritone.getPathingBehavior()).pathStart());
+   }
 
-    protected Movement(IBaritone baritone, BetterBlockPos src, BetterBlockPos dest, BetterBlockPos[] toBreak) {
-        this(baritone, src, dest, toBreak, null);
-    }
+   @Override
+   public MovementStatus update() {
+      if (this.ctx.entity() instanceof Player) {
+         ((Player)this.ctx.entity()).getAbilities().flying = false;
+      }
 
-    public double getCost() throws NullPointerException {
-        return cost;
-    }
+      if (!this.ctx.baritone().settings().allowSwimming.get() && MovementHelper.isLiquid(this.ctx, this.ctx.feetPos())) {
+         this.currentState.setInput(Input.JUMP, true);
+      }
 
-    public double getCost(CalculationContext context) {
-        if (cost == null) {
-            cost = calculateCost(context);
-        }
-        return cost;
-    }
+      this.currentState = this.updateState(this.currentState);
+      if (this.ctx.entity().isInWall()) {
+         this.ctx.getSelectedBlock().ifPresent(pos -> MovementHelper.switchToBestToolFor(this.ctx, BlockStateInterface.get(this.ctx, pos)));
+         this.currentState.setInput(Input.CLICK_LEFT, true);
+      }
 
-    public abstract double calculateCost(CalculationContext context);
+      this.currentState
+         .getTarget()
+         .getRotation()
+         .ifPresent(rotation -> this.baritone.getLookBehavior().updateTarget(rotation, this.currentState.getTarget().hasToForceRotations()));
+      this.baritone.getInputOverrideHandler().clearAllKeys();
+      this.currentState.getInputStates().forEach((input, forced) -> this.baritone.getInputOverrideHandler().setInputForceState(input, forced));
+      this.currentState.getInputStates().clear();
+      if (this.currentState.getStatus().isComplete()) {
+         this.baritone.getInputOverrideHandler().clearAllKeys();
+      }
 
-    public double recalculateCost(CalculationContext context) {
-        cost = null;
-        return getCost(context);
-    }
+      return this.currentState.getStatus();
+   }
 
-    public void override(double cost) {
-        this.cost = cost;
-    }
+   protected boolean prepared(MovementState state) {
+      if (state.getStatus() == MovementStatus.WAITING) {
+         return true;
+      } else {
+         boolean somethingInTheWay = false;
 
-    protected abstract Set<BetterBlockPos> calculateValidPositions();
-
-    public Set<BetterBlockPos> getValidPositions() {
-        if (validPositionsCached == null) {
-            validPositionsCached = calculateValidPositions();
-            Objects.requireNonNull(validPositionsCached);
-        }
-        return validPositionsCached;
-    }
-
-    protected boolean playerInValidPosition() {
-        return getValidPositions().contains(ctx.feetPos()) || getValidPositions().contains(((PathingBehavior) baritone.getPathingBehavior()).pathStart());
-    }
-
-    /**
-     * Handles the execution of the latest Movement
-     * State, and offers a Status to the calling class.
-     *
-     * @return Status
-     */
-    @Override
-    public MovementStatus update() {
-        if (ctx.entity() instanceof PlayerEntity) {
-            ((PlayerEntity) ctx.entity()).getAbilities().flying = false;
-        }
-        if (!ctx.baritone().settings().allowSwimming.get() && MovementHelper.isLiquid(ctx, ctx.feetPos())) {
-            currentState.setInput(Input.JUMP, true);
-        }
-        currentState = updateState(currentState);
-        if (ctx.entity().isInsideWall()) {
-            ctx.getSelectedBlock().ifPresent(pos -> MovementHelper.switchToBestToolFor(ctx, BlockStateInterface.get(ctx, pos)));
-            currentState.setInput(Input.CLICK_LEFT, true);
-        }
-
-        // If the movement target has to force the new rotations, or we aren't using silent move, then force the rotations
-        currentState.getTarget().getRotation().ifPresent(rotation ->
-                baritone.getLookBehavior().updateTarget(
-                        rotation,
-                        currentState.getTarget().hasToForceRotations()));
-        baritone.getInputOverrideHandler().clearAllKeys();
-        currentState.getInputStates().forEach((input, forced) -> {
-            baritone.getInputOverrideHandler().setInputForceState(input, forced);
-        });
-        currentState.getInputStates().clear();
-
-        // If the current status indicates a completed movement
-        if (currentState.getStatus().isComplete()) {
-            baritone.getInputOverrideHandler().clearAllKeys();
-        }
-
-        return currentState.getStatus();
-    }
-
-    protected boolean prepared(MovementState state) {
-        if (state.getStatus() == MovementStatus.WAITING) {
-            return true;
-        }
-        boolean somethingInTheWay = false;
-        for (BetterBlockPos blockPos : positionsToBreak) {
-            if (!ctx.world().getEntitiesByClass(FallingBlockEntity.class, new Box(0, 0, 0, 1, 1.1, 1).offset(blockPos), e -> true).isEmpty() && baritone.settings().pauseMiningForFallingBlocks.get()) {
-                return false;
+         for (BetterBlockPos blockPos : this.positionsToBreak) {
+            if (!this.ctx.world().getEntitiesOfClass(FallingBlockEntity.class, new AABB(0.0, 0.0, 0.0, 1.0, 1.1, 1.0).move(blockPos), e -> true).isEmpty()
+               && this.baritone.settings().pauseMiningForFallingBlocks.get()) {
+               return false;
             }
-            if (!MovementHelper.canWalkThrough(ctx, blockPos)) { // can't break air, so don't try
-                somethingInTheWay = true;
-                MovementHelper.switchToBestToolFor(ctx, BlockStateInterface.get(ctx, blockPos));
-                Optional<Rotation> reachable = RotationUtils.reachable(ctx.entity(), blockPos, ctx.playerController().getBlockReachDistance());
-                if (reachable.isPresent()) {
-                    Rotation rotTowardsBlock = reachable.get();
-                    state.setTarget(new MovementState.MovementTarget(rotTowardsBlock, true));
-                    if (ctx.isLookingAt(blockPos) || ctx.entityRotations().isReallyCloseTo(rotTowardsBlock)) {
-                        state.setInput(Input.CLICK_LEFT, true);
-                    }
-                    return false;
-                }
-                //get rekt minecraft
-                //i'm doing it anyway
-                //i dont care if theres snow in the way!!!!!!!
-                //you dont own me!!!!
-                state.setTarget(new MovementState.MovementTarget(RotationUtils.calcRotationFromVec3d(ctx.headPos(),
-                        VecUtils.getBlockPosCenter(blockPos), ctx.entityRotations()), true)
-                );
-                // don't check selectedblock on this one, this is a fallback when we can't see any face directly, it's intended to be breaking the "incorrect" block
-                state.setInput(Input.CLICK_LEFT, true);
-                return false;
+
+            if (!MovementHelper.canWalkThrough(this.ctx, blockPos)) {
+               somethingInTheWay = true;
+               MovementHelper.switchToBestToolFor(this.ctx, BlockStateInterface.get(this.ctx, blockPos));
+               Optional<Rotation> reachable = RotationUtils.reachable(this.ctx.entity(), blockPos, this.ctx.playerController().getBlockReachDistance());
+               if (!reachable.isPresent()) {
+                  state.setTarget(
+                     new MovementState.MovementTarget(
+                        RotationUtils.calcRotationFromVec3d(this.ctx.headPos(), VecUtils.getBlockPosCenter(blockPos), this.ctx.entityRotations()), true
+                     )
+                  );
+                  state.setInput(Input.CLICK_LEFT, true);
+                  return false;
+               }
+
+               Rotation rotTowardsBlock = reachable.get();
+               state.setTarget(new MovementState.MovementTarget(rotTowardsBlock, true));
+               if (this.ctx.isLookingAt(blockPos) || this.ctx.entityRotations().isReallyCloseTo(rotTowardsBlock)) {
+                  state.setInput(Input.CLICK_LEFT, true);
+               }
+
+               return false;
             }
-        }
-        if (somethingInTheWay) {
-            // There's a block or blocks that we can't walk through, but we have no target rotation to reach any
-            // So don't return true, actually set state to unreachable
+         }
+
+         if (somethingInTheWay) {
             state.setStatus(MovementStatus.UNREACHABLE);
             return true;
-        }
-        return true;
-    }
+         } else {
+            return true;
+         }
+      }
+   }
 
-    @Override
-    public boolean safeToCancel() {
-        return safeToCancel(currentState);
-    }
+   @Override
+   public boolean safeToCancel() {
+      return this.safeToCancel(this.currentState);
+   }
 
-    protected boolean safeToCancel(MovementState currentState) {
-        return true;
-    }
+   protected boolean safeToCancel(MovementState currentState) {
+      return true;
+   }
 
-    @Override
-    public BetterBlockPos getSrc() {
-        return src;
-    }
+   @Override
+   public BetterBlockPos getSrc() {
+      return this.src;
+   }
 
-    @Override
-    public BetterBlockPos getDest() {
-        return dest;
-    }
+   @Override
+   public BetterBlockPos getDest() {
+      return this.dest;
+   }
 
-    @Override
-    public void reset() {
-        currentState = new MovementState().setStatus(MovementStatus.PREPPING);
-    }
+   @Override
+   public void reset() {
+      this.currentState = new MovementState().setStatus(MovementStatus.PREPPING);
+   }
 
-    /**
-     * Calculate latest movement state. Gets called once a tick.
-     *
-     * @param state The current state
-     * @return The new state
-     */
-    public MovementState updateState(MovementState state) {
-        if (!prepared(state)) {
-            return state.setStatus(MovementStatus.PREPPING);
-        } else if (state.getStatus() == MovementStatus.PREPPING) {
+   public MovementState updateState(MovementState state) {
+      if (!this.prepared(state)) {
+         return state.setStatus(MovementStatus.PREPPING);
+      } else {
+         if (state.getStatus() == MovementStatus.PREPPING) {
             state.setStatus(MovementStatus.WAITING);
-        }
+         }
 
-        if (state.getStatus() == MovementStatus.WAITING) {
+         if (state.getStatus() == MovementStatus.WAITING) {
             state.setStatus(MovementStatus.RUNNING);
-        }
+         }
 
-        return state;
-    }
+         return state;
+      }
+   }
 
-    @Override
-    public BlockPos getDirection() {
-        return getDest().subtract(getSrc());
-    }
+   @Override
+   public BlockPos getDirection() {
+      return this.getDest().subtract(this.getSrc());
+   }
 
-    public void checkLoadedChunk(CalculationContext context) {
-        calculatedWhileLoaded = context.bsi.worldContainsLoadedChunk(dest.x, dest.z);
-    }
+   public void checkLoadedChunk(CalculationContext context) {
+      this.calculatedWhileLoaded = context.bsi.worldContainsLoadedChunk(this.dest.x, this.dest.z);
+   }
 
-    @Override
-    public boolean calculatedWhileLoaded() {
-        return calculatedWhileLoaded;
-    }
+   @Override
+   public boolean calculatedWhileLoaded() {
+      return this.calculatedWhileLoaded;
+   }
 
-    @Override
-    public void resetBlockCache() {
-        toBreakCached = null;
-        toPlaceCached = null;
-        toWalkIntoCached = null;
-    }
+   @Override
+   public void resetBlockCache() {
+      this.toBreakCached = null;
+      this.toPlaceCached = null;
+      this.toWalkIntoCached = null;
+   }
 
-    public List<BlockPos> toBreak(BlockStateInterface bsi) {
-        if (toBreakCached != null) {
-            return toBreakCached;
-        }
-        List<BlockPos> result = new ArrayList<>();
-        for (BetterBlockPos positionToBreak : positionsToBreak) {
-            if (!MovementHelper.canWalkThrough(bsi, positionToBreak.x, positionToBreak.y, positionToBreak.z, ctx.baritone().settings())) {
-                result.add(positionToBreak);
+   public List<BlockPos> toBreak(BlockStateInterface bsi) {
+      if (this.toBreakCached != null) {
+         return this.toBreakCached;
+      } else {
+         List<BlockPos> result = new ArrayList<>();
+
+         for (BetterBlockPos positionToBreak : this.positionsToBreak) {
+            if (!MovementHelper.canWalkThrough(bsi, positionToBreak.x, positionToBreak.y, positionToBreak.z, this.ctx.baritone().settings())) {
+               result.add(positionToBreak);
             }
-        }
-        toBreakCached = result;
-        return result;
-    }
+         }
 
-    public List<BlockPos> toPlace(BlockStateInterface bsi) {
-        if (toPlaceCached != null) {
-            return toPlaceCached;
-        }
-        List<BlockPos> result = new ArrayList<>();
-        if (positionToPlace != null && !MovementHelper.canWalkOn(bsi, positionToPlace.x, positionToPlace.y, positionToPlace.z, baritone.settings())) {
-            result.add(positionToPlace);
-        }
-        toPlaceCached = result;
-        return result;
-    }
+         this.toBreakCached = result;
+         return result;
+      }
+   }
 
-    public List<BlockPos> toWalkInto(BlockStateInterface bsi) { // overridden by movementdiagonal
-        if (toWalkIntoCached == null) {
-            toWalkIntoCached = new ArrayList<>();
-        }
-        return toWalkIntoCached;
-    }
+   public List<BlockPos> toPlace(BlockStateInterface bsi) {
+      if (this.toPlaceCached != null) {
+         return this.toPlaceCached;
+      } else {
+         List<BlockPos> result = new ArrayList<>();
+         if (this.positionToPlace != null
+            && !MovementHelper.canWalkOn(bsi, this.positionToPlace.x, this.positionToPlace.y, this.positionToPlace.z, this.baritone.settings())) {
+            result.add(this.positionToPlace);
+         }
 
-    public BlockPos[] toBreakAll() {
-        return positionsToBreak;
-    }
+         this.toPlaceCached = result;
+         return result;
+      }
+   }
+
+   public List<BlockPos> toWalkInto(BlockStateInterface bsi) {
+      if (this.toWalkIntoCached == null) {
+         this.toWalkIntoCached = new ArrayList<>();
+      }
+
+      return this.toWalkIntoCached;
+   }
+
+   public BlockPos[] toBreakAll() {
+      return this.positionsToBreak;
+   }
 }

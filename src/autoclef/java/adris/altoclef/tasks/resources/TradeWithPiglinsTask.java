@@ -10,205 +10,187 @@ import adris.altoclef.util.ItemTarget;
 import adris.altoclef.util.helpers.EntityHelper;
 import adris.altoclef.util.time.TimerGame;
 import baritone.utils.Debug;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.mob.HoglinEntity;
-import net.minecraft.entity.mob.PiglinEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.Items;
-
 import java.util.HashSet;
 import java.util.Optional;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.monster.hoglin.Hoglin;
+import net.minecraft.world.entity.monster.piglin.Piglin;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
 
 public class TradeWithPiglinsTask extends ResourceTask {
-    private static final boolean AVOID_HOGLINS = true;
+   private static final boolean AVOID_HOGLINS = true;
+   private static final double HOGLIN_AVOID_TRADE_RADIUS = 64.0;
+   private static final double TRADING_PIGLIN_TOO_FAR_AWAY = 72.0;
+   private final int goldBuffer;
+   private final Task tradeTask = new TradeWithPiglinsTask.PerformTradeWithPiglin();
+   private Task goldTask = null;
 
-    private static final double HOGLIN_AVOID_TRADE_RADIUS = 64.0D;
+   public TradeWithPiglinsTask(int goldBuffer, ItemTarget[] itemTargets) {
+      super(itemTargets);
+      this.goldBuffer = goldBuffer;
+   }
 
-    private static final double TRADING_PIGLIN_TOO_FAR_AWAY = 72.0D;
+   public TradeWithPiglinsTask(int goldBuffer, ItemTarget target) {
+      super(target);
+      this.goldBuffer = goldBuffer;
+   }
 
-    private final int goldBuffer;
+   public TradeWithPiglinsTask(int goldBuffer, Item item, int targetCount) {
+      super(item, targetCount);
+      this.goldBuffer = goldBuffer;
+   }
 
-    private final Task tradeTask = (Task) new PerformTradeWithPiglin();
+   @Override
+   protected boolean shouldAvoidPickingUp(AltoClefController mod) {
+      return false;
+   }
 
-    private Task goldTask = null;
+   @Override
+   protected void onResourceStart(AltoClefController mod) {
+   }
 
-    public TradeWithPiglinsTask(int goldBuffer, ItemTarget[] itemTargets) {
-        super(itemTargets);
-        this.goldBuffer = goldBuffer;
-    }
+   @Override
+   protected Task onResourceTick(AltoClefController mod) {
+      if (this.goldTask != null && this.goldTask.isActive() && !this.goldTask.isFinished()) {
+         this.setDebugState("Collecting gold");
+         return this.goldTask;
+      } else if (!mod.getItemStorage().hasItem(Items.GOLD_INGOT)) {
+         if (this.goldTask == null) {
+            this.goldTask = TaskCatalogue.getItemTask(Items.GOLD_INGOT, this.goldBuffer);
+         }
 
-    public TradeWithPiglinsTask(int goldBuffer, ItemTarget target) {
-        super(target);
-        this.goldBuffer = goldBuffer;
-    }
+         return this.goldTask;
+      } else if (!mod.getEntityTracker().entityFound(Piglin.class)) {
+         this.setDebugState("Wandering");
+         return new TimeoutWanderTask(false);
+      } else {
+         this.setDebugState("Trading with Piglin");
+         return this.tradeTask;
+      }
+   }
 
-    public TradeWithPiglinsTask(int goldBuffer, Item item, int targetCount) {
-        super(item, targetCount);
-        this.goldBuffer = goldBuffer;
-    }
+   @Override
+   protected void onResourceStop(AltoClefController mod, Task interruptTask) {
+   }
 
-    protected boolean shouldAvoidPickingUp(AltoClefController mod) {
-        return false;
-    }
+   @Override
+   protected boolean isEqualResource(ResourceTask other) {
+      return other instanceof TradeWithPiglinsTask;
+   }
 
-    protected void onResourceStart(AltoClefController mod) {
-    }
+   @Override
+   protected String toDebugStringName() {
+      return "Trading with Piglins";
+   }
 
-    protected Task onResourceTick(AltoClefController mod) {
-        if (this.goldTask != null && this.goldTask.isActive() && !this.goldTask.isFinished()) {
-            setDebugState("Collecting gold");
-            return this.goldTask;
-        }
-        if (!mod.getItemStorage().hasItem(new Item[]{Items.GOLD_INGOT})) {
-            if (this.goldTask == null)
-                this.goldTask = (Task) TaskCatalogue.getItemTask(Items.GOLD_INGOT, this.goldBuffer);
-            return this.goldTask;
-        }
-        if (!mod.getEntityTracker().entityFound(new Class[]{PiglinEntity.class})) {
-            setDebugState("Wandering");
-            return (Task) new TimeoutWanderTask(false);
-        }
-        setDebugState("Trading with Piglin");
-        return this.tradeTask;
-    }
+   static class PerformTradeWithPiglin extends AbstractDoToEntityTask {
+      private static final double PIGLIN_NEARBY_RADIUS = 10.0;
+      private final TimerGame barterTimeout = new TimerGame(2.0);
+      private final TimerGame intervalTimeout = new TimerGame(10.0);
+      private final HashSet<Entity> blacklisted = new HashSet<>();
+      private Entity currentlyBartering = null;
 
-    protected void onResourceStop(AltoClefController mod, Task interruptTask) {
-    }
+      public PerformTradeWithPiglin() {
+         super(3.0);
+      }
 
-    protected boolean isEqualResource(ResourceTask other) {
-        return other instanceof adris.altoclef.tasks.resources.TradeWithPiglinsTask;
-    }
+      @Override
+      protected void onStart() {
+         super.onStart();
+         AltoClefController mod = this.controller;
+         mod.getBehaviour().push();
+         mod.getBehaviour().addProtectedItems(Items.GOLD_INGOT);
+         mod.getBehaviour().addForceFieldExclusion(entity -> entity instanceof Piglin ? !this.blacklisted.contains(entity) : false);
+      }
 
-    protected String toDebugStringName() {
-        return "Trading with Piglins";
-    }
+      @Override
+      protected void onStop(Task interruptTask) {
+         super.onStop(interruptTask);
+         this.controller.getBehaviour().pop();
+      }
 
-    static class PerformTradeWithPiglin extends AbstractDoToEntityTask {
+      @Override
+      protected boolean isSubEqual(AbstractDoToEntityTask other) {
+         return other instanceof TradeWithPiglinsTask.PerformTradeWithPiglin;
+      }
 
-        private static final double PIGLIN_NEARBY_RADIUS = 10;
-        private final TimerGame barterTimeout = new TimerGame(2);
-        private final TimerGame intervalTimeout = new TimerGame(10);
-        private final HashSet<Entity> blacklisted = new HashSet<>();
-        private Entity currentlyBartering = null;
+      @Override
+      protected Task onEntityInteract(AltoClefController mod, Entity entity) {
+         if (this.intervalTimeout.elapsed()) {
+            this.barterTimeout.reset();
+            this.intervalTimeout.reset();
+         }
 
-        public PerformTradeWithPiglin() {
-            super(3);
-        }
+         if (EntityHelper.isTradingPiglin(this.currentlyBartering)) {
+            this.barterTimeout.reset();
+         }
 
-        @Override
-        protected void onStart() {
-            super.onStart();
-            AltoClefController mod = controller;
+         if (!entity.equals(this.currentlyBartering)) {
+            this.currentlyBartering = entity;
+            this.barterTimeout.reset();
+         }
 
-            mod.getBehaviour().push();
-
-            // Don't throw away our gold lol
-            mod.getBehaviour().addProtectedItems(Items.GOLD_INGOT);
-
-            // Don't attack piglins unless we've blacklisted them.
-            mod.getBehaviour().addForceFieldExclusion(entity -> {
-                if (entity instanceof PiglinEntity) {
-                    return !blacklisted.contains(entity);
-                }
-                return false;
-            });
-            //_blacklisted.clear();
-        }
-
-        @Override
-        protected void onStop(Task interruptTask) {
-            super.onStop(interruptTask);
-            controller.getBehaviour().pop();
-        }
-
-        @Override
-        protected boolean isSubEqual(AbstractDoToEntityTask other) {
-            return other instanceof PerformTradeWithPiglin;
-        }
-
-        @Override
-        protected Task onEntityInteract(AltoClefController mod, Entity entity) {
-
-            // If we didn't run this in a while, we can retry bartering.
-            if (intervalTimeout.elapsed()) {
-                // We didn't interact for a while, continue bartering as usual.
-                barterTimeout.reset();
-                intervalTimeout.reset();
-            }
-
-            // We're trading so reset the barter timeout
-            if (EntityHelper.isTradingPiglin(currentlyBartering)) {
-                barterTimeout.reset();
-            }
-
-            // We're bartering a new entity.
-            if (!entity.equals(currentlyBartering)) {
-                currentlyBartering = entity;
-                barterTimeout.reset();
-            }
-
-            if (barterTimeout.elapsed()) {
-                // We failed bartering.
-                Debug.logMessage("Failed bartering with current piglin, blacklisting.");
-                blacklisted.add(currentlyBartering);
-                barterTimeout.reset();
-                currentlyBartering = null;
-                return null;
-            }
-
-            if (AVOID_HOGLINS && currentlyBartering != null && !EntityHelper.isTradingPiglin(currentlyBartering)) {
-                Optional<Entity> closestHoglin = mod.getEntityTracker().getClosestEntity(currentlyBartering.getPos(), HoglinEntity.class);
-                if (closestHoglin.isPresent() && closestHoglin.get().isInRange(entity, HOGLIN_AVOID_TRADE_RADIUS)) {
-                    Debug.logMessage("Aborting further trading because a hoglin showed up");
-                    blacklisted.add(currentlyBartering);
-                    barterTimeout.reset();
-                    currentlyBartering = null;
-                }
-            }
-
-            setDebugState("Trading with piglin");
-
-            if (mod.getSlotHandler().forceEquipItem(Items.GOLD_INGOT)) {
-                Debug.logError("NYI");
-                //mod.getInteractionManager().interactEntity(mod.getPlayer(), entity, Hand.MAIN_HAND);
-                intervalTimeout.reset();
-            }
+         if (this.barterTimeout.elapsed()) {
+            Debug.logMessage("Failed bartering with current piglin, blacklisting.");
+            this.blacklisted.add(this.currentlyBartering);
+            this.barterTimeout.reset();
+            this.currentlyBartering = null;
             return null;
-        }
-
-        @Override
-        protected Optional<Entity> getEntityTarget(AltoClefController mod) {
-            // Ignore trading piglins
-            Optional<Entity> found = mod.getEntityTracker().getClosestEntity(mod.getPlayer().getPos(),
-                    entity -> {
-                        if (blacklisted.contains(entity)
-                                || EntityHelper.isTradingPiglin(entity)
-                                || (entity instanceof LivingEntity && ((LivingEntity) entity).isBaby())
-                                || (currentlyBartering != null && !entity.isInRange(currentlyBartering, PIGLIN_NEARBY_RADIUS))) {
-                            return false;
-                        }
-
-                        if (AVOID_HOGLINS) {
-                            // Avoid trading if hoglin is anywhere remotely nearby.
-                            Optional<Entity> closestHoglin = mod.getEntityTracker().getClosestEntity(entity.getPos(), HoglinEntity.class);
-                            return closestHoglin.isEmpty() || !closestHoglin.get().isInRange(entity, HOGLIN_AVOID_TRADE_RADIUS);
-                        }
-                        return true;
-                    }, PiglinEntity.class
-            );
-            if (found.isEmpty()) {
-                if (currentlyBartering != null && (blacklisted.contains(currentlyBartering) || !currentlyBartering.isAlive())) {
-                    currentlyBartering = null;
-                }
-                found = Optional.ofNullable(currentlyBartering);
+         } else {
+            if (this.currentlyBartering != null && !EntityHelper.isTradingPiglin(this.currentlyBartering)) {
+               Optional<Entity> closestHoglin = mod.getEntityTracker().getClosestEntity(this.currentlyBartering.position(), Hoglin.class);
+               if (closestHoglin.isPresent() && closestHoglin.get().closerThan(entity, 64.0)) {
+                  Debug.logMessage("Aborting further trading because a hoglin showed up");
+                  this.blacklisted.add(this.currentlyBartering);
+                  this.barterTimeout.reset();
+                  this.currentlyBartering = null;
+               }
             }
-            return found;
-        }
 
-        @Override
-        protected String toDebugString() {
-            return "Trading with piglin";
-        }
-    }
+            this.setDebugState("Trading with piglin");
+            if (mod.getSlotHandler().forceEquipItem(Items.GOLD_INGOT)) {
+               Debug.logError("NYI");
+               this.intervalTimeout.reset();
+            }
+
+            return null;
+         }
+      }
+
+      @Override
+      protected Optional<Entity> getEntityTarget(AltoClefController mod) {
+         Optional<Entity> found = mod.getEntityTracker()
+            .getClosestEntity(
+               mod.getPlayer().position(),
+               entity -> {
+                  if (!this.blacklisted.contains(entity)
+                     && !EntityHelper.isTradingPiglin(entity)
+                     && (!(entity instanceof LivingEntity) || !((LivingEntity)entity).isBaby())
+                     && (this.currentlyBartering == null || entity.closerThan(this.currentlyBartering, 10.0))) {
+                     Optional<Entity> closestHoglin = mod.getEntityTracker().getClosestEntity(entity.position(), Hoglin.class);
+                     return closestHoglin.isEmpty() || !closestHoglin.get().closerThan(entity, 64.0);
+                  } else {
+                     return false;
+                  }
+               },
+               Piglin.class
+            );
+         if (found.isEmpty()) {
+            if (this.currentlyBartering != null && (this.blacklisted.contains(this.currentlyBartering) || !this.currentlyBartering.isAlive())) {
+               this.currentlyBartering = null;
+            }
+
+            found = Optional.ofNullable(this.currentlyBartering);
+         }
+
+         return found;
+      }
+
+      @Override
+      protected String toDebugString() {
+         return "Trading with piglin";
+      }
+   }
 }

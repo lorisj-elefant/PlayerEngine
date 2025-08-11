@@ -2,18 +2,27 @@ package adris.altoclef.mixins;
 
 import adris.altoclef.eventbus.EventBus;
 import adris.altoclef.eventbus.events.PlayerCollidedWithEntityEvent;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
-@Mixin({PlayerEntity.class})
+@Mixin({Player.class})
 public class PlayerCollidesWithEntityMixin {
-    @Redirect(method = {"collideWithEntity"}, at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;onPlayerCollision(Lnet/minecraft/entity/player/PlayerEntity;)V"))
-    private void onCollideWithEntity(Entity self, PlayerEntity player) {
-        if (player instanceof net.minecraft.client.network.ClientPlayerEntity)
-            EventBus.publish(new PlayerCollidedWithEntityEvent(player, self));
-        self.onPlayerCollision(player);
-    }
+   @Redirect(
+      method = {"touch"},
+      at = @At(
+         value = "INVOKE",
+         target = "Lnet/minecraft/world/entity/Entity;playerTouch(Lnet/minecraft/world/entity/player/Player;)V"
+      )
+   )
+   private void onCollideWithEntity(Entity self, Player player) {
+      if (player instanceof LocalPlayer) {
+         EventBus.publish(new PlayerCollidedWithEntityEvent(player, self));
+      }
+
+      self.playerTouch(player);
+   }
 }

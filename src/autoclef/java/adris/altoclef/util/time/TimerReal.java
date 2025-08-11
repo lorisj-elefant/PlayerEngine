@@ -1,11 +1,12 @@
 package adris.altoclef.util.time;
 
 public class TimerReal extends BaseTimer {
-    public TimerReal(double intervalSeconds) {
-        super(intervalSeconds);
-    }
+   public TimerReal(double intervalSeconds) {
+      super(intervalSeconds);
+   }
 
-    protected double currentTime() {
-        return System.currentTimeMillis() / 1000.0D;
-    }
+   @Override
+   protected double currentTime() {
+      return System.currentTimeMillis() / 1000.0;
+   }
 }

@@ -4,37 +4,42 @@ import adris.altoclef.AltoClefController;
 import adris.altoclef.tasks.resources.CollectBucketLiquidTask;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.ItemTarget;
-import net.minecraft.item.Item;
-import net.minecraft.item.Items;
+import net.minecraft.world.item.Items;
 
 public class GetRidOfExtraWaterBucketTask extends Task {
-    private boolean needsPickup = false;
+   private boolean needsPickup = false;
 
-    protected void onStart() {
-    }
+   @Override
+   protected void onStart() {
+   }
 
-    protected Task onTick() {
-        AltoClefController mod = controller;
-        if (mod.getItemStorage().getItemCount(new Item[]{Items.WATER_BUCKET}) != 0 && !this.needsPickup)
-            return (Task) new InteractWithBlockTask(new ItemTarget(Items.WATER_BUCKET, 1), mod.getPlayer().getBlockPos().down(), false);
-        this.needsPickup = true;
-        if (mod.getItemStorage().getItemCount(new Item[]{Items.WATER_BUCKET}) < 1)
-            return (Task) new CollectBucketLiquidTask.CollectWaterBucketTask(1);
-        return null;
-    }
+   @Override
+   protected Task onTick() {
+      AltoClefController mod = this.controller;
+      if (mod.getItemStorage().getItemCount(Items.WATER_BUCKET) != 0 && !this.needsPickup) {
+         return new InteractWithBlockTask(new ItemTarget(Items.WATER_BUCKET, 1), mod.getPlayer().blockPosition().below(), false);
+      } else {
+         this.needsPickup = true;
+         return mod.getItemStorage().getItemCount(Items.WATER_BUCKET) < 1 ? new CollectBucketLiquidTask.CollectWaterBucketTask(1) : null;
+      }
+   }
 
-    public boolean isFinished() {
-        return (controller.getItemStorage().getItemCount(new Item[]{Items.WATER_BUCKET}) == 1 && this.needsPickup);
-    }
+   @Override
+   public boolean isFinished() {
+      return this.controller.getItemStorage().getItemCount(Items.WATER_BUCKET) == 1 && this.needsPickup;
+   }
 
-    protected void onStop(Task interruptTask) {
-    }
+   @Override
+   protected void onStop(Task interruptTask) {
+   }
 
-    protected boolean isEqual(Task other) {
-        return other instanceof adris.altoclef.tasks.GetRidOfExtraWaterBucketTask;
-    }
+   @Override
+   protected boolean isEqual(Task other) {
+      return other instanceof GetRidOfExtraWaterBucketTask;
+   }
 
-    protected String toDebugString() {
-        return null;
-    }
+   @Override
+   protected String toDebugString() {
+      return null;
+   }
 }

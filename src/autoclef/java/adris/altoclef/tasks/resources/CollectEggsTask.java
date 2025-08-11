@@ -8,47 +8,52 @@ import adris.altoclef.tasks.movement.GetToEntityTask;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.Dimension;
 import adris.altoclef.util.helpers.WorldHelper;
-import net.minecraft.entity.passive.ChickenEntity;
-import net.minecraft.item.Items;
+import net.minecraft.world.entity.animal.Chicken;
+import net.minecraft.world.item.Items;
 
 public class CollectEggsTask extends ResourceTask {
-    private final int count;
+   private final int count;
+   private final DoToClosestEntityTask waitNearChickens;
+   private AltoClefController mod;
 
-    private final DoToClosestEntityTask waitNearChickens;
+   public CollectEggsTask(int targetCount) {
+      super(Items.EGG, targetCount);
+      this.count = targetCount;
+      this.waitNearChickens = new DoToClosestEntityTask(chicken -> new GetToEntityTask(chicken, 5.0), Chicken.class);
+   }
 
-    private AltoClefController mod;
+   @Override
+   protected boolean shouldAvoidPickingUp(AltoClefController mod) {
+      return false;
+   }
 
-    public CollectEggsTask(int targetCount) {
-        super(Items.EGG, targetCount);
-        this.count = targetCount;
-        this.waitNearChickens = new DoToClosestEntityTask(chicken -> new GetToEntityTask(chicken, 5.0D), new Class[]{ChickenEntity.class});
-    }
+   @Override
+   protected void onResourceStart(AltoClefController mod) {
+      this.mod = mod;
+   }
 
-    protected boolean shouldAvoidPickingUp(AltoClefController mod) {
-        return false;
-    }
+   @Override
+   protected Task onResourceTick(AltoClefController mod) {
+      if (this.waitNearChickens.wasWandering() && WorldHelper.getCurrentDimension(this.controller) != Dimension.OVERWORLD) {
+         this.setDebugState("Going to right dimension.");
+         return new DefaultGoToDimensionTask(Dimension.OVERWORLD);
+      } else {
+         this.setDebugState("Waiting around chickens. Yes.");
+         return this.waitNearChickens;
+      }
+   }
 
-    protected void onResourceStart(AltoClefController mod) {
-        this.mod = mod;
-    }
+   @Override
+   protected void onResourceStop(AltoClefController mod, Task interruptTask) {
+   }
 
-    protected Task onResourceTick(AltoClefController mod) {
-        if (this.waitNearChickens.wasWandering() && WorldHelper.getCurrentDimension(controller) != Dimension.OVERWORLD) {
-            setDebugState("Going to right dimension.");
-            return (Task) new DefaultGoToDimensionTask(Dimension.OVERWORLD);
-        }
-        setDebugState("Waiting around chickens. Yes.");
-        return (Task) this.waitNearChickens;
-    }
+   @Override
+   protected boolean isEqualResource(ResourceTask other) {
+      return other instanceof CollectEggsTask;
+   }
 
-    protected void onResourceStop(AltoClefController mod, Task interruptTask) {
-    }
-
-    protected boolean isEqualResource(ResourceTask other) {
-        return other instanceof adris.altoclef.tasks.resources.CollectEggsTask;
-    }
-
-    protected String toDebugStringName() {
-        return "Collecting " + this.count + " eggs.";
-    }
+   @Override
+   protected String toDebugStringName() {
+      return "Collecting " + this.count + " eggs.";
+   }
 }

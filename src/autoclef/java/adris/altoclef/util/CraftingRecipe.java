@@ -1,138 +1,144 @@
 package adris.altoclef.util;
 
 import adris.altoclef.Debug;
-import net.minecraft.item.Item;
-
 import java.util.Arrays;
+import net.minecraft.world.item.Item;
 
 public class CraftingRecipe {
-    private ItemTarget[] slots;
+   private ItemTarget[] slots;
+   private int width;
+   private int height;
+   private boolean shapeless;
+   private String shortName;
+   private int outputCount;
 
-    private int width;
+   public static CraftingRecipe newShapedRecipe(Item[][] items, int outputCount) {
+      return newShapedRecipe(null, items, outputCount);
+   }
 
-    private int height;
+   public static CraftingRecipe newShapedRecipe(ItemTarget[] slots, int outputCount) {
+      return newShapedRecipe(null, slots, outputCount);
+   }
 
-    private boolean shapeless;
+   public static CraftingRecipe newShapedRecipe(String shortName, Item[][] items, int outputCount) {
+      return newShapedRecipe(shortName, createSlots(items), outputCount);
+   }
 
-    private String shortName;
-
-    private int outputCount;
-
-    public static adris.altoclef.util.CraftingRecipe newShapedRecipe(Item[][] items, int outputCount) {
-        return newShapedRecipe(null, items, outputCount);
-    }
-
-    public static adris.altoclef.util.CraftingRecipe newShapedRecipe(ItemTarget[] slots, int outputCount) {
-        return newShapedRecipe(null, slots, outputCount);
-    }
-
-    public static adris.altoclef.util.CraftingRecipe newShapedRecipe(String shortName, Item[][] items, int outputCount) {
-        return newShapedRecipe(shortName, createSlots(items), outputCount);
-    }
-
-    public static adris.altoclef.util.CraftingRecipe newShapedRecipe(String shortName, ItemTarget[] slots, int outputCount) {
-        if (slots.length != 4 && slots.length != 9) {
-            Debug.logError("Invalid shaped crafting recipe, must be either size 4 or 9. Size given: " + slots.length);
-            return null;
-        }
-        adris.altoclef.util.CraftingRecipe result = new adris.altoclef.util.CraftingRecipe();
-        result.shortName = shortName;
-        result.slots = (ItemTarget[]) Arrays.<ItemTarget>stream(slots).map(target -> (target == null) ? ItemTarget.EMPTY : target).toArray(x$0 -> new ItemTarget[x$0]);
-        result.outputCount = outputCount;
-        if (slots.length == 4) {
+   public static CraftingRecipe newShapedRecipe(String shortName, ItemTarget[] slots, int outputCount) {
+      if (slots.length != 4 && slots.length != 9) {
+         Debug.logError("Invalid shaped crafting recipe, must be either size 4 or 9. Size given: " + slots.length);
+         return null;
+      } else {
+         CraftingRecipe result = new CraftingRecipe();
+         result.shortName = shortName;
+         result.slots = Arrays.stream(slots).map(target -> target == null ? ItemTarget.EMPTY : target).toArray(ItemTarget[]::new);
+         result.outputCount = outputCount;
+         if (slots.length == 4) {
             result.width = 2;
             result.height = 2;
-        } else {
+         } else {
             result.width = 3;
             result.height = 3;
-        }
-        result.shapeless = false;
-        return result;
-    }
+         }
 
-    private static ItemTarget[] createSlots(ItemTarget[] slots) {
-        ItemTarget[] result = new ItemTarget[slots.length];
-        System.arraycopy(slots, 0, result, 0, slots.length);
-        return result;
-    }
+         result.shapeless = false;
+         return result;
+      }
+   }
 
-    private static ItemTarget[] createSlots(Item[][] slots) {
-        ItemTarget[] result = new ItemTarget[slots.length];
-        for (int i = 0; i < slots.length; i++) {
-            if (slots[i] == null) {
-                result[i] = ItemTarget.EMPTY;
-            } else {
-                result[i] = new ItemTarget(slots[i]);
-            }
-        }
-        return result;
-    }
+   private static ItemTarget[] createSlots(ItemTarget[] slots) {
+      ItemTarget[] result = new ItemTarget[slots.length];
+      System.arraycopy(slots, 0, result, 0, slots.length);
+      return result;
+   }
 
-    public ItemTarget getSlot(int index) {
-        ItemTarget result = this.slots[index];
-        return (result != null) ? result : ItemTarget.EMPTY;
-    }
+   private static ItemTarget[] createSlots(Item[][] slots) {
+      ItemTarget[] result = new ItemTarget[slots.length];
 
-    public int getSlotCount() {
-        return this.slots.length;
-    }
+      for (int i = 0; i < slots.length; i++) {
+         if (slots[i] == null) {
+            result[i] = ItemTarget.EMPTY;
+         } else {
+            result[i] = new ItemTarget(slots[i]);
+         }
+      }
 
-    public ItemTarget[] getSlots() {
-        return this.slots;
-    }
+      return result;
+   }
 
-    public int getWidth() {
-        return this.width;
-    }
+   public ItemTarget getSlot(int index) {
+      ItemTarget result = this.slots[index];
+      return result != null ? result : ItemTarget.EMPTY;
+   }
 
-    public int getHeight() {
-        return this.height;
-    }
+   public int getSlotCount() {
+      return this.slots.length;
+   }
 
-    public boolean isShapeless() {
-        return this.shapeless;
-    }
+   public ItemTarget[] getSlots() {
+      return this.slots;
+   }
 
-    public boolean isBig() {
-        return (this.slots.length > 4);
-    }
+   public int getWidth() {
+      return this.width;
+   }
 
-    public int outputCount() {
-        return this.outputCount;
-    }
+   public int getHeight() {
+      return this.height;
+   }
 
-    public boolean equals(Object o) {
-        if (o instanceof adris.altoclef.util.CraftingRecipe) {
-            adris.altoclef.util.CraftingRecipe other = (adris.altoclef.util.CraftingRecipe) o;
-            if (other.shapeless != this.shapeless)
-                return false;
-            if (other.outputCount != this.outputCount)
-                return false;
-            if (other.height != this.height)
-                return false;
-            if (other.width != this.width)
-                return false;
-            if (other.slots.length != this.slots.length)
-                return false;
+   public boolean isShapeless() {
+      return this.shapeless;
+   }
+
+   public boolean isBig() {
+      return this.slots.length > 4;
+   }
+
+   public int outputCount() {
+      return this.outputCount;
+   }
+
+   @Override
+   public boolean equals(Object o) {
+      if (o instanceof CraftingRecipe other) {
+         if (other.shapeless != this.shapeless) {
+            return false;
+         } else if (other.outputCount != this.outputCount) {
+            return false;
+         } else if (other.height != this.height) {
+            return false;
+         } else if (other.width != this.width) {
+            return false;
+         } else if (other.slots.length != this.slots.length) {
+            return false;
+         } else {
             for (int i = 0; i < this.slots.length; i++) {
-                if (((other.slots[i] == null) ? true : false) != ((this.slots[i] == null) ? true : false))
-                    return false;
-                if (other.slots[i] != null && !other.slots[i].equals(this.slots[i]))
-                    return false;
-            }
-            return true;
-        }
-        return false;
-    }
+               if (other.slots[i] == null != (this.slots[i] == null)) {
+                  return false;
+               }
 
-    public String toString() {
-        String name = "CraftingRecipe{";
-        if (this.shortName != null) {
-            name = name + "craft " + name;
-        } else {
-            name = name + "_slots=" + name + ", width=" + Arrays.toString(this.slots) + ", height=" + this.width + ", shapeless=" + this.height;
-        }
-        name = name + "}";
-        return name;
-    }
+               if (other.slots[i] != null && !other.slots[i].equals(this.slots[i])) {
+                  return false;
+               }
+            }
+
+            return true;
+         }
+      } else {
+         return false;
+      }
+   }
+
+   @Override
+   public String toString() {
+      String name = "CraftingRecipe{";
+      if (this.shortName != null) {
+         name = name + "craft " + name;
+      } else {
+         name = name + "_slots=" + name + ", width=" + Arrays.toString((Object[])this.slots) + ", height=" + this.width + ", shapeless=" + this.height;
+      }
+
+      return name + "}";
+   }
 }

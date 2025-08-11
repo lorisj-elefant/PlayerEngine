@@ -1,19 +1,3 @@
-/*
- * This file is part of Baritone.
- *
- * Baritone is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Baritone is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
- */
 package adris.altoclef;
 
 import adris.altoclef.chains.FoodChain;
@@ -31,6 +15,7 @@ import adris.altoclef.control.InputControls;
 import adris.altoclef.control.PlayerExtraController;
 import adris.altoclef.control.SlotHandler;
 import adris.altoclef.player2api.AICommandBridge;
+import adris.altoclef.player2api.Character;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.tasksystem.TaskRunner;
 import adris.altoclef.trackers.CraftingRecipeTracker;
@@ -48,333 +33,320 @@ import baritone.api.entity.LivingEntityInventory;
 import baritone.api.utils.IEntityContext;
 import baritone.api.utils.IInteractionController;
 import baritone.autoclef.AltoClefSettings;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
-import net.minecraft.server.world.ServerWorld;
-
 import java.util.Arrays;
 import java.util.List;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 
 public class AltoClefController {
-    private final IBaritone baritone;
-    private final IEntityContext ctx;
+   private final IBaritone baritone;
+   private final IEntityContext ctx;
+   private CommandExecutor commandExecutor;
+   private TaskRunner taskRunner;
+   private TrackerManager trackerManager;
+   private BotBehaviour botBehaviour;
+   private UserTaskChain userTaskChain;
+   private FoodChain foodChain;
+   private MobDefenseChain mobDefenseChain;
+   private MLGBucketFallChain mlgBucketChain;
+   private ItemStorageTracker storageTracker;
+   private ContainerSubTracker containerSubTracker;
+   private EntityTracker entityTracker;
+   private BlockScanner blockScanner;
+   private SimpleChunkTracker chunkTracker;
+   private MiscBlockTracker miscBlockTracker;
+   private CraftingRecipeTracker craftingRecipeTracker;
+   private EntityStuckTracker entityStuckTracker;
+   private UserBlockRangeTracker userBlockRangeTracker;
+   private InputControls inputControls;
+   private SlotHandler slotHandler;
+   private PlayerExtraController extraController;
+   private Settings settings;
+   private boolean paused = false;
+   private Task storedTask;
+   private AICommandBridge aiBridge;
+   public boolean isStopping = false;
+   private Player owner;
 
-    private CommandExecutor commandExecutor;
-    private TaskRunner taskRunner;
-    private TrackerManager trackerManager;
-    private BotBehaviour botBehaviour;
-    private UserTaskChain userTaskChain;
-
-    // Chains
-    private FoodChain foodChain;
-    private MobDefenseChain mobDefenseChain;
-    private MLGBucketFallChain mlgBucketChain;
-
-    // Trackers
-    private ItemStorageTracker storageTracker;
-    private ContainerSubTracker containerSubTracker;
-    private EntityTracker entityTracker;
-    private BlockScanner blockScanner;
-    private SimpleChunkTracker chunkTracker;
-    private MiscBlockTracker miscBlockTracker;
-    private CraftingRecipeTracker craftingRecipeTracker;
-    private EntityStuckTracker entityStuckTracker;
-    private UserBlockRangeTracker userBlockRangeTracker;
-
-    private InputControls inputControls;
-    private SlotHandler slotHandler;
-    private PlayerExtraController extraController;
-
-    private Settings settings;
-
-    private boolean paused = false;
-    private Task storedTask;
-    private AICommandBridge aiBridge;
-    public boolean isStopping = false;
-
-    private PlayerEntity owner;
-
-    public AltoClefController(IBaritone baritone) {
-        this.baritone = baritone;
-        this.ctx = baritone.getEntityContext();
-        commandExecutor = new CommandExecutor(this);
-        taskRunner = new TaskRunner(this);
-        trackerManager = new TrackerManager(this);
-        userTaskChain = new UserTaskChain(taskRunner);
-        mobDefenseChain = new MobDefenseChain(taskRunner);
-        new PlayerInteractionFixChain(taskRunner);
-        mlgBucketChain = new MLGBucketFallChain(taskRunner);
-        new UnstuckChain(taskRunner);
-        new PreEquipItemChain(taskRunner);
-        new WorldSurvivalChain(taskRunner);
-        foodChain = new FoodChain(taskRunner);
-        new PlayerDefenseChain(taskRunner);
-
-        storageTracker = new ItemStorageTracker(this, trackerManager, container -> this.containerSubTracker = container);
-        entityTracker = new EntityTracker(trackerManager);
-        blockScanner = new BlockScanner(this);
-        chunkTracker = new SimpleChunkTracker(this);
-        miscBlockTracker = new MiscBlockTracker(this);
-        craftingRecipeTracker = new CraftingRecipeTracker(trackerManager);
-        entityStuckTracker = new EntityStuckTracker(trackerManager);
-        userBlockRangeTracker = new UserBlockRangeTracker(trackerManager);
-        inputControls = new InputControls(this);
-        slotHandler = new SlotHandler(this);
-        aiBridge = new AICommandBridge(commandExecutor, this);
-        extraController = new PlayerExtraController(this);
-        initializeBaritoneSettings();
-
-        botBehaviour = new BotBehaviour(this);
-        initializeCommands();
-
-        Settings.load(newSettings -> {
+   public AltoClefController(IBaritone baritone) {
+      this.baritone = baritone;
+      this.ctx = baritone.getEntityContext();
+      this.commandExecutor = new CommandExecutor(this);
+      this.taskRunner = new TaskRunner(this);
+      this.trackerManager = new TrackerManager(this);
+      this.userTaskChain = new UserTaskChain(this.taskRunner);
+      this.mobDefenseChain = new MobDefenseChain(this.taskRunner);
+      new PlayerInteractionFixChain(this.taskRunner);
+      this.mlgBucketChain = new MLGBucketFallChain(this.taskRunner);
+      new UnstuckChain(this.taskRunner);
+      new PreEquipItemChain(this.taskRunner);
+      new WorldSurvivalChain(this.taskRunner);
+      this.foodChain = new FoodChain(this.taskRunner);
+      new PlayerDefenseChain(this.taskRunner);
+      this.storageTracker = new ItemStorageTracker(this, this.trackerManager, container -> this.containerSubTracker = container);
+      this.entityTracker = new EntityTracker(this.trackerManager);
+      this.blockScanner = new BlockScanner(this);
+      this.chunkTracker = new SimpleChunkTracker(this);
+      this.miscBlockTracker = new MiscBlockTracker(this);
+      this.craftingRecipeTracker = new CraftingRecipeTracker(this.trackerManager);
+      this.entityStuckTracker = new EntityStuckTracker(this.trackerManager);
+      this.userBlockRangeTracker = new UserBlockRangeTracker(this.trackerManager);
+      this.inputControls = new InputControls(this);
+      this.slotHandler = new SlotHandler(this);
+      this.aiBridge = new AICommandBridge(this.commandExecutor, this);
+      this.extraController = new PlayerExtraController(this);
+      this.initializeBaritoneSettings();
+      this.botBehaviour = new BotBehaviour(this);
+      this.initializeCommands();
+      Settings.load(
+         newSettings -> {
             this.settings = newSettings;
             List<Item> baritoneCanPlace = Arrays.stream(this.settings.getThrowawayItems(this, true)).toList();
-            (getBaritoneSettings().acceptableThrowawayItems.get()).addAll(baritoneCanPlace);
-
-            if ((!getUserTaskChain().isActive() || getUserTaskChain().isRunningIdleTask()) && getModSettings().shouldRunIdleCommandWhenNotActive()) {
-                getUserTaskChain().signalNextTaskToBeIdleTask();
-                getCommandExecutor().executeWithPrefix(getModSettings().getIdleCommand());
+            this.getBaritoneSettings().acceptableThrowawayItems.get().addAll(baritoneCanPlace);
+            if ((!this.getUserTaskChain().isActive() || this.getUserTaskChain().isRunningIdleTask())
+               && this.getModSettings().shouldRunIdleCommandWhenNotActive()) {
+               this.getUserTaskChain().signalNextTaskToBeIdleTask();
+               this.getCommandExecutor().executeWithPrefix(this.getModSettings().getIdleCommand());
             }
 
-            getExtraBaritoneSettings().avoidBlockBreak(userBlockRangeTracker::isNearUserTrackedBlock);
-            getExtraBaritoneSettings().avoidBlockPlace(entityStuckTracker::isBlockedByEntity);
-        });
+            this.getExtraBaritoneSettings().avoidBlockBreak(this.userBlockRangeTracker::isNearUserTrackedBlock);
+            this.getExtraBaritoneSettings().avoidBlockPlace(this.entityStuckTracker::isBlockedByEntity);
+         }
+      );
+      Playground.IDLE_TEST_INIT_FUNCTION(this);
+   }
 
-        Playground.IDLE_TEST_INIT_FUNCTION(this);
-    }
+   public void serverTick() {
+      this.inputControls.onTickPre();
+      this.storageTracker.setDirty();
+      this.miscBlockTracker.tick();
+      this.trackerManager.tick();
+      this.blockScanner.tick();
+      this.taskRunner.tick();
+      this.inputControls.onTickPost();
+      this.baritone.serverTick();
+      if (this.aiBridge.getEnabled()) {
+         this.aiBridge.onTick();
+      }
+   }
 
-    public void serverTick() {
-        inputControls.onTickPre();
-        storageTracker.setDirty();
-        miscBlockTracker.tick();
-        trackerManager.tick();
-        blockScanner.tick();
-        taskRunner.tick();
-        inputControls.onTickPost();
-        baritone.serverTick();
+   public void stop() {
+      this.getUserTaskChain().cancel(this);
+      if (this.taskRunner.getCurrentTaskChain() != null) {
+         this.taskRunner.getCurrentTaskChain().stop();
+      }
 
-        if (aiBridge.getEnabled()) {
-            aiBridge.onTick();
-        }
-    }
+      this.getTaskRunner().disable();
+      this.getBaritone().getPathingBehavior().forceCancel();
+      this.getBaritone().getInputOverrideHandler().clearAllKeys();
+   }
 
-    public void stop() {
-        getUserTaskChain().cancel(this);
-        if (taskRunner.getCurrentTaskChain() != null) {
-            taskRunner.getCurrentTaskChain().stop();
-        }
-        getTaskRunner().disable();
-        getBaritone().getPathingBehavior().forceCancel();
-        getBaritone().getInputOverrideHandler().clearAllKeys();
-    }
+   private void initializeBaritoneSettings() {
+      this.getExtraBaritoneSettings().canWalkOnEndPortal(false);
+      this.getExtraBaritoneSettings().avoidBlockPlace(this.entityStuckTracker::isBlockedByEntity);
+      this.getExtraBaritoneSettings().avoidBlockBreak(this.userBlockRangeTracker::isNearUserTrackedBlock);
+      this.getBaritoneSettings().freeLook.set(false);
+      this.getBaritoneSettings().overshootTraverse.set(true);
+      this.getBaritoneSettings().allowOvershootDiagonalDescend.set(true);
+      this.getBaritoneSettings().allowInventory.set(true);
+      this.getBaritoneSettings().allowParkour.set(false);
+      this.getBaritoneSettings().allowParkourAscend.set(false);
+      this.getBaritoneSettings().allowParkourPlace.set(false);
+      this.getBaritoneSettings().allowDiagonalDescend.set(false);
+      this.getBaritoneSettings().allowDiagonalAscend.set(false);
+      this.getBaritoneSettings().fadePath.set(true);
+      this.getBaritoneSettings().mineScanDroppedItems.set(false);
+      this.getBaritoneSettings().mineDropLoiterDurationMSThanksLouca.set(0L);
+      this.getExtraBaritoneSettings().configurePlaceBucketButDontFall(true);
+      this.getBaritoneSettings().randomLooking.set(0.0);
+      this.getBaritoneSettings().randomLooking113.set(0.0);
+      this.getBaritoneSettings().failureTimeoutMS.reset();
+      this.getBaritoneSettings().planAheadFailureTimeoutMS.reset();
+      this.getBaritoneSettings().movementTimeoutTicks.reset();
+   }
 
-    private void initializeBaritoneSettings() {
-        getExtraBaritoneSettings().canWalkOnEndPortal(false);
-        getExtraBaritoneSettings().avoidBlockPlace(entityStuckTracker::isBlockedByEntity);
-        getExtraBaritoneSettings().avoidBlockBreak(userBlockRangeTracker::isNearUserTrackedBlock);
+   private void initializeCommands() {
+      try {
+         AltoClefCommands.init(this);
+      } catch (Exception var2) {
+         var2.printStackTrace();
+      }
+   }
 
-        getBaritoneSettings().freeLook.set(false);
-        getBaritoneSettings().overshootTraverse.set(true);
-        getBaritoneSettings().allowOvershootDiagonalDescend.set(true);
-        getBaritoneSettings().allowInventory.set(true);
-        getBaritoneSettings().allowParkour.set(false);
-        getBaritoneSettings().allowParkourAscend.set(false);
-        getBaritoneSettings().allowParkourPlace.set(false);
-        getBaritoneSettings().allowDiagonalDescend.set(false);
-        getBaritoneSettings().allowDiagonalAscend.set(false);
-        getBaritoneSettings().fadePath.set(true);
-        getBaritoneSettings().mineScanDroppedItems.set(false);
-        getBaritoneSettings().mineDropLoiterDurationMSThanksLouca.set(0L);
-        getExtraBaritoneSettings().configurePlaceBucketButDontFall(true);
-        getBaritoneSettings().randomLooking.set(0.0D);
-        getBaritoneSettings().randomLooking113.set(0.0D);
-        getBaritoneSettings().failureTimeoutMS.reset();
-        getBaritoneSettings().planAheadFailureTimeoutMS.reset();
-        getBaritoneSettings().movementTimeoutTicks.reset();
-    }
+   public void runUserTask(Task task, Runnable onFinish) {
+      this.userTaskChain.runTask(this, task, onFinish);
+   }
 
-    private void initializeCommands() {
-        try {
-            AltoClefCommands.init(this);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+   public void runUserTask(Task task) {
+      this.runUserTask(task, () -> {});
+   }
 
-    public void runUserTask(Task task, Runnable onFinish) {
-        userTaskChain.runTask(this, task, onFinish);
-    }
+   public void cancelUserTask() {
+      this.userTaskChain.cancel(this);
+   }
 
-    public void runUserTask(Task task) {
-        runUserTask(task, () -> {
-        });
-    }
+   public CommandExecutor getCommandExecutor() {
+      return this.commandExecutor;
+   }
 
-    public void cancelUserTask() {
-        userTaskChain.cancel(this);
-    }
+   public LivingEntity getEntity() {
+      return this.ctx.entity();
+   }
 
+   public ServerLevel getWorld() {
+      return this.ctx.world();
+   }
 
-    public CommandExecutor getCommandExecutor() {
-        return commandExecutor;
-    }
+   public IInteractionController getInteractionManager() {
+      return this.ctx.playerController();
+   }
 
-    public LivingEntity getEntity() {
-        return ctx.entity();
-    }
+   public IBaritone getBaritone() {
+      return this.baritone;
+   }
 
-    public ServerWorld getWorld() {
-        return ctx.world();
-    }
+   public baritone.api.Settings getBaritoneSettings() {
+      return this.baritone.settings();
+   }
 
-    public IInteractionController getInteractionManager() {
-        return ctx.playerController();
-    }
+   public AltoClefSettings getExtraBaritoneSettings() {
+      return ((Baritone)this.baritone).getExtraBaritoneSettings();
+   }
 
-    public IBaritone getBaritone() {
-        return baritone;
-    }
+   public TaskRunner getTaskRunner() {
+      return this.taskRunner;
+   }
 
-    public baritone.api.Settings getBaritoneSettings() {
-        return baritone.settings();
-    }
+   public UserTaskChain getUserTaskChain() {
+      return this.userTaskChain;
+   }
 
-    public AltoClefSettings getExtraBaritoneSettings() {
-        return ((Baritone) baritone).getExtraBaritoneSettings();
-    }
+   public BotBehaviour getBehaviour() {
+      return this.botBehaviour;
+   }
 
-    public TaskRunner getTaskRunner() {
-        return taskRunner;
-    }
+   public boolean isPaused() {
+      return this.paused;
+   }
 
-    public UserTaskChain getUserTaskChain() {
-        return userTaskChain;
-    }
+   public void setPaused(boolean pausing) {
+      this.paused = pausing;
+   }
 
-    public BotBehaviour getBehaviour() {
-        return botBehaviour;
-    }
+   public Task getStoredTask() {
+      return this.storedTask;
+   }
 
-    public boolean isPaused() {
-        return paused;
-    }
+   public void setStoredTask(Task currentTask) {
+      this.storedTask = currentTask;
+   }
 
-    public void setPaused(boolean pausing) {
-        this.paused = pausing;
-    }
+   public ItemStorageTracker getItemStorage() {
+      return this.storageTracker;
+   }
 
-    public Task getStoredTask() {
-        return storedTask;
-    }
+   public EntityTracker getEntityTracker() {
+      return this.entityTracker;
+   }
 
-    public void setStoredTask(Task currentTask) {
-        this.storedTask = currentTask;
-    }
+   public CraftingRecipeTracker getCraftingRecipeTracker() {
+      return this.craftingRecipeTracker;
+   }
 
-    public ItemStorageTracker getItemStorage() {
-        return storageTracker;
-    }
+   public BlockScanner getBlockScanner() {
+      return this.blockScanner;
+   }
 
-    public EntityTracker getEntityTracker() {
-        return entityTracker;
-    }
+   public SimpleChunkTracker getChunkTracker() {
+      return this.chunkTracker;
+   }
 
-    public CraftingRecipeTracker getCraftingRecipeTracker() {
-        return craftingRecipeTracker;
-    }
+   public MiscBlockTracker getMiscBlockTracker() {
+      return this.miscBlockTracker;
+   }
 
-    public BlockScanner getBlockScanner() {
-        return blockScanner;
-    }
+   public Settings getModSettings() {
+      return this.settings;
+   }
 
-    public SimpleChunkTracker getChunkTracker() {
-        return chunkTracker;
-    }
+   public FoodChain getFoodChain() {
+      return this.foodChain;
+   }
 
-    public MiscBlockTracker getMiscBlockTracker() {
-        return miscBlockTracker;
-    }
+   public MobDefenseChain getMobDefenseChain() {
+      return this.mobDefenseChain;
+   }
 
-    public Settings getModSettings() {
-        return settings;
-    }
+   public MLGBucketFallChain getMLGBucketChain() {
+      return this.mlgBucketChain;
+   }
 
-    public FoodChain getFoodChain() {
-        return foodChain;
-    }
+   public void log(String message) {
+      Debug.logMessage(message);
+   }
 
-    public MobDefenseChain getMobDefenseChain() {
-        return mobDefenseChain;
-    }
+   public void logWarning(String message) {
+      Debug.logWarning(message);
+   }
 
-    public MLGBucketFallChain getMLGBucketChain() {
-        return mlgBucketChain;
-    }
+   public static boolean inGame() {
+      return true;
+   }
 
-    public void log(String message) {
-        Debug.logMessage(message);
-    }
+   public LivingEntity getPlayer() {
+      return this.ctx.entity();
+   }
 
-    public void logWarning(String message) {
-        Debug.logWarning(message);
-    }
+   public InputControls getInputControls() {
+      return this.inputControls;
+   }
 
-    public static boolean inGame() {
-        return true;
-    }
+   public SlotHandler getSlotHandler() {
+      return this.slotHandler;
+   }
 
-    public LivingEntity getPlayer() {
-        return ctx.entity();
-    }
+   public LivingEntityInventory getInventory() {
+      return this.getBaritone().getEntityContext().inventory();
+   }
 
-    public InputControls getInputControls() {
-        return inputControls;
-    }
+   public PlayerExtraController getControllerExtras() {
+      return this.extraController;
+   }
 
-    public SlotHandler getSlotHandler() {
-        return slotHandler;
-    }
+   public AICommandBridge getAiBridge() {
+      return this.aiBridge;
+   }
 
-    public LivingEntityInventory getInventory() {
-        return getBaritone().getEntityContext().inventory();
-    }
+   public void setChatClefEnabled(boolean enabled) {
+      this.getAiBridge().setEnabled(enabled);
+      if (!enabled) {
+         this.getUserTaskChain().cancel(this);
+         this.getTaskRunner().disable();
+      }
+   }
 
-    public PlayerExtraController getControllerExtras() {
-        return extraController;
-    }
+   public void logCharacterMessage(String message, Character character, boolean isPublic) {
+      int maxLength = 256;
+      int start = 0;
 
-    public AICommandBridge getAiBridge() {
-        return this.aiBridge;
-    }
+      while (start < message.length()) {
+         int end = Math.min(start + maxLength, message.length());
+         String chunk = message.substring(start, end);
+         if (chunk.length() > 0 && !chunk.isBlank()) {
+            Debug.logCharacterMessage(chunk, character, isPublic);
+         }
 
-    public void setChatClefEnabled(boolean enabled) {
-        getAiBridge().setEnabled(enabled);
-        if (!enabled) {
-            getUserTaskChain().cancel(this);
-            getTaskRunner().disable();
-        }
-    }
+         start = end;
+      }
+   }
 
-    public void logCharacterMessage(String message, adris.altoclef.player2api.Character character, boolean isPublic) {
-        int maxLength = 256;
-        int start = 0;
-        while (start < message.length()) {
-            int end = Math.min(start + maxLength, message.length());
-            String chunk = message.substring(start, end);
-            if (chunk.length() > 0 && !chunk.isBlank()) {
-                Debug.logCharacterMessage(chunk, character, isPublic);
-            }
-            start = end;
-        }
-    }
+   public Player getOwner() {
+      return this.owner;
+   }
 
-    public PlayerEntity getOwner() {
-        return owner;
-    }
-
-    public void setOwner(PlayerEntity owner) {
-        this.owner = owner;
-    }
+   public void setOwner(Player owner) {
+      this.owner = owner;
+   }
 }

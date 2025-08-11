@@ -1,15 +1,15 @@
 package adris.altoclef.multiversion.blockpos;
 
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Position;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Position;
+import net.minecraft.util.Mth;
 
 public class BlockPosVer {
-    public static BlockPos ofFloored(Position pos) {
-        return new BlockPos(MathHelper.floor(pos.getX()), MathHelper.floor(pos.getY()), MathHelper.floor(pos.getZ()));
-    }
+   public static BlockPos ofFloored(Position pos) {
+      return new BlockPos(Mth.floor(pos.x()), Mth.floor(pos.y()), Mth.floor(pos.z()));
+   }
 
-    public static double getSquaredDistance(BlockPos pos, Position obj) {
-        return pos.getSquaredDistanceToCenter(obj);
-    }
+   public static double getSquaredDistance(BlockPos pos, Position obj) {
+      return pos.distToCenterSqr(obj);
+   }
 }

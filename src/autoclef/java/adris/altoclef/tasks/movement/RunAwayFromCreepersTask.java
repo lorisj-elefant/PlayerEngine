@@ -5,56 +5,50 @@ import adris.altoclef.chains.MobDefenseChain;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.baritone.GoalRunAwayFromEntities;
 import baritone.api.pathing.goals.Goal;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.mob.CreeperEntity;
-import net.minecraft.util.math.Vec3d;
-
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.monster.Creeper;
+import net.minecraft.world.phys.Vec3;
 
 public class RunAwayFromCreepersTask extends CustomBaritoneGoalTask {
-    private final double distanceToRun;
+   private final double distanceToRun;
 
-    public RunAwayFromCreepersTask(double distance) {
-        this.distanceToRun = distance;
-    }
+   public RunAwayFromCreepersTask(double distance) {
+      this.distanceToRun = distance;
+   }
 
-    protected boolean isEqual(Task other) {
-        if (other instanceof adris.altoclef.tasks.movement.RunAwayFromCreepersTask) {
-            adris.altoclef.tasks.movement.RunAwayFromCreepersTask task = (adris.altoclef.tasks.movement.RunAwayFromCreepersTask) other;
-            if (Math.abs(task.distanceToRun - this.distanceToRun) > 1.0D)
-                return false;
-            return true;
-        }
-        return false;
-    }
+   @Override
+   protected boolean isEqual(Task other) {
+      return other instanceof RunAwayFromCreepersTask task ? !(Math.abs(task.distanceToRun - this.distanceToRun) > 1.0) : false;
+   }
 
-    protected String toDebugString() {
-        return "Run " + this.distanceToRun + " blocks away from creepers";
-    }
+   @Override
+   protected String toDebugString() {
+      return "Run " + this.distanceToRun + " blocks away from creepers";
+   }
 
-    protected Goal newGoal(AltoClefController mod) {
-        mod.getBaritone().getPathingBehavior().forceCancel();
-        return (Goal) new GoalRunAwayFromCreepers(mod, this.distanceToRun);
-    }
+   @Override
+   protected Goal newGoal(AltoClefController mod) {
+      mod.getBaritone().getPathingBehavior().forceCancel();
+      return new RunAwayFromCreepersTask.GoalRunAwayFromCreepers(mod, this.distanceToRun);
+   }
 
-    private static class GoalRunAwayFromCreepers extends GoalRunAwayFromEntities {
+   private static class GoalRunAwayFromCreepers extends GoalRunAwayFromEntities {
+      public GoalRunAwayFromCreepers(AltoClefController mod, double distance) {
+         super(mod, distance, false, 10.0);
+      }
 
-        public GoalRunAwayFromCreepers(AltoClefController mod, double distance) {
-            super(mod, distance, false, 10);
-        }
+      @Override
+      protected List<Entity> getEntities(AltoClefController mod) {
+         return new ArrayList<>(mod.getEntityTracker().getTrackedEntities(Creeper.class));
+      }
 
-        @Override
-        protected List<Entity> getEntities(AltoClefController mod) {
-            return new ArrayList<>(mod.getEntityTracker().getTrackedEntities(CreeperEntity.class));
-        }
-
-        @Override
-        protected double getCostOfEntity(Entity entity, int x, int y, int z) {
-            if (entity instanceof CreeperEntity) {
-                return MobDefenseChain.getCreeperSafety(new Vec3d(x + 0.5, y + 0.5, z + 0.5), (CreeperEntity) entity);
-            }
-            return super.getCostOfEntity(entity, x, y, z);
-        }
-    }
+      @Override
+      protected double getCostOfEntity(Entity entity, int x, int y, int z) {
+         return entity instanceof Creeper
+            ? MobDefenseChain.getCreeperSafety(new Vec3(x + 0.5, y + 0.5, z + 0.5), (Creeper)entity)
+            : super.getCostOfEntity(entity, x, y, z);
+      }
+   }
 }

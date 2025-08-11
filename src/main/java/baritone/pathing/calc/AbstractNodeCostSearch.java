@@ -1,20 +1,3 @@
-/*
- * This file is part of Baritone.
- *
- * Baritone is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Baritone is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
- */
-
 package baritone.pathing.calc;
 
 import baritone.Automatone;
@@ -28,226 +11,179 @@ import baritone.pathing.movement.CalculationContext;
 import baritone.utils.NotificationHelper;
 import baritone.utils.pathing.PathBase;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-
 import java.util.Optional;
 
-/**
- * Any pathfinding algorithm that keeps track of nodes recursively by their cost (e.g. A*, dijkstra)
- *
- * @author leijurv
- */
 public abstract class AbstractNodeCostSearch implements IPathFinder {
+   protected final int startX;
+   protected final int startY;
+   protected final int startZ;
+   protected final Goal goal;
+   private final CalculationContext context;
+   private final Long2ObjectOpenHashMap<PathNode> map;
+   protected PathNode startNode;
+   protected PathNode mostRecentConsidered;
+   protected final PathNode[] bestSoFar;
+   private volatile boolean isFinished;
+   protected boolean cancelRequested;
+   protected static final double[] COEFFICIENTS = new double[]{1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 10.0};
+   protected static final double MIN_DIST_PATH = 5.0;
+   protected static final double MIN_IMPROVEMENT = 0.01;
 
-    protected final int startX;
-    protected final int startY;
-    protected final int startZ;
+   AbstractNodeCostSearch(int startX, int startY, int startZ, Goal goal, CalculationContext context) {
+      this.bestSoFar = new PathNode[COEFFICIENTS.length];
+      this.startX = startX;
+      this.startY = startY;
+      this.startZ = startZ;
+      this.goal = goal;
+      this.context = context;
+      this.map = new Long2ObjectOpenHashMap(context.baritone.settings().pathingMapDefaultSize.get(), context.baritone.settings().pathingMapLoadFactor.get());
+   }
 
-    protected final Goal goal;
+   public void cancel() {
+      this.cancelRequested = true;
+   }
 
-    private final CalculationContext context;
+   @Override
+   public synchronized PathCalculationResult calculate(long primaryTimeout, long failureTimeout) {
+      if (this.isFinished) {
+         throw new IllegalStateException("Path finder cannot be reused!");
+      } else {
+         this.cancelRequested = false;
 
-    /**
-     * @see <a href="https://github.com/cabaletta/baritone/issues/107">Issue #107</a>
-     */
-    private final Long2ObjectOpenHashMap<PathNode> map;
-
-    protected PathNode startNode;
-
-    protected PathNode mostRecentConsidered;
-
-    protected final PathNode[] bestSoFar = new PathNode[COEFFICIENTS.length];
-
-    private volatile boolean isFinished;
-
-    protected boolean cancelRequested;
-
-    /**
-     * This is really complicated and hard to explain. I wrote a comment in the old version of MineBot but it was so
-     * long it was easier as a Google Doc (because I could insert charts).
-     *
-     * @see <a href="https://docs.google.com/document/d/1WVHHXKXFdCR1Oz__KtK8sFqyvSwJN_H4lftkHFgmzlc/edit">here</a>
-     */
-    protected static final double[] COEFFICIENTS = {1.5, 2, 2.5, 3, 4, 5, 10};
-
-    /**
-     * If a path goes less than 5 blocks and doesn't make it to its goal, it's not worth considering.
-     */
-    protected static final double MIN_DIST_PATH = 5;
-
-    /**
-     * there are floating point errors caused by random combinations of traverse and diagonal over a flat area
-     * that means that sometimes there's a cost improvement of like 10 ^ -16
-     * it's not worth the time to update the costs, decrease-key the heap, potentially repropagate, etc
-     * <p>
-     * who cares about a hundredth of a tick? that's half a millisecond for crying out loud!
-     */
-    protected static final double MIN_IMPROVEMENT = 0.01;
-
-    AbstractNodeCostSearch(int startX, int startY, int startZ, Goal goal, CalculationContext context) {
-        this.startX = startX;
-        this.startY = startY;
-        this.startZ = startZ;
-        this.goal = goal;
-        this.context = context;
-        this.map = new Long2ObjectOpenHashMap<>(context.baritone.settings().pathingMapDefaultSize.get(), context.baritone.settings().pathingMapLoadFactor.get());
-    }
-
-    public void cancel() {
-        cancelRequested = true;
-    }
-
-    @Override
-    public synchronized PathCalculationResult calculate(long primaryTimeout, long failureTimeout) {
-        if (isFinished) {
-            throw new IllegalStateException("Path finder cannot be reused!");
-        }
-        cancelRequested = false;
-        try {
-            IPath path = calculate0(primaryTimeout, failureTimeout).map(IPath::postProcess).orElse(null);
-
-            if (cancelRequested) {
-                return new PathCalculationResult(PathCalculationResult.Type.CANCELLATION);
+         PathCalculationResult var8;
+         try {
+            IPath path = this.calculate0(primaryTimeout, failureTimeout).map(IPath::postProcess).orElse(null);
+            if (this.cancelRequested) {
+               return new PathCalculationResult(PathCalculationResult.Type.CANCELLATION);
             }
 
             if (path == null) {
-                return new PathCalculationResult(PathCalculationResult.Type.FAILURE);
+               return new PathCalculationResult(PathCalculationResult.Type.FAILURE);
             }
 
             int previousLength = path.length();
-            Settings settings = context.getBaritone().settings();
-            path = ((PathBase) path).cutoffAtLoadedChunks(context.bsi, settings);
-
-            if (path.length() < previousLength) {
-                context.baritone.logDebug("Cutting off path at edge of loaded chunks");
-                context.baritone.logDebug("Length decreased by " + (previousLength - path.length()));
+            Settings settings = this.context.getBaritone().settings();
+            PathBase var14 = ((PathBase)path).cutoffAtLoadedChunks(this.context.bsi, settings);
+            if (var14.length() < previousLength) {
+               this.context.baritone.logDebug("Cutting off path at edge of loaded chunks");
+               this.context.baritone.logDebug("Length decreased by " + (previousLength - var14.length()));
             } else {
-                context.baritone.logDebug("Path ends within loaded chunks");
+               this.context.baritone.logDebug("Path ends within loaded chunks");
             }
 
-            previousLength = path.length();
-            path = ((PathBase) path).staticCutoff(goal, settings);
-
-            if (path.length() < previousLength) {
-                context.baritone.logDebug("Static cutoff " + previousLength + " to " + path.length());
+            previousLength = var14.length();
+            IPath var15 = var14.staticCutoff(this.goal, settings);
+            if (var15.length() < previousLength) {
+               this.context.baritone.logDebug("Static cutoff " + previousLength + " to " + var15.length());
             }
 
-            if (goal.isInGoal(path.getDest())) {
-                return new PathCalculationResult(PathCalculationResult.Type.SUCCESS_TO_GOAL, path);
-            } else {
-                return new PathCalculationResult(PathCalculationResult.Type.SUCCESS_SEGMENT, path);
+            if (!this.goal.isInGoal(var15.getDest())) {
+               return new PathCalculationResult(PathCalculationResult.Type.SUCCESS_SEGMENT, var15);
             }
-        } catch (Exception e) {
-            this.context.baritone.logDirect("Pathing exception: " + e);
-            Automatone.LOGGER.error("Pathing exception: ", e);
+
+            var8 = new PathCalculationResult(PathCalculationResult.Type.SUCCESS_TO_GOAL, var15);
+         } catch (Exception var12) {
+            this.context.baritone.logDirect("Pathing exception: " + var12);
+            Automatone.LOGGER.error("Pathing exception: ", var12);
             return new PathCalculationResult(PathCalculationResult.Type.EXCEPTION);
-        } finally {
-            // this is run regardless of what exception may or may not be raised by calculate0
-            isFinished = true;
-        }
-    }
+         } finally {
+            this.isFinished = true;
+         }
 
-    protected abstract Optional<IPath> calculate0(long primaryTimeout, long failureTimeout);
+         return var8;
+      }
+   }
 
-    /**
-     * Determines the distance squared from the specified node to the start
-     * node. Intended for use in distance comparison, rather than anything that
-     * considers the real distance value, hence the "sq".
-     *
-     * @param n A node
-     * @return The distance, squared
-     */
-    protected double getDistFromStartSq(PathNode n) {
-        int xDiff = n.x - startX;
-        int yDiff = n.y - startY;
-        int zDiff = n.z - startZ;
-        return xDiff * xDiff + yDiff * yDiff + zDiff * zDiff;
-    }
+   protected abstract Optional<IPath> calculate0(long var1, long var3);
 
-    /**
-     * Attempts to search the block position hashCode long to {@link PathNode} map
-     * for the node mapped to the specified pos. If no node is found,
-     * a new node is created.
-     *
-     * @param x        The x position of the node
-     * @param y        The y position of the node
-     * @param z        The z position of the node
-     * @param hashCode The hash code of the node, provided by {@link BetterBlockPos#longHash(int, int, int)}
-     * @return The associated node
-     * @see <a href="https://github.com/cabaletta/baritone/issues/107">Issue #107</a>
-     */
+   protected double getDistFromStartSq(PathNode n) {
+      int xDiff = n.x - this.startX;
+      int yDiff = n.y - this.startY;
+      int zDiff = n.z - this.startZ;
+      return xDiff * xDiff + yDiff * yDiff + zDiff * zDiff;
+   }
 
-    protected PathNode getNodeAtPosition(int x, int y, int z, long hashCode) {
-        PathNode node = map.get(hashCode);
-        if (node == null) {
-            node = new PathNode(x, y, z, goal);
-            map.put(hashCode, node);
-        }
-        return node;
-    }
+   protected PathNode getNodeAtPosition(int x, int y, int z, long hashCode) {
+      PathNode node = (PathNode)this.map.get(hashCode);
+      if (node == null) {
+         node = new PathNode(x, y, z, this.goal);
+         this.map.put(hashCode, node);
+      }
 
-    @Override
-    public Optional<IPath> pathToMostRecentNodeConsidered() {
-        return Optional.ofNullable(mostRecentConsidered).map(node -> new Path(startNode, node, 0, goal, context));
-    }
+      return node;
+   }
 
-    @Override
-    public Optional<IPath> bestPathSoFar() {
-        return bestSoFar(false, 0);
-    }
+   @Override
+   public Optional<IPath> pathToMostRecentNodeConsidered() {
+      return Optional.ofNullable(this.mostRecentConsidered).map(node -> new Path(this.startNode, node, 0, this.goal, this.context));
+   }
 
-    protected Optional<IPath> bestSoFar(boolean logInfo, int numNodes) {
-        if (startNode == null) {
-            return Optional.empty();
-        }
-        double bestDist = 0;
-        for (int i = 0; i < COEFFICIENTS.length; i++) {
-            if (bestSoFar[i] == null) {
-                continue;
-            }
-            double dist = getDistFromStartSq(bestSoFar[i]);
-            if (dist > bestDist) {
-                bestDist = dist;
-            }
-            if (dist > MIN_DIST_PATH * MIN_DIST_PATH) { // square the comparison since distFromStartSq is squared
-                if (logInfo) {
-                    if (COEFFICIENTS[i] >= 3) {
+   @Override
+   public Optional<IPath> bestPathSoFar() {
+      return this.bestSoFar(false, 0);
+   }
+
+   protected Optional<IPath> bestSoFar(boolean logInfo, int numNodes) {
+      if (this.startNode == null) {
+         return Optional.empty();
+      } else {
+         double bestDist = 0.0;
+
+         for (int i = 0; i < COEFFICIENTS.length; i++) {
+            if (this.bestSoFar[i] != null) {
+               double dist = this.getDistFromStartSq(this.bestSoFar[i]);
+               if (dist > bestDist) {
+                  bestDist = dist;
+               }
+
+               if (dist > 25.0) {
+                  if (logInfo) {
+                     if (COEFFICIENTS[i] >= 3.0) {
                         Automatone.LOGGER.warn("Warning: cost coefficient is greater than three! Probably means that");
                         Automatone.LOGGER.warn("the path I found is pretty terrible (like sneak-bridging for dozens of blocks)");
                         Automatone.LOGGER.warn("But I'm going to do it anyway, because yolo");
-                    }
-                    Automatone.LOGGER.info("Path goes for " + Math.sqrt(dist) + " blocks");
-                    context.baritone.logDebug("A* cost coefficient " + COEFFICIENTS[i]);
-                }
-                return Optional.of(new Path(startNode, bestSoFar[i], numNodes, goal, context));
+                     }
+
+                     Automatone.LOGGER.info("Path goes for " + Math.sqrt(dist) + " blocks");
+                     this.context.baritone.logDebug("A* cost coefficient " + COEFFICIENTS[i]);
+                  }
+
+                  return Optional.of(new Path(this.startNode, this.bestSoFar[i], numNodes, this.goal, this.context));
+               }
             }
-        }
-        // instead of returning bestSoFar[0], be less misleading
-        // if it actually won't find any path, don't make them think it will by rendering a dark blue that will never actually happen
-        if (logInfo) {
-            context.baritone.logDebug("Even with a cost coefficient of " + COEFFICIENTS[COEFFICIENTS.length - 1] + ", I couldn't get more than " + Math.sqrt(bestDist) + " blocks");
-            context.baritone.logDebug("No path found =(");
-            if (context.baritone.settings().desktopNotifications.get()) {
-                NotificationHelper.notify("No path found =(", true);
+         }
+
+         if (logInfo) {
+            this.context
+               .baritone
+               .logDebug(
+                  "Even with a cost coefficient of " + COEFFICIENTS[COEFFICIENTS.length - 1] + ", I couldn't get more than " + Math.sqrt(bestDist) + " blocks"
+               );
+            this.context.baritone.logDebug("No path found =(");
+            if (this.context.baritone.settings().desktopNotifications.get()) {
+               NotificationHelper.notify("No path found =(", true);
             }
-        }
-        return Optional.empty();
-    }
+         }
 
-    @Override
-    public final boolean isFinished() {
-        return isFinished;
-    }
+         return Optional.empty();
+      }
+   }
 
-    @Override
-    public final Goal getGoal() {
-        return goal;
-    }
+   @Override
+   public final boolean isFinished() {
+      return this.isFinished;
+   }
 
-    public BetterBlockPos getStart() {
-        return new BetterBlockPos(startX, startY, startZ);
-    }
+   @Override
+   public final Goal getGoal() {
+      return this.goal;
+   }
 
-    protected int mapSize() {
-        return map.size();
-    }
+   public BetterBlockPos getStart() {
+      return new BetterBlockPos(this.startX, this.startY, this.startZ);
+   }
+
+   protected int mapSize() {
+      return this.map.size();
+   }
 }

@@ -1,31 +1,29 @@
 package adris.altoclef.tasks.speedrun.beatgame.prioritytask.prioritycalculators;
 
 public abstract class DistancePriorityCalculator {
-    public final int minCount;
+   public final int minCount;
+   public final int maxCount;
+   protected boolean minCountSatisfied = false;
+   protected boolean maxCountSatisfied = false;
 
-    public final int maxCount;
+   public DistancePriorityCalculator(int minCount, int maxCount) {
+      this.minCount = minCount;
+      this.maxCount = maxCount;
+   }
 
-    protected boolean minCountSatisfied = false;
+   public void update(int count) {
+      if (count >= this.minCount) {
+         this.minCountSatisfied = true;
+      }
 
-    protected boolean maxCountSatisfied = false;
+      if (count >= this.maxCount) {
+         this.maxCountSatisfied = true;
+      }
+   }
 
-    public DistancePriorityCalculator(int minCount, int maxCount) {
-        this.minCount = minCount;
-        this.maxCount = maxCount;
-    }
+   public double getPriority(double distance) {
+      return !Double.isInfinite(distance) && distance != 2.147483647E9 && !this.maxCountSatisfied ? this.calculatePriority(distance) : Double.NEGATIVE_INFINITY;
+   }
 
-    public void update(int count) {
-        if (count >= this.minCount)
-            this.minCountSatisfied = true;
-        if (count >= this.maxCount)
-            this.maxCountSatisfied = true;
-    }
-
-    public double getPriority(double distance) {
-        if (Double.isInfinite(distance) || distance == 2.147483647E9D || this.maxCountSatisfied)
-            return Double.NEGATIVE_INFINITY;
-        return calculatePriority(distance);
-    }
-
-    abstract double calculatePriority(double paramDouble);
+   abstract double calculatePriority(double var1);
 }

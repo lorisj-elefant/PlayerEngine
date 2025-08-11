@@ -3,26 +3,32 @@ package adris.altoclef.tasks.misc;
 import adris.altoclef.tasksystem.Task;
 
 public class SleepThroughNightTask extends Task {
-    protected void onStart() {
-    }
+   @Override
+   protected void onStart() {
+   }
 
-    protected Task onTick() {
-        return (Task) (new PlaceBedAndSetSpawnTask()).stayInBed();
-    }
+   @Override
+   protected Task onTick() {
+      return new PlaceBedAndSetSpawnTask().stayInBed();
+   }
 
-    protected void onStop(Task interruptTask) {
-    }
+   @Override
+   protected void onStop(Task interruptTask) {
+   }
 
-    protected boolean isEqual(Task other) {
-        return other instanceof adris.altoclef.tasks.misc.SleepThroughNightTask;
-    }
+   @Override
+   protected boolean isEqual(Task other) {
+      return other instanceof SleepThroughNightTask;
+   }
 
-    protected String toDebugString() {
-        return "Sleeping through the night";
-    }
+   @Override
+   protected String toDebugString() {
+      return "Sleeping through the night";
+   }
 
-    public boolean isFinished() {
-        int time = (int) (controller.getWorld().getTimeOfDay() % 24000L);
-        return (0 <= time && time < 13000);
-    }
+   @Override
+   public boolean isFinished() {
+      int time = (int)(this.controller.getWorld().getDayTime() % 24000L);
+      return 0 <= time && time < 13000;
+   }
 }

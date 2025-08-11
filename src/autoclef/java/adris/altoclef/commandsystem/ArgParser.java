@@ -4,119 +4,102 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ArgParser {
-    private final ArgBase[] args;
-    int argCounter;
-    int unitCounter;
-    String[] argUnits;
+   private final ArgBase[] args;
+   int argCounter;
+   int unitCounter;
+   String[] argUnits;
 
-    public ArgParser(ArgBase... args) {
-        this.args = args;
-        argCounter = 0;
-        unitCounter = 0;
-    }
+   public ArgParser(ArgBase... args) {
+      this.args = args;
+      this.argCounter = 0;
+      this.unitCounter = 0;
+   }
 
-    // Given a single line as a String, parse it into a list of keywords
-    public static List<String> splitLineIntoKeywords(String line) {
-        List<String> result = new ArrayList<String>();
-        // By default, it's just spaces. But sometimes we want to count quotes. So do it manually.
-        String last_kword = "";
-        boolean open_quote = false;
-        char prev_char = '\0';
-        for (char c : line.toCharArray()) {
-            // We found a quote, update our "quote" state.
-            if (c == '\"') {
-                open_quote = !open_quote;
+   public static List<String> splitLineIntoKeywords(String line) {
+      List<String> result = new ArrayList<>();
+      String last_kword = "";
+      boolean open_quote = false;
+      char prev_char = 0;
+
+      for (char c : line.toCharArray()) {
+         if (c == '"') {
+            open_quote = !open_quote;
+         }
+
+         if (prev_char == '\\') {
+            if (c == '#' || c == '"') {
+               last_kword = last_kword.substring(0, last_kword.length() - 1);
             }
-            if (prev_char == '\\') {
-                if (c == '#' || c == '"') {
-                    // We escaped this pound sign, so ignore the escaping backslash
-                    last_kword = last_kword.substring(0, last_kword.length() - 1);
-                }
+         } else if (c == '#') {
+            break;
+         }
+
+         if (c == ' ' && !open_quote) {
+            if (last_kword.length() != 0) {
+               result.add(last_kword.trim());
+            }
+
+            last_kword = "";
+         } else {
+            last_kword = last_kword + c;
+         }
+
+         prev_char = c;
+      }
+
+      if (last_kword.length() != 0) {
+         result.add(last_kword.trim());
+      }
+
+      return result;
+   }
+
+   public void loadArgs(String line, boolean removeFirst) {
+      List<String> units = splitLineIntoKeywords(line);
+      if (removeFirst && units.size() != 0) {
+         units.remove(0);
+      }
+
+      this.argUnits = new String[units.size()];
+      units.toArray(this.argUnits);
+      this.argCounter = 0;
+      this.unitCounter = 0;
+   }
+
+   public <T> T get(Class<T> type) throws CommandException {
+      if (this.argCounter >= this.args.length) {
+         throw new CommandException("You tried grabbing more arguments than you had... Bad move.");
+      } else {
+         ArgBase arg = this.args[this.argCounter];
+         if (!arg.isArbitrarilyLong() && this.argUnits.length > this.args.length) {
+            throw new CommandException(String.format("Too many arguments provided %d. The maximum is %d.", this.argUnits.length, this.args.length));
+         } else {
+            this.argCounter++;
+            if (arg.isArray()) {
+               this.argCounter = this.args.length;
+            }
+
+            int givenArgs = this.argUnits.length;
+            if (arg.hasDefault() && arg.getMinArgCountToUseDefault() >= givenArgs) {
+               return arg.getDefault(type);
+            } else if (this.unitCounter >= this.argUnits.length) {
+               throw new CommandException(String.format("Not enough arguments supplied: You supplied %d.", this.argUnits.length));
             } else {
-                if (c == '#') {
-                    // Bail! Everything beyond this is part of a comment, so ignore.
-                    break;
-                }
+               String unit = this.argUnits[this.unitCounter];
+               String[] unitPlusRemaining = new String[this.argUnits.length - this.unitCounter];
+               System.arraycopy(this.argUnits, this.unitCounter, unitPlusRemaining, 0, unitPlusRemaining.length);
+               this.unitCounter++;
+               return arg.parseUnit(unit, unitPlusRemaining);
             }
-            if (c == ' ' && !open_quote) {
-                // If it's empty, just ignore.
-                if (last_kword.length() != 0) {
-                    // Remove trailing whitespace
-                    result.add(last_kword.trim());
-                }
-                last_kword = "";
-            } else {
-                // We don't care about speed here.
-                //noinspection StringConcatenationInLoop
-                last_kword += c;
-            }
-            prev_char = c;
-        }
-        // Add the remainder
-        if (last_kword.length() != 0) {
-            result.add(last_kword.trim());
-        }
-        return result;
-    }
+         }
+      }
+   }
 
-    public void loadArgs(String line, boolean removeFirst) {
-        List<String> units = splitLineIntoKeywords(line);
-        // Discard the first element since, well, it will always be the name of the command.
-        if (removeFirst && units.size() != 0) {
-            units.remove(0);
-        }
-        argUnits = new String[units.size()];
-        units.toArray(argUnits);
-        argCounter = 0;
-        unitCounter = 0;
-    }
+   public ArgBase[] getArgs() {
+      return this.args;
+   }
 
-    // Get the next argument.
-    public <T> T get(Class<T> type) throws CommandException {
-
-        if (argCounter >= args.length) {
-            throw new CommandException("You tried grabbing more arguments than you had... Bad move.");
-        }
-        ArgBase arg = args[argCounter];
-        if (!arg.isArbitrarilyLong() && argUnits.length > args.length) {
-            throw new CommandException(String.format("Too many arguments provided %d. The maximum is %d.", argUnits.length, args.length));
-        }
-
-        // Current values from arrays
-        ++argCounter;
-        if (arg.isArray()) {
-            argCounter = args.length;
-        }
-
-        // If this can be default and we don't have enough (unit) args provided to use this arg, use the default value instead of reading from our arg list.
-        int givenArgs = argUnits.length;
-        if (arg.hasDefault() && arg.getMinArgCountToUseDefault() >= givenArgs) {
-            return arg.getDefault(type);
-        }
-
-        if (unitCounter >= argUnits.length) {
-            throw new CommandException(String.format("Not enough arguments supplied: You supplied %d.", argUnits.length));
-        }
-
-        String unit = argUnits[unitCounter];
-        String[] unitPlusRemaining = new String[argUnits.length - unitCounter];
-        System.arraycopy(argUnits, unitCounter, unitPlusRemaining, 0, unitPlusRemaining.length);
-        //Array.Copy(argUnits, unitCounter, unitPlusRemaining, 0, unitPlusRemaining.Length);
-        //argUnits.CopyTo(unitPlusRemaining, unitCounter);
-
-        ++unitCounter;
-
-        // If our type is not valid, try um handling the defaults.
-
-        return arg.parseUnit(unit, unitPlusRemaining);
-    }
-
-    public ArgBase[] getArgs() {
-        return args;
-    }
-
-    // Dear god kill this system already
-    public String[] getArgUnits() {
-        return argUnits;
-    }
+   public String[] getArgUnits() {
+      return this.argUnits;
+   }
 }

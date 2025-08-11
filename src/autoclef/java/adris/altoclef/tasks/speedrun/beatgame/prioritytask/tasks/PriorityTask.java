@@ -2,50 +2,45 @@ package adris.altoclef.tasks.speedrun.beatgame.prioritytask.tasks;
 
 import adris.altoclef.AltoClefController;
 import adris.altoclef.tasksystem.Task;
-
 import java.util.function.Function;
 
 public abstract class PriorityTask {
-    private final Function<AltoClefController, Boolean> canCall;
+   private final Function<AltoClefController, Boolean> canCall;
+   private final boolean shouldForce;
+   private final boolean canCache;
+   public final boolean bypassForceCooldown;
 
-    private final boolean shouldForce;
+   public PriorityTask(Function<AltoClefController, Boolean> canCall, boolean shouldForce, boolean canCache, boolean bypassForceCooldown) {
+      this.canCall = canCall;
+      this.shouldForce = shouldForce;
+      this.canCache = canCache;
+      this.bypassForceCooldown = bypassForceCooldown;
+   }
 
-    private final boolean canCache;
+   public final double calculatePriority(AltoClefController mod) {
+      return !this.canCall.apply(mod) ? Double.NEGATIVE_INFINITY : this.getPriority(mod);
+   }
 
-    public final boolean bypassForceCooldown;
+   @Override
+   public String toString() {
+      return this.getDebugString();
+   }
 
-    public PriorityTask(Function<AltoClefController, Boolean> canCall, boolean shouldForce, boolean canCache, boolean bypassForceCooldown) {
-        this.canCall = canCall;
-        this.shouldForce = shouldForce;
-        this.canCache = canCache;
-        this.bypassForceCooldown = bypassForceCooldown;
-    }
+   public abstract Task getTask(AltoClefController var1);
 
-    public final double calculatePriority(AltoClefController mod) {
-        if (!((Boolean) this.canCall.apply(mod)).booleanValue())
-            return Double.NEGATIVE_INFINITY;
-        return getPriority(mod);
-    }
+   public abstract String getDebugString();
 
-    public String toString() {
-        return getDebugString();
-    }
+   protected abstract double getPriority(AltoClefController var1);
 
-    public abstract Task getTask(AltoClefController paramAltoClefController);
+   public boolean needCraftingOnStart(AltoClefController mod) {
+      return false;
+   }
 
-    public abstract String getDebugString();
+   public boolean shouldForce() {
+      return this.shouldForce;
+   }
 
-    protected abstract double getPriority(AltoClefController paramAltoClefController);
-
-    public boolean needCraftingOnStart(AltoClefController mod) {
-        return false;
-    }
-
-    public boolean shouldForce() {
-        return this.shouldForce;
-    }
-
-    public boolean canCache() {
-        return this.canCache;
-    }
+   public boolean canCache() {
+      return this.canCache;
+   }
 }

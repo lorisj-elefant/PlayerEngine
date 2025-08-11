@@ -5,14 +5,13 @@ import adris.altoclef.commandsystem.ArgParser;
 import adris.altoclef.commandsystem.Command;
 
 public class StopCommand extends Command {
+   public StopCommand() {
+      super("stop", "Stop task runner (stops all automation), also stops the IDLE task until a new task is started");
+   }
 
-    public StopCommand() {
-        super("stop", "Stop task runner (stops all automation), also stops the IDLE task until a new task is started");
-    }
-
-    @Override
-    protected void call(AltoClefController mod, ArgParser parser) {
-        mod.stop();
-        finish();
-    }
+   @Override
+   protected void call(AltoClefController mod, ArgParser parser) {
+      mod.stop();
+      this.finish();
+   }
 }

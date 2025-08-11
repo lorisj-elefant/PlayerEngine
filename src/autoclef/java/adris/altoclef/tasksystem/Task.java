@@ -3,207 +3,178 @@ package adris.altoclef.tasksystem;
 import adris.altoclef.AltoClefController;
 import adris.altoclef.Debug;
 import adris.altoclef.tasks.movement.TimeoutWanderTask;
-
 import java.util.function.Predicate;
 
 public abstract class Task {
+   public AltoClefController controller;
+   private String oldDebugState = "";
+   private String debugState = "";
+   private Task sub = null;
+   private boolean first = true;
+   private boolean stopped = false;
+   private boolean active = false;
 
-    public AltoClefController controller;
+   public void tick(TaskChain parentChain) {
+      this.controller = parentChain.controller;
+      parentChain.addTaskToChain(this);
+      if (this.first) {
+         Debug.logInternal("Task START: " + this);
+         this.active = true;
+         this.onStart();
+         this.first = false;
+         this.stopped = false;
+      }
 
-    private String oldDebugState = "";
-    private String debugState = "";
+      if (!this.stopped) {
+         Task newSub = this.onTick();
+         if (!this.oldDebugState.equals(this.debugState)) {
+            Debug.logInternal(this.toString());
+            this.oldDebugState = this.debugState;
+         }
 
-    private Task sub = null;
+         if (newSub != null) {
+            if (!newSub.isEqual(this.sub) && this.canBeInterrupted(this.sub, newSub)) {
+               if (this.sub != null) {
+                  this.sub.stop(newSub);
+               }
 
-    private boolean first = true;
-
-    private boolean stopped = false;
-
-    private boolean active = false;
-
-    public void tick(TaskChain parentChain) {
-        controller = parentChain.controller;
-        parentChain.addTaskToChain(this);
-        if (first) {
-            Debug.logInternal("Task START: " + this);
-            active = true;
-            onStart();
-            first = false;
-            stopped = false;
-        }
-        if (stopped) return;
-
-        Task newSub = onTick();
-        // Debug state print
-        if (!oldDebugState.equals(debugState)) {
-            Debug.logInternal(toString());
-            oldDebugState = debugState;
-        }
-        // We have a sub task
-        if (newSub != null) {
-            if (!newSub.isEqual(sub)) {
-                if (canBeInterrupted(sub, newSub)) {
-                    // Our sub task is new
-                    if (sub != null) {
-                        // Our previous sub must be interrupted.
-                        sub.stop(newSub);
-                    }
-
-                    sub = newSub;
-                }
+               this.sub = newSub;
             }
 
-            // Run our child
-            sub.tick(parentChain);
-        } else {
-            // We are null
-            if (sub != null && canBeInterrupted(sub, null)) {
-                // Our previous sub must be interrupted.
-                sub.stop();
-                sub = null;
-            }
-        }
-    }
+            this.sub.tick(parentChain);
+         } else if (this.sub != null && this.canBeInterrupted(this.sub, null)) {
+            this.sub.stop();
+            this.sub = null;
+         }
+      }
+   }
 
-    public void reset() {
-        first = true;
-        active = false;
-        stopped = false;
-    }
+   public void reset() {
+      this.first = true;
+      this.active = false;
+      this.stopped = false;
+   }
 
-    public void stop() {
-        stop(null);
-    }
+   public void stop() {
+      this.stop(null);
+   }
 
-    /**
-     * Stops the task. Next time it's run it will run `onStart`
-     */
-    public void stop(Task interruptTask) {
-        if (!active) return;
-        Debug.logInternal("Task STOP: " + this + ", interrupted by " + interruptTask);
-        if (!first) {
-            onStop(interruptTask);
-        }
+   public void stop(Task interruptTask) {
+      if (this.active) {
+         Debug.logInternal("Task STOP: " + this + ", interrupted by " + interruptTask);
+         if (!this.first) {
+            this.onStop(interruptTask);
+         }
 
-        if (sub != null && !sub.stopped()) {
-            sub.stop(interruptTask);
-        }
+         if (this.sub != null && !this.sub.stopped()) {
+            this.sub.stop(interruptTask);
+         }
 
-        first = true;
-        active = false;
-        stopped = true;
-    }
+         this.first = true;
+         this.active = false;
+         this.stopped = true;
+      }
+   }
 
-    public void fail(String reason) {
-        stop();
-        Debug.logMessage("Task FAILED: " + reason);
-    }
+   public void fail(String reason) {
+      this.stop();
+      Debug.logMessage("Task FAILED: " + reason);
+   }
 
-    /**
-     * Lets the task know it's execution has been "suspended"
-     * <p>
-     * STILL RUNS `onStop`
-     * <p>
-     * Doesn't stop it all-together (meaning `isActive` still returns true)
-     */
-    public void interrupt(Task interruptTask) {
-        if (!active) return;
-        if (!first) {
-            onStop(interruptTask);
-        }
+   public void interrupt(Task interruptTask) {
+      if (this.active) {
+         if (!this.first) {
+            this.onStop(interruptTask);
+         }
 
-        if (sub != null && !sub.stopped()) {
-            sub.interrupt(interruptTask);
-        }
+         if (this.sub != null && !this.sub.stopped()) {
+            this.sub.interrupt(interruptTask);
+         }
 
-        first = true;
-    }
+         this.first = true;
+      }
+   }
 
-    protected void setDebugState(String state) {
-        if (state == null) {
-            state = "";
-        }
-        debugState = state;
-    }
+   protected void setDebugState(String state) {
+      if (state == null) {
+         state = "";
+      }
 
-    // Virtual
-    public boolean isFinished() {
-        return false;
-    }
+      this.debugState = state;
+   }
 
-    public boolean isActive() {
-        return active;
-    }
+   public boolean isFinished() {
+      return false;
+   }
 
-    public boolean stopped() {
-        return stopped;
-    }
+   public boolean isActive() {
+      return this.active;
+   }
 
-    protected abstract void onStart();
+   public boolean stopped() {
+      return this.stopped;
+   }
 
-    protected abstract Task onTick();
+   protected abstract void onStart();
 
-    // interruptTask = null if the task stopped cleanly
-    protected abstract void onStop(Task interruptTask);
+   protected abstract Task onTick();
 
-    protected abstract boolean isEqual(Task other);
+   protected abstract void onStop(Task var1);
 
-    protected abstract String toDebugString();
+   protected abstract boolean isEqual(Task var1);
 
-    @Override
-    public String toString() {
-        return "<" + toDebugString() + "> " + debugState;
-    }
+   protected abstract String toDebugString();
 
-    @Override
-    public boolean equals(Object obj) {
-        if (obj instanceof Task task) {
-            return isEqual(task);
-        }
-        return false;
-    }
+   @Override
+   public String toString() {
+      return "<" + this.toDebugString() + "> " + this.debugState;
+   }
 
-    public boolean thisOrChildSatisfies(Predicate<Task> pred) {
-        Task t = this;
-        while (t != null) {
-            if (pred.test(t)) return true;
-            t = t.sub;
-        }
-        return false;
-    }
+   @Override
+   public boolean equals(Object obj) {
+      return obj instanceof Task task ? this.isEqual(task) : false;
+   }
 
-    public boolean thisOrChildAreTimedOut() {
-        return thisOrChildSatisfies(task -> task instanceof TimeoutWanderTask);
-    }
-
-    /**
-     * Sometimes a task just can NOT be bothered to be interrupted right now.
-     * For instance, if we're in mid air and MUST complete the parkour movement.
-     */
-    private boolean canBeInterrupted(Task subTask, Task toInterruptWith) {
-        if (subTask == null) return true;
-        // Our task can declare that is FORCES itself to be active NOW.
-        return (subTask.thisOrChildSatisfies(task -> {
-            if (task instanceof ITaskCanForce canForce) {
-                if (toInterruptWith != null && toInterruptWith.controller == null) {
-                    toInterruptWith.controller = this.controller;
-                }
-                return !canForce.shouldForce(toInterruptWith);
-            }
+   public boolean thisOrChildSatisfies(Predicate<Task> pred) {
+      for (Task t = this; t != null; t = t.sub) {
+         if (pred.test(t)) {
             return true;
-        }));
-    }
+         }
+      }
 
-    public String getTaskTree(){
-        StringBuilder builder = new StringBuilder("Main task:\n");
-        Task cur = this;
-        while(cur!=null){
-            builder.append(cur.toDebugString());
-            cur = cur.sub;
-            if(cur!=null){
-                builder.append("\nFor that doing:\n");
+      return false;
+   }
+
+   public boolean thisOrChildAreTimedOut() {
+      return this.thisOrChildSatisfies(task -> task instanceof TimeoutWanderTask);
+   }
+
+   private boolean canBeInterrupted(Task subTask, Task toInterruptWith) {
+      return subTask == null ? true : subTask.thisOrChildSatisfies(task -> {
+         if (task instanceof ITaskCanForce canForce) {
+            if (toInterruptWith != null && toInterruptWith.controller == null) {
+               toInterruptWith.controller = this.controller;
             }
-        }
-        return builder.toString();
-    }
+
+            return !canForce.shouldForce(toInterruptWith);
+         } else {
+            return true;
+         }
+      });
+   }
+
+   public String getTaskTree() {
+      StringBuilder builder = new StringBuilder("Main task:\n");
+      Task cur = this;
+
+      while (cur != null) {
+         builder.append(cur.toDebugString());
+         cur = cur.sub;
+         if (cur != null) {
+            builder.append("\nFor that doing:\n");
+         }
+      }
+
+      return builder.toString();
+   }
 }

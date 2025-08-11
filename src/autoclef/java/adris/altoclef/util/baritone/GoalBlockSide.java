@@ -1,41 +1,40 @@
 package adris.altoclef.util.baritone;
 
 import baritone.api.pathing.goals.Goal;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.Vec3i;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.Vec3i;
+import net.minecraft.world.phys.Vec3;
 
 public class GoalBlockSide implements Goal {
-    private final BlockPos block;
+   private final BlockPos block;
+   private final Direction direction;
+   private final double buffer;
 
-    private final Direction direction;
+   public GoalBlockSide(BlockPos block, Direction direction, double bufferDistance) {
+      this.block = block;
+      this.direction = direction;
+      this.buffer = bufferDistance;
+   }
 
-    private final double buffer;
+   public GoalBlockSide(BlockPos block, Direction direction) {
+      this(block, direction, 1.0);
+   }
 
-    public GoalBlockSide(BlockPos block, Direction direction, double bufferDistance) {
-        this.block = block;
-        this.direction = direction;
-        this.buffer = bufferDistance;
-    }
+   @Override
+   public boolean isInGoal(int x, int y, int z) {
+      return this.getDistanceInRightDirection(x, y, z) > 0.0;
+   }
 
-    public GoalBlockSide(BlockPos block, Direction direction) {
-        this(block, direction, 1.0D);
-    }
+   @Override
+   public double heuristic(int x, int y, int z) {
+      return Math.min(this.getDistanceInRightDirection(x, y, z), 0.0);
+   }
 
-    public boolean isInGoal(int x, int y, int z) {
-        return (getDistanceInRightDirection(x, y, z) > 0.0D);
-    }
-
-    public double heuristic(int x, int y, int z) {
-        return Math.min(getDistanceInRightDirection(x, y, z), 0.0D);
-    }
-
-    private double getDistanceInRightDirection(int x, int y, int z) {
-        Vec3d delta = (new Vec3d(x, y, z)).subtract(this.block.getX(), this.block.getY(), this.block.getZ());
-        Vec3i dir = this.direction.getVector();
-        double dot = (new Vec3d(dir.getX(), dir.getY(), dir.getZ())).dotProduct(delta);
-        double distCorrect = dot;
-        return distCorrect - this.buffer;
-    }
+   private double getDistanceInRightDirection(int x, int y, int z) {
+      Vec3 delta = new Vec3(x, y, z).subtract(this.block.getX(), this.block.getY(), this.block.getZ());
+      Vec3i dir = this.direction.getNormal();
+      double dot = new Vec3(dir.getX(), dir.getY(), dir.getZ()).dot(delta);
+      return dot - this.buffer;
+   }
 }

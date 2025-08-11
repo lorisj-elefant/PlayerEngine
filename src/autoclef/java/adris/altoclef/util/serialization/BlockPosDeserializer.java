@@ -1,36 +1,30 @@
-//
-// Source code recreated from a .class file by IntelliJ IDEA
-// (powered by FernFlower decompiler)
-//
-
 package adris.altoclef.util.serialization;
 
 import com.fasterxml.jackson.core.JsonToken;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.List;
+import net.minecraft.core.BlockPos;
 
 public class BlockPosDeserializer extends AbstractVectorDeserializer<BlockPos, Integer> {
-    public BlockPosDeserializer() {
-    }
+   @Override
+   protected String getTypeName() {
+      return "BlockPos";
+   }
 
-    protected String getTypeName() {
-        return "BlockPos";
-    }
+   @Override
+   protected String[] getComponents() {
+      return new String[]{"x", "y", "z"};
+   }
 
-    protected String[] getComponents() {
-        return new String[]{"x", "y", "z"};
-    }
+   protected Integer parseUnit(String unit) throws Exception {
+      return Integer.parseInt(unit);
+   }
 
-    protected Integer parseUnit(String unit) throws Exception {
-        return Integer.parseInt(unit);
-    }
+   protected BlockPos deserializeFromUnits(List<Integer> units) {
+      return new BlockPos(units.get(0), units.get(1), units.get(2));
+   }
 
-    protected BlockPos deserializeFromUnits(List<Integer> units) {
-        return new BlockPos((Integer) units.get(0), (Integer) units.get(1), (Integer) units.get(2));
-    }
-
-    protected boolean isUnitTokenValid(JsonToken token) {
-        return token == JsonToken.VALUE_NUMBER_INT;
-    }
+   @Override
+   protected boolean isUnitTokenValid(JsonToken token) {
+      return token == JsonToken.VALUE_NUMBER_INT;
+   }
 }

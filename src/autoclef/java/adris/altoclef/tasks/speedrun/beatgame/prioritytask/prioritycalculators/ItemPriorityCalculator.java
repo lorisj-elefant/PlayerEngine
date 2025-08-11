@@ -1,30 +1,31 @@
 package adris.altoclef.tasks.speedrun.beatgame.prioritytask.prioritycalculators;
 
 public abstract class ItemPriorityCalculator {
-    public final int minCount;
+   public final int minCount;
+   public final int maxCount;
+   protected boolean minCountSatisfied = false;
+   protected boolean maxCountSatisfied = false;
 
-    public final int maxCount;
+   public ItemPriorityCalculator(int minCount, int maxCount) {
+      this.minCount = minCount;
+      this.maxCount = maxCount;
+   }
 
-    protected boolean minCountSatisfied = false;
+   public final double getPriority(int count) {
+      if (count > this.minCount) {
+         this.minCountSatisfied = true;
+      }
 
-    protected boolean maxCountSatisfied = false;
+      if (count > this.maxCount) {
+         this.maxCountSatisfied = true;
+      }
 
-    public ItemPriorityCalculator(int minCount, int maxCount) {
-        this.minCount = minCount;
-        this.maxCount = maxCount;
-    }
+      if (this.minCountSatisfied) {
+         count = Math.max(this.minCount, count);
+      }
 
-    public final double getPriority(int count) {
-        if (count > this.minCount)
-            this.minCountSatisfied = true;
-        if (count > this.maxCount)
-            this.maxCountSatisfied = true;
-        if (this.minCountSatisfied)
-            count = Math.max(this.minCount, count);
-        if (this.maxCountSatisfied)
-            return Double.NEGATIVE_INFINITY;
-        return calculatePriority(count);
-    }
+      return this.maxCountSatisfied ? Double.NEGATIVE_INFINITY : this.calculatePriority(count);
+   }
 
-    abstract double calculatePriority(int paramInt);
+   abstract double calculatePriority(int var1);
 }
