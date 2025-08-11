@@ -15,17 +15,20 @@
  * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package baritone;
+package adris.altoclef.mixins.baritone;
 
-import baritone.client.CustomFishingBobberRenderer;
-import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
+import baritone.utils.accessor.ILivingEntityAccessor;
+import net.minecraft.entity.LivingEntity;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.gen.Invoker;
 
-@KeepName
-public final class AutomatoneClient implements ClientModInitializer {
-
+@Mixin(LivingEntity.class)
+public abstract class MixinLivingEntity implements ILivingEntityAccessor {
+    @Invoker("getNextAirUnderwater")
     @Override
-    public void onInitializeClient() {
-        EntityRendererRegistry.register(Automatone.FISHING_BOBBER, CustomFishingBobberRenderer::new);
-    }
+    public abstract int automatone$getNextAirUnderwater(int air);
+
+    @Invoker("getNextAirOnLand")
+    @Override
+    public abstract int automatone$getNextAirOnLand(int air);
 }

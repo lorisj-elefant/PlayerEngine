@@ -26,7 +26,6 @@
     ]
   },
   "mixins": [
-    "mixins.automatone.json",
     "mixins.altoclef.json"
   ],
   "depends": {

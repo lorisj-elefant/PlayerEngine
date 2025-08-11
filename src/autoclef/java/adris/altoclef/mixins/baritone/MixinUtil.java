@@ -15,35 +15,26 @@
  * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package baritone.launch.mixins;
+package adris.altoclef.mixins.baritone;
 
-import baritone.api.IBaritone;
-import baritone.api.utils.IEntityAccessor;
-import baritone.behavior.PathingBehavior;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityDimensions;
-import net.minecraft.entity.EntityPose;
-import net.minecraft.world.World;
+import baritone.Automatone;
+import net.minecraft.util.Util;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.gen.Invoker;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(Entity.class)
-public abstract class MixinEntity implements IEntityAccessor {
+import java.util.concurrent.ExecutorService;
+
+@Mixin(Util.class)
+public abstract class MixinUtil {
     @Shadow
-    public abstract World getWorld();
+    private static void attemptShutdown(ExecutorService service) {
+    }
 
-    @Override
-    @Invoker("getEyeHeight")
-    public abstract float automatone$invokeGetEyeHeight(EntityPose pose, EntityDimensions dimensions);
-
-    @Inject(method = "setRemoved", at = @At("RETURN"))
-    private void shutdownPathingOnUnloading(Entity.RemovalReason reason, CallbackInfo ci) {
-        if (!getWorld().isClient()) {
-            IBaritone.KEY.maybeGet(this).ifPresent(b -> ((PathingBehavior) b.getPathingBehavior()).shutdown());
-        }
+    @Inject(method = "shutdownExecutors", at = @At("RETURN"))
+    private static void shutdownBaritoneExecutor(CallbackInfo ci) {
+        attemptShutdown(Automatone.getExecutor());
     }
 }

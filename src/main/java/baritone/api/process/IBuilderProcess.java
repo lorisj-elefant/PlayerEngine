@@ -18,7 +18,7 @@
 package baritone.api.process;
 
 import baritone.api.schematic.ISchematic;
-import net.fabricmc.loader.api.FabricLoader;
+import baritone.utils.DirUtil;
 import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3i;
@@ -52,7 +52,7 @@ public interface IBuilderProcess extends IBaritoneProcess {
     boolean build(String name, File schematic, Vec3i origin);
 
     default boolean build(String schematicFile, BlockPos origin) {
-        File file = FabricLoader.getInstance().getGameDir().resolve("schematics").resolve(schematicFile).toFile();
+        File file = DirUtil.getGameDir().resolve("schematics").resolve(schematicFile).toFile();
         return build(schematicFile, file, origin);
     }
 

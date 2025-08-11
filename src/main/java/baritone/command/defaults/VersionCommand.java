@@ -17,16 +17,10 @@
 
 package baritone.command.defaults;
 
-import baritone.Automatone;
 import baritone.api.IBaritone;
 import baritone.api.command.Command;
 import baritone.api.command.argument.IArgConsumer;
 import baritone.api.command.exception.CommandException;
-import baritone.api.command.exception.CommandInvalidStateException;
-import net.fabricmc.loader.api.FabricLoader;
-import net.fabricmc.loader.api.ModContainer;
-import net.fabricmc.loader.api.Version;
-import net.fabricmc.loader.api.metadata.ModMetadata;
 import net.minecraft.server.command.ServerCommandSource;
 
 import java.util.Arrays;
@@ -42,11 +36,7 @@ public class VersionCommand extends Command {
     @Override
     public void execute(ServerCommandSource source, String label, IArgConsumer args, IBaritone baritone) throws CommandException {
         args.requireMax(0);
-        Version version = FabricLoader.getInstance().getModContainer(Automatone.MOD_ID)
-                .map(ModContainer::getMetadata)
-                .map(ModMetadata::getVersion)
-                .orElseThrow(() -> new CommandInvalidStateException("Null version (this may be normal in a dev environment)"));
-        logDirect(source, String.format("You are running Automatone v%s", version.getFriendlyString()));
+        logDirect(source, "You are running Automatone integrated into PlayerEngine");
     }
 
     @Override

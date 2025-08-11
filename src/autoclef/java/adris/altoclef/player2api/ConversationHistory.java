@@ -2,8 +2,8 @@ package adris.altoclef.player2api;
 
 import adris.altoclef.player2api.status.ObjectStatus;
 import adris.altoclef.player2api.utils.Utils;
+import baritone.utils.DirUtil;
 import com.google.gson.JsonObject;
-import net.fabricmc.loader.api.FabricLoader;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -27,7 +27,7 @@ public class ConversationHistory {
     private final String player2GameId;
 
     public ConversationHistory(String player2GameId, String initialSystemPrompt, String characterName, String characterShortName) {
-        Path configDir = FabricLoader.getInstance().getConfigDir();
+        Path configDir = DirUtil.getConfigDir();
         String fileName = characterName.replaceAll("\\s+", "_") + "_" + characterName.replaceAll("\\s+", "_") + ".txt";
         this.historyFile = configDir.resolve(fileName);
         this.player2GameId = player2GameId;

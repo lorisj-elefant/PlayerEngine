@@ -15,17 +15,19 @@
  * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package baritone.launch.mixins;
+package baritone.utils;
 
-import baritone.utils.accessor.ServerCommandSourceAccessor;
-import net.minecraft.server.command.CommandOutput;
-import net.minecraft.server.command.ServerCommandSource;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.gen.Accessor;
+import net.fabricmc.loader.api.FabricLoader;
 
-@Mixin(ServerCommandSource.class)
-public abstract class MixinServerCommandSource implements ServerCommandSourceAccessor {
-    @Override
-    @Accessor("output")
-    public abstract CommandOutput automatone$getOutput();
+import java.nio.file.Path;
+
+public class DirUtil {
+
+    public static Path getGameDir(){
+        return FabricLoader.getInstance().getGameDir();
+    }
+
+    public static Path getConfigDir(){
+        return FabricLoader.getInstance().getConfigDir();
+    }
 }

@@ -1,6 +1,5 @@
 plugins {
     id 'fabric-loom' version '1.6-SNAPSHOT'
-    id 'io.github.ladysnake.chenille' version "0.11.3"
     id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 
@@ -19,19 +18,14 @@ sourceSets {
         compileClasspath += main.compileClasspath + main.runtimeClasspath + main.output
         runtimeClasspath += main.compileClasspath + main.runtimeClasspath + main.output
     }
-
-    launch {
-        compileClasspath += main.compileClasspath + main.runtimeClasspath + main.output + autoclef.compileClasspath + autoclef.runtimeClasspath + autoclef.output
-        runtimeClasspath += main.compileClasspath + main.runtimeClasspath + main.output + autoclef.compileClasspath + autoclef.runtimeClasspath + autoclef.output
-    }
 }
 
 repositories {
     mavenCentral()
 
-    chenille.repositories {
-        ladysnake()
-        jamieswhiteshirt()
+    maven {
+        name = 'Ladysnake Mods'
+        url = 'https://maven.ladysnake.org/releases'
     }
 
     maven {
@@ -81,7 +75,6 @@ shadowJar {
     archiveBaseName.set('PlayerEngine')
     archiveClassifier.set('dev')
 
-    from sourceSets.launch.output
     from sourceSets.main.output
     from sourceSets.autoclef.output
 
@@ -102,13 +95,6 @@ remapJar {
     input.set(shadowJar.archiveFile)
 }
 
-processLaunchResources {
-    inputs.property "version", project.version
-    filesMatching('quilt.mod.json') {
-        expand "version": project.version
-    }
-}
-
 java {
     withSourcesJar()
 }
@@ -122,7 +108,7 @@ javadoc {
 }
 
 jar {
-    from sourceSets.launch.output, sourceSets.main.output, sourceSets.autoclef.output
+    from sourceSets.main.output, sourceSets.autoclef.output
 
     preserveFileTimestamps = false
     reproducibleFileOrder = true

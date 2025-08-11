@@ -20,7 +20,6 @@ package baritone.utils;
 import baritone.Automatone;
 import baritone.api.Settings;
 import baritone.api.utils.SettingsUtil;
-import net.fabricmc.loader.api.FabricLoader;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -32,7 +31,7 @@ import java.util.regex.Pattern;
 
 public class SettingsLoader {
     private static final Pattern SETTING_PATTERN = Pattern.compile("^(?<setting>[^ ]+) +(?<value>.+)"); // key and value split by the first space
-    private static final Path SETTINGS_PATH = FabricLoader.getInstance().getConfigDir().resolve("automatone").resolve("settings.txt");
+    private static final Path SETTINGS_PATH = DirUtil.getConfigDir().resolve("automatone").resolve("settings.txt");
 
     public static void readAndApply(Settings settings) {
         try {

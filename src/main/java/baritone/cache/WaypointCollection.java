@@ -21,8 +21,8 @@ import baritone.api.cache.IWaypoint;
 import baritone.api.cache.IWaypointCollection;
 import baritone.api.cache.Waypoint;
 import baritone.api.utils.BetterBlockPos;
-import net.fabricmc.fabric.api.util.NbtType;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.nbt.NbtList;
 
@@ -53,7 +53,7 @@ public class WaypointCollection implements IWaypointCollection {
 
     public void readFromNbt(NbtCompound nbt) {
         for (Waypoint.Tag tag : Waypoint.Tag.values()) {
-            this.waypoints.put(tag, readFromNbt(tag, nbt.getList(tag.name(), NbtType.COMPOUND)));
+            this.waypoints.put(tag, readFromNbt(tag, nbt.getList(tag.name(), NbtElement.COMPOUND_TYPE)));
         }
     }
 

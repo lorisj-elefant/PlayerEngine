@@ -24,8 +24,8 @@ import baritone.api.command.datatypes.RelativeFile;
 import baritone.api.command.exception.CommandException;
 import baritone.api.command.exception.CommandInvalidStateException;
 import baritone.api.command.exception.CommandInvalidTypeException;
+import baritone.utils.DirUtil;
 import com.google.gson.JsonSyntaxException;
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.server.command.ServerCommandSource;
 
 import java.io.File;
@@ -43,7 +43,7 @@ public class ExploreFilterCommand extends Command {
     @Override
     public void execute(ServerCommandSource source, String label, IArgConsumer args, IBaritone baritone) throws CommandException {
         args.requireMax(2);
-        File file = args.getDatatypePost(RelativeFile.INSTANCE, FabricLoader.getInstance().getGameDir().toAbsolutePath().getParent().toFile());
+        File file = args.getDatatypePost(RelativeFile.INSTANCE, DirUtil.getGameDir().toAbsolutePath().getParent().toFile());
         boolean invert = false;
         if (args.hasAny()) {
             if (args.getString().equalsIgnoreCase("invert")) {

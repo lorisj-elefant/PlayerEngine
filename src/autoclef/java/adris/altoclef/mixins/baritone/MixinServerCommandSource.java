@@ -15,20 +15,17 @@
  * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package baritone.launch.mixins;
+package adris.altoclef.mixins.baritone;
 
-import baritone.utils.accessor.ILivingEntityAccessor;
-import net.minecraft.entity.LivingEntity;
+import baritone.utils.accessor.ServerCommandSourceAccessor;
+import net.minecraft.server.command.CommandOutput;
+import net.minecraft.server.command.ServerCommandSource;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.gen.Invoker;
+import org.spongepowered.asm.mixin.gen.Accessor;
 
-@Mixin(LivingEntity.class)
-public abstract class MixinLivingEntity implements ILivingEntityAccessor {
-    @Invoker("getNextAirUnderwater")
+@Mixin(ServerCommandSource.class)
+public abstract class MixinServerCommandSource implements ServerCommandSourceAccessor {
     @Override
-    public abstract int automatone$getNextAirUnderwater(int air);
-
-    @Invoker("getNextAirOnLand")
-    @Override
-    public abstract int automatone$getNextAirOnLand(int air);
+    @Accessor("output")
+    public abstract CommandOutput automatone$getOutput();
 }

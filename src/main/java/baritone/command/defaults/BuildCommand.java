@@ -25,7 +25,7 @@ import baritone.api.command.datatypes.RelativeFile;
 import baritone.api.command.exception.CommandException;
 import baritone.api.command.exception.CommandInvalidStateException;
 import baritone.api.utils.BetterBlockPos;
-import net.fabricmc.loader.api.FabricLoader;
+import baritone.utils.DirUtil;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.util.math.BlockPos;
 import org.apache.commons.io.FilenameUtils;
@@ -37,7 +37,7 @@ import java.util.stream.Stream;
 
 public class BuildCommand extends Command {
 
-    private static final File schematicsDir = FabricLoader.getInstance().getGameDir().resolve("schematics").toFile();
+    private static final File schematicsDir = DirUtil.getGameDir().resolve("schematics").toFile();
 
     public BuildCommand() {
         super("build");

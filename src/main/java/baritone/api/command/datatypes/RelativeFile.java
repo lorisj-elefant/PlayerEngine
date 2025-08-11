@@ -19,7 +19,7 @@ package baritone.api.command.datatypes;
 
 import baritone.api.command.argument.IArgConsumer;
 import baritone.api.command.exception.CommandException;
-import net.fabricmc.loader.api.FabricLoader;
+import baritone.utils.DirUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -93,7 +93,7 @@ public enum RelativeFile implements IDatatypePost<File, File> {
     }
 
     public static File gameDir() {
-        File gameDir = FabricLoader.getInstance().getGameDir().toFile().getAbsoluteFile();
+        File gameDir = DirUtil.getGameDir().toFile().getAbsoluteFile();
         if (gameDir.getName().equals(".")) {
             return gameDir.getParentFile();
         }

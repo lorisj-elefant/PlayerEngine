@@ -20,7 +20,6 @@ package baritone.api.event.listener;
 import baritone.api.IBaritone;
 import baritone.api.event.events.BlockInteractEvent;
 import baritone.api.event.events.PathEvent;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 
 /**
  * @author Brady
@@ -31,7 +30,6 @@ public interface IGameEventListener {
     /**
      * Run once per game tick, if the associated baritone instance is {@linkplain IBaritone#isActive() active}.
      *
-     * @see ServerTickEvents#END_SERVER_TICK
      */
     void onTickServer();
 

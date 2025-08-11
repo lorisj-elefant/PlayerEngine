@@ -23,12 +23,8 @@ import baritone.api.command.Command;
 import baritone.api.command.argument.IArgConsumer;
 import baritone.api.command.exception.CommandException;
 import baritone.utils.accessor.ServerCommandSourceAccessor;
-import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.network.packet.s2c.play.CustomPayloadS2CPacket;
 import net.minecraft.server.command.CommandOutput;
 import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 
 import java.util.Arrays;
@@ -47,11 +43,6 @@ public class ClickCommand extends Command {
         args.requireMax(0);
         try {
             CommandOutput commandOutput = ((ServerCommandSourceAccessor) source).automatone$getOutput();
-            if (commandOutput instanceof ServerPlayerEntity) {
-                PacketByteBuf buf = PacketByteBufs.create();
-                buf.writeUuid(baritone.getEntityContext().entity().getUuid());
-                ((ServerPlayerEntity) commandOutput).networkHandler.sendPacket(new CustomPayloadS2CPacket(OPEN_CLICK_SCREEN, buf));
-            }
         } catch (Throwable t) {
             Automatone.LOGGER.error("Failed to open click screen, is this a dedicated server?", t);
         }

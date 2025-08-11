@@ -21,9 +21,9 @@ import baritone.Automatone;
 import baritone.api.BaritoneAPI;
 import baritone.api.cache.IContainerMemory;
 import baritone.api.cache.IRememberedInventory;
-import net.fabricmc.fabric.api.util.NbtType;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.util.math.BlockPos;
@@ -45,12 +45,12 @@ public class ContainerMemory implements IContainerMemory {
 
     public void read(NbtCompound tag) {
         try {
-            NbtList nbtInventories = tag.getList("inventories", NbtType.COMPOUND);
+            NbtList nbtInventories = tag.getList("inventories", NbtElement.COMPOUND_TYPE);
             for (int i = 0; i < nbtInventories.size(); i++) {
                 NbtCompound nbtEntry = nbtInventories.getCompound(i);
                 BlockPos pos = NbtHelper.toBlockPos(nbtEntry.getCompound("pos"));
                 RememberedInventory rem = new RememberedInventory();
-                rem.fromNbt(nbtEntry.getList("content", NbtType.LIST));
+                rem.fromNbt(nbtEntry.getList("content", NbtElement.LIST_TYPE));
                 if (rem.items.isEmpty()) {
                     continue; // this only happens if the list has no elements, not if the list has elements that are all empty item stacks
                 }

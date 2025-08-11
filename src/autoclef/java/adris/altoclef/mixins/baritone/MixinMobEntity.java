@@ -15,7 +15,7 @@
  * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package baritone.launch.mixins;
+package adris.altoclef.mixins.baritone;
 
 import baritone.BaritoneProvider;
 import net.minecraft.entity.LivingEntity;

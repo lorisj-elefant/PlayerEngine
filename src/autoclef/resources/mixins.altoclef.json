@@ -19,7 +19,15 @@
     "PersistentProjectileEntityAccessor",
     "PlayerCollidesWithEntityMixin",
     "PlayerDamageMixin",
-    "WorldBlockModifiedMixin"
+    "WorldBlockModifiedMixin",
+    "baritone.MixinBucketItem",
+    "baritone.MixinEntity",
+    "baritone.MixinItemStack",
+    "baritone.MixinLivingEntity",
+    "baritone.MixinMobEntity",
+    "baritone.MixinServerChunkManager",
+    "baritone.MixinServerCommandSource",
+    "baritone.MixinUtil"
   ],
   "refmap": "autoclef-playerengine-refmap.json"
 }
