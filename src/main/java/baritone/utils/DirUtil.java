@@ -1,14 +1,14 @@
 package baritone.utils;
 
 import java.nio.file.Path;
-import net.fabricmc.loader.api.FabricLoader;
+import net.minecraftforge.fml.loading.FMLPaths;
 
 public class DirUtil {
    public static Path getGameDir() {
-      return FabricLoader.getInstance().getGameDir();
+      return FMLPaths.GAMEDIR.get();
    }
 
    public static Path getConfigDir() {
-      return FabricLoader.getInstance().getConfigDir();
+      return FMLPaths.CONFIGDIR.get();
    }
 }

@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -87,8 +86,6 @@ public final class DefaultCommands {
       )) {
          ICommandManager.registry.register(command);
       }
-
-      CommandRegistrationCallback.EVENT.register((CommandRegistrationCallback)(dispatcher, ctx, dedicated) -> register(dispatcher));
    }
 
    private static void logRanCommand(CommandSourceStack source, String command, String rest) {
@@ -160,7 +157,7 @@ public final class DefaultCommands {
       }
    }
 
-   private static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
+   public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
       dispatcher.register(
          (LiteralArgumentBuilder)((LiteralArgumentBuilder)Commands.literal("automatone").requires(s -> s.hasPermission(2)))
             .then(

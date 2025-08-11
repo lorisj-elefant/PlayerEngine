@@ -102,6 +102,7 @@ public class CustomFishingBobberEntity extends Projectile {
       this.xRotO = this.getXRot();
    }
 
+
    protected void defineSynchedData() {
       this.getEntityData().define(HOOK_ENTITY_ID, 0);
       this.getEntityData().define(CAUGHT_FISH, false);

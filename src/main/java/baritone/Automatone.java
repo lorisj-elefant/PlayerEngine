@@ -6,35 +6,39 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.object.builder.v1.entity.FabricEntityTypeBuilder;
-import net.minecraft.core.Registry;
-import net.minecraft.core.registries.BuiltInRegistries;
+
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
-import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.item.Item;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.RegisterCommandsEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.RegisterEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@KeepName
-public final class Automatone implements ModInitializer {
+@Mod(Automatone.MOD_ID)
+@Mod.EventBusSubscriber(bus=Mod.EventBusSubscriber.Bus.MOD,modid=Automatone.MOD_ID)
+public final class Automatone {
    public static final Logger LOGGER = LogManager.getLogger("Automatone");
    public static final String MOD_ID = "automatone";
    public static final TagKey<Item> EMPTY_BUCKETS = TagKey.create(Registries.ITEM, id("empty_buckets"));
    public static final TagKey<Item> WATER_BUCKETS = TagKey.create(Registries.ITEM, id("water_buckets"));
    private static final ThreadPoolExecutor threadPool;
-   public static final EntityType<CustomFishingBobberEntity> FISHING_BOBBER = FabricEntityTypeBuilder.<CustomFishingBobberEntity>create()
-      .spawnGroup(MobCategory.MISC)
-      .entityFactory(CustomFishingBobberEntity::new)
-      .dimensions(EntityDimensions.scalable(EntityType.FISHING_BOBBER.getWidth(), EntityType.FISHING_BOBBER.getHeight()))
-      .trackRangeBlocks(64)
-      .trackedUpdateRate(1)
-      .forceTrackedVelocityUpdates(true)
-      .build();
+   public static final EntityType<CustomFishingBobberEntity> FISHING_BOBBER = EntityType.Builder.<CustomFishingBobberEntity>of(CustomFishingBobberEntity::new,MobCategory.MISC)
+      .sized(EntityType.FISHING_BOBBER.getWidth(), EntityType.FISHING_BOBBER.getHeight())
+      .setTrackingRange(64)
+      .setUpdateInterval(1)
+      .setShouldReceiveVelocityUpdates(true)
+      .build(id("fishing_bobber").toString());
 
    public static ResourceLocation id(String path) {
       return new ResourceLocation("automatone", path);
@@ -44,9 +48,25 @@ public final class Automatone implements ModInitializer {
       return threadPool;
    }
 
-   public void onInitialize() {
+   public Automatone() {
+      FMLJavaModLoadingContext.get().getModEventBus().addListener(this::setup);
+   }
+
+   private void setup(final FMLCommonSetupEvent event) {
+      MinecraftForge.EVENT_BUS.register(this);
+   }
+
+   @SubscribeEvent
+   public void registerCommand(RegisterCommandsEvent e) {
       DefaultCommands.registerAll();
-      Registry.register(BuiltInRegistries.ENTITY_TYPE, id("fishing_bobber"), FISHING_BOBBER);
+      DefaultCommands.register(e.getDispatcher());
+   }
+
+   @SubscribeEvent
+   public static void registerEntities(RegisterEvent event) {
+      if (event.getRegistryKey() == ForgeRegistries.Keys.ENTITY_TYPES) {
+         event.getForgeRegistry().register(id("fishing_bobber"), FISHING_BOBBER);
+      }
    }
 
    static {

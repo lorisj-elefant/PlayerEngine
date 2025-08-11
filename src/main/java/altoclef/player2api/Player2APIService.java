@@ -1,0 +1,139 @@
+/*
+ * This file is part of Baritone.
+ *
+ * Baritone is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Baritone is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package altoclef.player2api;
+
+import altoclef.player2api.utils.CharacterUtils;
+import altoclef.player2api.utils.HTTPUtils;
+import altoclef.player2api.utils.Utils;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import java.util.Map;
+
+public class Player2APIService {
+   public static JsonObject completeConversation(String player2GameId, ConversationHistory conversationHistory) throws Exception {
+      JsonObject requestBody = new JsonObject();
+      JsonArray messagesArray = new JsonArray();
+
+      for (JsonObject msg : conversationHistory.getListJSON()) {
+         messagesArray.add(msg);
+      }
+
+      requestBody.add("messages", messagesArray);
+      Map<String, JsonElement> responseMap = HTTPUtils.sendRequest(player2GameId, "/v1/chat/completions", true, requestBody);
+      if (responseMap.containsKey("choices")) {
+         JsonArray choices = responseMap.get("choices").getAsJsonArray();
+         if (choices.size() != 0) {
+            JsonObject messageObject = choices.get(0).getAsJsonObject().getAsJsonObject("message");
+            if (messageObject != null && messageObject.has("content")) {
+               String content = messageObject.get("content").getAsString();
+               return Utils.parseCleanedJson(content);
+            }
+         }
+      }
+
+      throw new Exception("Invalid response format: " + responseMap.toString());
+   }
+
+   public static String completeConversationToString(String player2GameId, ConversationHistory conversationHistory) throws Exception {
+      JsonObject requestBody = new JsonObject();
+      JsonArray messagesArray = new JsonArray();
+
+      for (JsonObject msg : conversationHistory.getListJSON()) {
+         messagesArray.add(msg);
+      }
+
+      requestBody.add("messages", messagesArray);
+      Map<String, JsonElement> responseMap = HTTPUtils.sendRequest(player2GameId, "/v1/chat/completions", true, requestBody);
+      if (responseMap.containsKey("choices")) {
+         JsonArray choices = responseMap.get("choices").getAsJsonArray();
+         if (choices.size() != 0) {
+            JsonObject messageObject = choices.get(0).getAsJsonObject().getAsJsonObject("message");
+            if (messageObject != null && messageObject.has("content")) {
+               return messageObject.get("content").getAsString();
+            }
+         }
+      }
+
+      throw new Exception("Invalid response format: " + responseMap.toString());
+   }
+
+   public static Character getSelectedCharacter(String player2GameId) {
+      try {
+         Map<String, JsonElement> responseMap = HTTPUtils.sendRequest(player2GameId, "/v1/selected_characters", false, null);
+         return CharacterUtils.parseFirstCharacter(responseMap);
+      } catch (Exception var2) {
+         return CharacterUtils.DEFAULT_CHARACTER;
+      }
+   }
+
+   public static void textToSpeech(String player2GameId, String message, Character character) {
+      try {
+         JsonObject requestBody = new JsonObject();
+         requestBody.addProperty("play_in_app", true);
+         requestBody.addProperty("speed", 1);
+         requestBody.addProperty("text", message);
+         JsonArray voiceIdsArray = new JsonArray();
+
+         for (String voiceId : character.voiceIds) {
+            voiceIdsArray.add(voiceId);
+         }
+
+         requestBody.add("voice_ids", voiceIdsArray);
+         System.out.println("Sending TTS request: " + message);
+         HTTPUtils.sendRequest(player2GameId, "/v1/tts/speak", true, requestBody);
+      } catch (Exception var9) {
+      }
+   }
+
+   public static void startSTT(String player2GameId) {
+      JsonObject requestBody = new JsonObject();
+      requestBody.addProperty("timeout", 30);
+
+      try {
+         HTTPUtils.sendRequest(player2GameId, "/v1/stt/start", true, requestBody);
+      } catch (Exception var3) {
+         System.err.println("[Player2APIService/startSTT]: Error" + var3.getMessage());
+      }
+   }
+
+   public static String stopSTT(String player2GameId) {
+      try {
+         Map<String, JsonElement> responseMap = HTTPUtils.sendRequest(player2GameId, "/v1/stt/stop", true, null);
+         if (!responseMap.containsKey("text")) {
+            throw new Exception("Could not find key 'text' in response");
+         } else {
+            return responseMap.get("text").getAsString();
+         }
+      } catch (Exception var2) {
+         return var2.getMessage();
+      }
+   }
+
+   public static void sendHeartbeat(String player2GameId) {
+      try {
+         System.out.println("Sending Heartbeat " + player2GameId);
+         Map<String, JsonElement> responseMap = HTTPUtils.sendRequest(player2GameId, "/v1/health", false, null);
+         if (responseMap.containsKey("client_version")) {
+            System.out.println("Heartbeat Successful");
+         }
+      } catch (Exception var2) {
+         System.err.printf("Heartbeat Fail: %s", var2.getMessage());
+      }
+   }
+}
