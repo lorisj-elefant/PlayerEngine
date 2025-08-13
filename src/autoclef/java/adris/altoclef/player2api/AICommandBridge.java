@@ -109,24 +109,13 @@ public class AICommandBridge {
         System.out.println("Updating info");
         Character newCharacter = character;
         this.character = newCharacter;
-        int padSize = 10;
-        StringBuilder commandListBuilder = new StringBuilder();
-        for (Command c : mod.getCommandExecutor().allCommands()) {
-            StringBuilder line = new StringBuilder();
-            line.append(c.getName()).append(": ");
-            int toAdd = padSize - c.getName().length();
-            line.append(" ".repeat(Math.max(0, toAdd)));
-            line.append(c.getDescription()).append("\n");
-            commandListBuilder.append(line);
-        }
-        String validCommandsFormatted = commandListBuilder.toString();
-        String newPrompt = Utils.replacePlaceholders(initialPrompt,
-                Map.of("characterDescription", this.character.description, "characterName", this.character.name, "validCommands", validCommandsFormatted));
-        System.out.println("New prompt: " + newPrompt);
+        String systemPrompt = Prompts.getAINPCSystemPrompt(this.character,mod.getCommandExecutor().allCommands());
+        System.out.println("System prompt: " + systemPrompt);
+
         if (this.conversationHistory == null) {
-            this.conversationHistory = new ConversationHistory(newPrompt, this.character.name, this.character.shortName);
+            this.conversationHistory = new ConversationHistory(systemPrompt, this.character.name, this.character.shortName);
         } else {
-            this.conversationHistory.setBaseSystemPrompt(newPrompt);
+            this.conversationHistory.setBaseSystemPrompt(systemPrompt);
         }
     }
 
