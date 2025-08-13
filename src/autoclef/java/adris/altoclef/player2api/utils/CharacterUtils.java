@@ -106,13 +106,13 @@ public class CharacterUtils {
     }
 
     public static void writeToBuf(PacketByteBuf buf, Character character) {
-        buf.writeString(character.name);
-        buf.writeString(character.shortName);
-        buf.writeString(character.greetingInfo);
-        buf.writeString(character.description);
-        buf.writeString(character.skinURL);
-        buf.writeInt(character.voiceIds.length);
-        for (String id : character.voiceIds) {
+        buf.writeString(character.name());
+        buf.writeString(character.shortName());
+        buf.writeString(character.greetingInfo());
+        buf.writeString(character.description());
+        buf.writeString(character.skinURL());
+        buf.writeInt(character.voiceIds().length);
+        for (String id : character.voiceIds()) {
             buf.writeString(id);
         }
     }
@@ -132,13 +132,13 @@ public class CharacterUtils {
     }
 
     public static void writeToNBT(NbtCompound compound, Character character) {
-        compound.putString("name", character.name);
-        compound.putString("shortName", character.shortName);
-        compound.putString("greetingInfo", character.greetingInfo);
-        compound.putString("description", character.description);
-        compound.putString("skinURL", character.skinURL);
+        compound.putString("name", character.name());
+        compound.putString("shortName", character.shortName());
+        compound.putString("greetingInfo", character.greetingInfo());
+        compound.putString("description", character.description());
+        compound.putString("skinURL", character.skinURL());
         NbtList voiceIds = new NbtList();
-        for (String id : character.voiceIds) {
+        for (String id : character.voiceIds()) {
             voiceIds.add(NbtString.of(id));
         }
         compound.put("voiceIds", voiceIds);

@@ -24,9 +24,10 @@ public class ConversationHistory {
 
     private static final int SUMMARY_COUNT = 48;
 
-    public ConversationHistory(String initialSystemPrompt, String characterName, String characterShortName) {
+    public ConversationHistory(String initialSystemPrompt, Character character) {
+
         Path configDir = FabricLoader.getInstance().getConfigDir();
-        String fileName = characterName.replaceAll("\\s+", "_") + "_" + characterName.replaceAll("\\s+", "_") + ".txt";
+        String fileName = character.name().replaceAll("\\s+", "_") + "_" + character.name().replaceAll("\\s+", "_") + ".txt";
         this.historyFile = configDir.resolve(fileName);
         if (Files.exists(this.historyFile, new java.nio.file.LinkOption[0])) {
             loadFromFile();
@@ -165,13 +166,6 @@ public class ConversationHistory {
             systemMessage.addProperty("content", newPrompt);
             this.conversationHistory.add(0, systemMessage);
         }
-    }
-
-    public void addSystemMessage(String systemText) {
-        JsonObject objectToAdd = new JsonObject();
-        objectToAdd.addProperty("role", "system");
-        objectToAdd.addProperty("content", systemText);
-        addHistory(objectToAdd, false);
     }
 
     public void addAssistantMessage(String messageText) {

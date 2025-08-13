@@ -5,8 +5,14 @@ public sealed interface Event // tagged union basically of the below events
     String message();
 
     public record UserMessage(String message, String userName) implements Event {
+        public String toString(){
+            return String.format("Other Player Message: [%s]: %s", userName, message);
+        }
     }
 
-    public record CharacterMessage(String message, Character character) implements Event {
+    public record CharacterMessage(String message, EventQueueData sendingCharacterData) implements Event {
+        public String toString(){
+            return String.format("Other Agent Message: [%s]: %s", sendingCharacterData.getUsername(), message);
+        }
     }
 }

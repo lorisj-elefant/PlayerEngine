@@ -58,7 +58,7 @@ public class Prompts {
         }
         String validCommandsFormatted = commandListBuilder.toString();
         String newPrompt = Utils.replacePlaceholders(aiNPCPromptTemplate,
-                Map.of("characterDescription", character.description, "characterName", character.name, "validCommands",
+                Map.of("characterDescription", character.description(), "characterName", character.name(), "validCommands",
                         validCommandsFormatted));
         return newPrompt;
     }

@@ -68,7 +68,7 @@ public class Player2APIService {
             requestBody.addProperty("speed", Integer.valueOf(1));
             requestBody.addProperty("text", message);
             JsonArray voiceIdsArray = new JsonArray();
-            for (String voiceId : character.voiceIds)
+            for (String voiceId : character.voiceIds())
                 voiceIdsArray.add(voiceId);
             requestBody.add("voice_ids", (JsonElement) voiceIdsArray);
             System.out.println("Sending TTS request: " + message);
