@@ -73,7 +73,7 @@ public class Player2APIService {
          requestBody.addProperty("text", message);
          JsonArray voiceIdsArray = new JsonArray();
 
-         for (String voiceId : character.voiceIds) {
+         for (String voiceId : character.voiceIds()) {
             voiceIdsArray.add(voiceId);
          }
 

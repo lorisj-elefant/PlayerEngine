@@ -124,14 +124,14 @@ public class CharacterUtils {
    }
 
    public static void writeToNBT(CompoundTag compound, Character character) {
-      compound.putString("name", character.name);
-      compound.putString("shortName", character.shortName);
-      compound.putString("greetingInfo", character.greetingInfo);
-      compound.putString("description", character.description);
-      compound.putString("skinURL", character.skinURL);
+      compound.putString("name", character.name());
+      compound.putString("shortName", character.shortName());
+      compound.putString("greetingInfo", character.greetingInfo());
+      compound.putString("description", character.description());
+      compound.putString("skinURL", character.skinURL());
       ListTag voiceIds = new ListTag();
 
-      for (String id : character.voiceIds) {
+      for (String id : character.voiceIds()) {
          voiceIds.add(StringTag.valueOf(id));
       }
 
