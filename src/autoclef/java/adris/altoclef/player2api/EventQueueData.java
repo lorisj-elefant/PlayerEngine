@@ -1,11 +1,8 @@
 package adris.altoclef.player2api;
 
 import java.util.Deque;
-import java.util.Optional;
-import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 
 import org.apache.logging.log4j.LogManager;
@@ -14,10 +11,14 @@ import org.apache.logging.log4j.Logger;
 import com.google.gson.JsonObject;
 
 import adris.altoclef.AltoClefController;
+import adris.altoclef.commandsystem.CommandException;
+import adris.altoclef.player2api.AgentSideEffects.CommandExecutionStopReason;
+import adris.altoclef.player2api.Event.InfoMessage;
 import adris.altoclef.player2api.status.AgentStatus;
 import adris.altoclef.player2api.status.StatusUtils;
 import adris.altoclef.player2api.status.WorldStatus;
 import adris.altoclef.player2api.utils.Utils;
+import net.minecraft.server.world.ServerWorld;
 
 public class EventQueueData {
     public static final Logger LOGGER = LogManager.getLogger("Automatone");
@@ -43,8 +44,8 @@ public class EventQueueData {
 
     // ## Processing
 
-    // returns 0 if should not process, otherwise gives a number that increases
-    // based on higher priority
+    // 0 => should not process,
+    // otherwise gives a number that increases based on higher priority
     // (for now it is #ns from last processing time)
     public long getPriority() {
         if (isProcessing || eventQueue.isEmpty()) {
@@ -53,8 +54,12 @@ public class EventQueueData {
         return System.nanoTime() - lastProcessTime;
     }
 
-    public void process(Consumer<String> onEntityMessage, Consumer<String> onCommandString,
-            Consumer<String> extOnErrMsg, EventQueueManager.LLMCompleter completer) {
+    // get LLM response and add to conversation history
+    public void process(
+            Consumer<Event.CharacterMessage> onCharacterEvent,
+            Consumer<String> extOnErrMsg,
+            EventQueueManager.LLMCompleter completer) {
+
         if (isProcessing) {
             LOGGER.warn("Called queueData.process even though it was already processing! this should not happen");
             return;
@@ -83,17 +88,19 @@ public class EventQueueData {
 
         LOGGER.info("[AICommandBridge/processChatWithAPI]: Calling LLM: history={}",
                 new Object[] { historyWithWrappedStatus.toString() });
+
         Consumer<JsonObject> onLLMResponse = jsonResp -> {
             String llmMessage = Utils.getStringJsonSafely(jsonResp, "message");
             String command = Utils.getStringJsonSafely(jsonResp, "command");
             LOGGER.info("[AICommandBridge/processCharWithAPI]: Processed LLM repsonse: message={} command={}",
                     llmMessage, command);
             try {
-                if (llmMessage != null) {
-                    onEntityMessage.accept(llmMessage);
-                }
-                if (command != null) {
-                    onCommandString.accept(command);
+                if (llmMessage != null || command != null) {
+                    conversationHistory.addAssistantMessage(llmMessage);
+                    onCharacterEvent.accept(new Event.CharacterMessage(llmMessage, command, this));
+                } else {
+                    LOGGER.warn(
+                            "[AICommandBridge/processChatWithAPI/onLLMResponse]: Generated null llm message and command");
                 }
             } catch (Exception e) {
                 LOGGER.error("[AICommandBridge/processChatWithAPI/onLLMRepsonse: ERROR RUNNING SIDE EFFECTS, errMsg={}",
@@ -112,6 +119,16 @@ public class EventQueueData {
         }
     }
 
+    private boolean isEventDuplicateOfLastMessage(Event evt) {
+        boolean isDuplicate = eventQueue.peekLast() != null && eventQueue.peekLast().equals(evt);
+
+        if (isDuplicate) {
+            LOGGER.warn("[EventQueueData]: evt={} was added twice!", evt.toString());
+            return true;
+        }
+        return false;
+    }
+
     // ## Callbacks:
     public void addAltoclefLogMessage(String message) {
         System.out.printf("ADDING Altoclef System Message: %s", new Object[] { message });
@@ -120,8 +137,14 @@ public class EventQueueData {
 
     public void onUserMessage(Event.UserMessage msg) {
         // is duplicate <=> same as most recent msg
-        boolean isDuplicate = eventQueue.peekLast() != null && eventQueue.peekLast().equals(msg);
-        if (isDuplicate) {
+        if (isEventDuplicateOfLastMessage(msg)) {
+            return; // skip
+        }
+        eventQueue.add(msg);
+    }
+
+    public void onInfoMessage(Event.InfoMessage msg) {
+        if (isEventDuplicateOfLastMessage(msg)) {
             return; // skip
         }
         eventQueue.add(msg);
@@ -137,6 +160,32 @@ public class EventQueueData {
         eventQueue.add(msg);
     }
 
+    public void onGreeting() {
+        // queues up greeting:
+        String suffix = " IMPORTANT: SINCE THIS IS THE FIRST MESSAGE, DO NOT SEND A COMMAND!!";
+        if (conversationHistory.isLoadedFromFile()) {
+            onInfoMessage(new InfoMessage("You want to welcome user back." + suffix));
+        } else {
+            onInfoMessage(new InfoMessage(character.greetingInfo() + suffix));
+        }
+    }
+
+    public void onCommandFinish(AgentSideEffects.CommandExecutionStopReason stopReason) {
+        if (stopReason instanceof CommandExecutionStopReason.Finished) {
+            if (eventQueue.isEmpty()) {
+                onInfoMessage(new InfoMessage(String.format(
+                        "Command feedback: %s finished running. What shall we do next? If no new action is needed to finish user's request, generate empty command `\"\"`.",
+                        stopReason.commandName())));
+            }
+        } else if (stopReason instanceof CommandExecutionStopReason.Error) {
+            onInfoMessage(new InfoMessage(String.format(
+                    "Command feedback: %s FAILED. The error was %s.",
+                    stopReason.commandName(),
+                    ((CommandExecutionStopReason.Error) stopReason).errMsg())));
+        }
+        // do nothing otherwise (if canceled)
+    }
+
     // Utils:
     public String getUsername() {
         return mod.getPlayer().getName().getString();
@@ -146,4 +195,19 @@ public class EventQueueData {
         return StatusUtils.getUserNameDistance(mod, userName);
     }
 
+    public ServerWorld getWorld() {
+        return mod.getWorld();
+    }
+
+    public UUID getUUID() {
+        return mod.getPlayer().getUuid();
+    }
+
+    public Character getCharacter() {
+        return character;
+    }
+
+    public AltoClefController getMod() {
+        return mod;
+    }
 }
