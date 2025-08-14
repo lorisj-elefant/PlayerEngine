@@ -1,5 +1,8 @@
 package adris.altoclef.player2api;
 
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -13,11 +16,9 @@ import org.apache.logging.log4j.Logger;
 import com.google.gson.JsonObject;
 
 import adris.altoclef.AltoClefController;
-import adris.altoclef.player2api.utils.Utils;
-import net.minecraft.text.Text;
 
 public class EventQueueManager {
-    public static final Logger LOGGER = LogManager.getLogger("Automatone");
+    public static final Logger LOGGER = LogManager.getLogger();
 
     public static ConcurrentHashMap<UUID, EventQueueData> queueData = new ConcurrentHashMap<>();
 
@@ -74,12 +75,16 @@ public class EventQueueManager {
         }
     }
 
+    private static List<LLMCompleter> llmCompleters = List.of(new LLMCompleter());
+
     // ## Utils
-    private static EventQueueData getOrCreateEventQueueData(AltoClefController mod) {
+    public static EventQueueData createEventQueueData(AltoClefController mod, Character character) {
         return queueData.computeIfAbsent(mod.getPlayer().getUuid(), k -> {
-            LOGGER.info("EventQueueManager/getOrCreateEventQueueData: creating new queue data for entId={}",
-                    mod.getPlayer().getUuidAsString());
-            return new EventQueueData(mod,  );
+            LOGGER.info(
+                    "EventQueueManager/getOrCreateEventQueueData: creating new queue data for entId={} character={}",
+                    mod.getPlayer().getUuidAsString(),
+                    character.toString());
+            return new EventQueueData(mod, character);
         });
     }
 
@@ -91,17 +96,38 @@ public class EventQueueManager {
     // ## Callbacks (need to register these externally)
 
     // register when a user sends a chat message
-    public void onUserChatMessage(Event.UserMessage msg) {
+    public static void onUserChatMessage(Event.UserMessage msg) {
         // will add to entities close to the user:
         getCloseData(msg.userName()).forEach(data -> {
             data.onUserMessage(msg);
         });
     }
 
+    // public static void onAltoclefLogMessage(EventQueueData data, String message){
+    // data.addAltoclefLogMessage(null);
+    // }
+
     // register when an AI character messages
-    public void onAICharacterMessage(Event.CharacterMessage msg, UUID senderId) {
+    public static void onAICharacterMessage(Event.CharacterMessage msg, UUID senderId) {
         String sendingCharacterUsername = msg.sendingCharacterData().getUsername();
-        getCloseData(sendingCharacterUsername).filter(data -> !(data.getUsername().equals(sendingCharacterUsername)));
+        getCloseData(sendingCharacterUsername).filter(data -> !(data.getUsername().equals(sendingCharacterUsername)))
+                .forEach(data -> {
+                    data.onAICharacterMessage(msg);
+                });
     }
 
+    // side effects are here:
+    public static void injectOnTick() {
+        Optional<EventQueueData> dataToProcess = queueData.values().stream().filter(data -> {
+            return data.getPriority() != 0;
+        }).max(Comparator.comparingLong(EventQueueData::getPriority));
+        llmCompleters.stream().filter(LLMCompleter::isAvailible).forEach(completer -> {
+            dataToProcess.ifPresent(data -> {
+                data.process(AgentSideEffects::onEntityMessage, AgentSideEffects::onError, completer);
+            });
+        });
+    }
+    public static void sendGreeting(EventQueueData data){
+        data.onGreeting();
+    }
 }
