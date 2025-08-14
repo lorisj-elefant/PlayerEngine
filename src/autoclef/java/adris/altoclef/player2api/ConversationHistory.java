@@ -25,7 +25,6 @@ public class ConversationHistory {
     private static final int SUMMARY_COUNT = 48;
 
     public ConversationHistory(String initialSystemPrompt, Character character) {
-
         Path configDir = FabricLoader.getInstance().getConfigDir();
         String fileName = character.name().replaceAll("\\s+", "_") + "_" + character.name().replaceAll("\\s+", "_") + ".txt";
         this.historyFile = configDir.resolve(fileName);
