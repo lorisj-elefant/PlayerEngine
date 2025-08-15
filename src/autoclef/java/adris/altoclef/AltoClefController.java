@@ -16,6 +16,7 @@ import adris.altoclef.control.PlayerExtraController;
 import adris.altoclef.control.SlotHandler;
 import adris.altoclef.player2api.AICommandBridge;
 import adris.altoclef.player2api.Character;
+import adris.altoclef.player2api.EventQueueManager;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.tasksystem.TaskRunner;
 import adris.altoclef.trackers.CraftingRecipeTracker;
@@ -70,8 +71,9 @@ public class AltoClefController {
    public boolean isStopping = false;
    private Player owner;
 
-   public AltoClefController(IBaritone baritone) {
+   public AltoClefController(IBaritone baritone, Character character) {
       this.baritone = baritone;
+      EventQueueManager.createEventQueueData(this, character);
       this.ctx = baritone.getEntityContext();
       this.commandExecutor = new CommandExecutor(this);
       this.taskRunner = new TaskRunner(this);
@@ -127,9 +129,7 @@ public class AltoClefController {
       this.taskRunner.tick();
       this.inputControls.onTickPost();
       this.baritone.serverTick();
-      if (this.aiBridge.getEnabled()) {
-         this.aiBridge.onTick();
-      }
+      EventQueueManager.injectOnTick(); 
    }
 
    public void stop() {
@@ -315,17 +315,20 @@ public class AltoClefController {
       return this.extraController;
    }
 
-   public AICommandBridge getAiBridge() {
-      return this.aiBridge;
-   }
+  
 
-   public void setChatClefEnabled(boolean enabled) {
-      this.getAiBridge().setEnabled(enabled);
-      if (!enabled) {
-         this.getUserTaskChain().cancel(this);
-         this.getTaskRunner().disable();
-      }
-   }
+    public void setChatClefEnabled(boolean enabled) {
+        if (enabled) {
+            EventQueueManager.enable();
+        } else {
+            EventQueueManager.disable();
+        }
+
+        if (!enabled) {
+            getUserTaskChain().cancel(this);
+            getTaskRunner().disable();
+        }
+    }
 
    public void logCharacterMessage(String message, Character character, boolean isPublic) {
       int maxLength = 256;

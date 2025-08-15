@@ -11,7 +11,6 @@ import org.apache.logging.log4j.Logger;
 import com.google.gson.JsonObject;
 
 import adris.altoclef.AltoClefController;
-import adris.altoclef.commandsystem.CommandException;
 import adris.altoclef.player2api.AgentSideEffects.CommandExecutionStopReason;
 import adris.altoclef.player2api.Event.InfoMessage;
 import adris.altoclef.player2api.status.AgentStatus;
@@ -21,7 +20,10 @@ import adris.altoclef.player2api.utils.Utils;
 import net.minecraft.server.world.ServerWorld;
 
 public class EventQueueData {
-    public static final Logger LOGGER = LogManager.getLogger("Automatone");
+
+    private static short MAX_EVENT_QUEUE_SIZE = 10;
+
+    public static final Logger LOGGER = LogManager.getLogger();
 
     private final Character character;
     private final AltoClefController mod;
@@ -129,25 +131,24 @@ public class EventQueueData {
         return false;
     }
 
+    private void addEventToQueue(Event event){
+        if (isEventDuplicateOfLastMessage(event)) {
+            return; // skip
+        }
+        if(eventQueue.size() > MAX_EVENT_QUEUE_SIZE){
+            eventQueue.removeFirst(); 
+        }
+        eventQueue.add(event);
+    }
+
     // ## Callbacks:
     public void addAltoclefLogMessage(String message) {
         System.out.printf("ADDING Altoclef System Message: %s", new Object[] { message });
         this.altoClefMsgBuffer.addMsg(message);
     }
 
-    public void onUserMessage(Event.UserMessage msg) {
-        // is duplicate <=> same as most recent msg
-        if (isEventDuplicateOfLastMessage(msg)) {
-            return; // skip
-        }
-        eventQueue.add(msg);
-    }
-
-    public void onInfoMessage(Event.InfoMessage msg) {
-        if (isEventDuplicateOfLastMessage(msg)) {
-            return; // skip
-        }
-        eventQueue.add(msg);
+    public void onEvent(Event event){
+        addEventToQueue(event);
     }
 
     public void onAICharacterMessage(Event.CharacterMessage msg) {
@@ -164,21 +165,21 @@ public class EventQueueData {
         // queues up greeting:
         String suffix = " IMPORTANT: SINCE THIS IS THE FIRST MESSAGE, DO NOT SEND A COMMAND!!";
         if (conversationHistory.isLoadedFromFile()) {
-            onInfoMessage(new InfoMessage("You want to welcome user back." + suffix));
+            addEventToQueue(new InfoMessage("You want to welcome user back." + suffix));
         } else {
-            onInfoMessage(new InfoMessage(character.greetingInfo() + suffix));
+            addEventToQueue(new InfoMessage(character.greetingInfo() + suffix));
         }
     }
 
     public void onCommandFinish(AgentSideEffects.CommandExecutionStopReason stopReason) {
         if (stopReason instanceof CommandExecutionStopReason.Finished) {
             if (eventQueue.isEmpty()) {
-                onInfoMessage(new InfoMessage(String.format(
+                addEventToQueue(new InfoMessage(String.format(
                         "Command feedback: %s finished running. What shall we do next? If no new action is needed to finish user's request, generate empty command `\"\"`.",
                         stopReason.commandName())));
             }
         } else if (stopReason instanceof CommandExecutionStopReason.Error) {
-            onInfoMessage(new InfoMessage(String.format(
+            addEventToQueue(new InfoMessage(String.format(
                     "Command feedback: %s FAILED. The error was %s.",
                     stopReason.commandName(),
                     ((CommandExecutionStopReason.Error) stopReason).errMsg())));
@@ -209,5 +210,9 @@ public class EventQueueData {
 
     public AltoClefController getMod() {
         return mod;
+    }
+
+    public void clearHistory() {
+        conversationHistory.clear();
     }
 }

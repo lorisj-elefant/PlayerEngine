@@ -23,6 +23,9 @@ public class EventQueueManager {
     public static ConcurrentHashMap<UUID, EventQueueData> queueData = new ConcurrentHashMap<>();
 
     private static float messagePassingMaxDistance = 200; // let messages between entities pass iff <= this maximum
+    private static boolean enabled;
+
+    private static final ExecutorService heartbeatThread = Executors.newSingleThreadExecutor();
 
     public static class LLMCompleter {
         private boolean isProcessing = false;
@@ -93,13 +96,17 @@ public class EventQueueManager {
                 .filter(data -> data.getDistanceToUserName(senderUserName) < messagePassingMaxDistance);
     }
 
+    private static EventQueueData modToData(AltoClefController mod) {
+        return queueData.get(mod.getPlayer().getUuid());
+    }
+
     // ## Callbacks (need to register these externally)
 
     // register when a user sends a chat message
     public static void onUserChatMessage(Event.UserMessage msg) {
         // will add to entities close to the user:
         getCloseData(msg.userName()).forEach(data -> {
-            data.onUserMessage(msg);
+            data.onEvent(msg);
         });
     }
 
@@ -118,6 +125,9 @@ public class EventQueueManager {
 
     // side effects are here:
     public static void injectOnTick() {
+        if (!enabled) {
+            return;
+        }
         Optional<EventQueueData> dataToProcess = queueData.values().stream().filter(data -> {
             return data.getPriority() != 0;
         }).max(Comparator.comparingLong(EventQueueData::getPriority));
@@ -127,7 +137,25 @@ public class EventQueueManager {
             });
         });
     }
-    public static void sendGreeting(EventQueueData data){
+
+    public static void sendGreeting(EventQueueData data) {
         data.onGreeting();
+    }
+
+    public static void enable() {
+        enabled = true;
+    }
+
+    public static void disable() {
+        enabled = false;
+    }
+
+    public static void sendHeartbeat() {
+        heartbeatThread.submit(() -> Player2APIService.sendHeartbeat());
+    }
+
+    public static void resetMemory(AltoClefController mod) {
+        EventQueueData data = modToData(mod);
+        data.clearHistory();
     }
 }
