@@ -30,7 +30,8 @@ import adris.altoclef.commandsystem.CommandExecutor;
 import adris.altoclef.control.InputControls;
 import adris.altoclef.control.PlayerExtraController;
 import adris.altoclef.control.SlotHandler;
-import adris.altoclef.player2api.AICommandBridge;
+import adris.altoclef.player2api.Character;
+import adris.altoclef.player2api.EventQueueManager;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.tasksystem.TaskRunner;
 import adris.altoclef.trackers.CraftingRecipeTracker;
@@ -90,14 +91,17 @@ public class AltoClefController {
 
     private boolean paused = false;
     private Task storedTask;
-    private AICommandBridge aiBridge;
     private static long lastHeartbeatTime = System.nanoTime();
+    private Character character;
     public boolean isStopping = false;
 
     private PlayerEntity owner;
 
-    public AltoClefController(IBaritone baritone) {
+    public AltoClefController(IBaritone baritone, Character character) {
         this.baritone = baritone;
+        this.character = character;
+        EventQueueManager.createEventQueueData(this, character);
+
         this.ctx = baritone.getEntityContext();
         commandExecutor = new CommandExecutor(this);
         taskRunner = new TaskRunner(this);
@@ -112,7 +116,8 @@ public class AltoClefController {
         foodChain = new FoodChain(taskRunner);
         new PlayerDefenseChain(taskRunner);
 
-        storageTracker = new ItemStorageTracker(this, trackerManager, container -> this.containerSubTracker = container);
+        storageTracker = new ItemStorageTracker(this, trackerManager,
+                container -> this.containerSubTracker = container);
         entityTracker = new EntityTracker(trackerManager);
         blockScanner = new BlockScanner(this);
         chunkTracker = new SimpleChunkTracker(this);
@@ -122,7 +127,7 @@ public class AltoClefController {
         userBlockRangeTracker = new UserBlockRangeTracker(trackerManager);
         inputControls = new InputControls(this);
         slotHandler = new SlotHandler(this);
-        aiBridge = new AICommandBridge(commandExecutor, this);
+
         extraController = new PlayerExtraController(this);
         initializeBaritoneSettings();
 
@@ -134,7 +139,8 @@ public class AltoClefController {
             List<Item> baritoneCanPlace = Arrays.stream(this.settings.getThrowawayItems(this, true)).toList();
             (getBaritoneSettings().acceptableThrowawayItems.get()).addAll(baritoneCanPlace);
 
-            if ((!getUserTaskChain().isActive() || getUserTaskChain().isRunningIdleTask()) && getModSettings().shouldRunIdleCommandWhenNotActive()) {
+            if ((!getUserTaskChain().isActive() || getUserTaskChain().isRunningIdleTask())
+                    && getModSettings().shouldRunIdleCommandWhenNotActive()) {
                 getUserTaskChain().signalNextTaskToBeIdleTask();
                 getCommandExecutor().executeWithPrefix(getModSettings().getIdleCommand());
             }
@@ -155,15 +161,12 @@ public class AltoClefController {
         taskRunner.tick();
         inputControls.onTickPost();
         baritone.serverTick();
+        EventQueueManager.injectOnTick();
 
         long now = System.nanoTime();
         if (now - lastHeartbeatTime > 60_000_000_000L) {
-            aiBridge.sendHeartbeat();
+            EventQueueManager.sendHeartbeat();
             lastHeartbeatTime = now;
-        }
-
-        if (aiBridge.getEnabled()) {
-            aiBridge.onTick();
         }
     }
 
@@ -222,7 +225,6 @@ public class AltoClefController {
     public void cancelUserTask() {
         userTaskChain.cancel(this);
     }
-
 
     public CommandExecutor getCommandExecutor() {
         return commandExecutor;
@@ -352,12 +354,13 @@ public class AltoClefController {
         return extraController;
     }
 
-    public AICommandBridge getAiBridge() {
-        return this.aiBridge;
-    }
-
     public void setChatClefEnabled(boolean enabled) {
-        getAiBridge().setEnabled(enabled);
+        if (enabled) {
+            EventQueueManager.enable();
+        } else {
+            EventQueueManager.disable();
+        }
+
         if (!enabled) {
             getUserTaskChain().cancel(this);
             getTaskRunner().disable();

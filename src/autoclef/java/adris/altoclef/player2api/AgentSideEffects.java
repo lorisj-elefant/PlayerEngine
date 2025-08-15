@@ -11,32 +11,42 @@ import net.minecraft.text.Text;
 
 public class AgentSideEffects {
     private static final Logger LOGGER = LogManager.getLogger();
+
     public sealed interface CommandExecutionStopReason
-        permits CommandExecutionStopReason.Cancelled,
-                CommandExecutionStopReason.Finished,
-                CommandExecutionStopReason.Error {
-    String commandName();
+            permits CommandExecutionStopReason.Cancelled,
+            CommandExecutionStopReason.Finished,
+            CommandExecutionStopReason.Error {
+        String commandName();
 
-    record Cancelled(String commandName) implements CommandExecutionStopReason {}
-    record Finished(String commandName) implements CommandExecutionStopReason {}
-    record Error(String commandName, String errMsg) implements CommandExecutionStopReason {}
-}
+        record Cancelled(String commandName) implements CommandExecutionStopReason {
+        }
 
-    public static void onEntityMessage(Event.CharacterMessage characterMessage){
+        record Finished(String commandName) implements CommandExecutionStopReason {
+        }
+
+        record Error(String commandName, String errMsg) implements CommandExecutionStopReason {
+        }
+    }
+
+    public static void onEntityMessage(Event.CharacterMessage characterMessage) {
         // message part:
-        if(characterMessage.message() != null){
-            characterMessage.sendingCharacterData().getWorld().getServer().getPlayerManager().broadcastSystemMessage(Text.of("<" + characterMessage.sendingCharacterData().getUsername() + "> " + characterMessage.message()), false);
-            Player2APIService.textToSpeech(characterMessage.message(), characterMessage.sendingCharacterData().getCharacter());
+        if (characterMessage.message() != null) {
+            characterMessage.sendingCharacterData().getWorld().getServer().getPlayerManager()
+                    .broadcastSystemMessage(Text.of("<" + characterMessage.sendingCharacterData().getUsername() + "> "
+                            + characterMessage.message()), false);
+            Player2APIService.textToSpeech(characterMessage.message(),
+                    characterMessage.sendingCharacterData().getCharacter());
             EventQueueManager.onAICharacterMessage(characterMessage, characterMessage.sendingCharacterData().getUUID());
         }
 
         // command part:
-        if(characterMessage.command() != null){
-            onCommandListGenerated(characterMessage.sendingCharacterData().getMod(), characterMessage.command(), characterMessage.sendingCharacterData()::onCommandFinish);
+        if (characterMessage.command() != null) {
+            onCommandListGenerated(characterMessage.sendingCharacterData().getMod(), characterMessage.command(),
+                    characterMessage.sendingCharacterData()::onCommandFinish);
         }
     }
 
-    public static void onError(String errMsg){
+    public static void onError(String errMsg) {
         LOGGER.error(errMsg);
     }
 
@@ -53,11 +63,9 @@ public class AgentSideEffects {
         cmdExecutor.execute(commandWithPrefix, () -> {
             if (mod.isStopping) {
                 System.out.printf(
-                        "[AICommandBridge/processChat]: (%s) was cancelled. Not adding finish event to queue.",
+                        "[AgentSideEffects/AgentSideEffects]: (%s) was cancelled. Not adding finish event to queue.",
                         commandWithPrefix);
-                // Canceled logic here
-            }
-            if (mod.isStopping) {
+                // Other canceled logic here
                 onStop.accept(new CommandExecutionStopReason.Cancelled(commandWithPrefix));
             } else {
                 onStop.accept(new CommandExecutionStopReason.Finished(commandWithPrefix));
