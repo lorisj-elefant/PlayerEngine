@@ -1,4 +1,4 @@
-package adris.altoclef.player2api;
+package adris.altoclef.brain.server;
 
 public sealed interface Event // tagged union basically of the below events
         permits Event.UserMessage, Event.CharacterMessage, Event.InfoMessage {

@@ -1,4 +1,4 @@
-package adris.altoclef.player2api.status;
+package adris.altoclef.brain.server.local.status;
 
 import adris.altoclef.AltoClefController;
 

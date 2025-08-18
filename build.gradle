@@ -22,7 +22,10 @@ sourceSets {
 
 repositories {
     mavenCentral()
-
+    maven {
+         name = 'ParchmentMC'
+         url = 'https://maven.parchmentmc.org'
+    }
     maven {
         name = 'Quilt Snapshots'
         url = 'https://maven.quiltmc.org/repository/snapshot'

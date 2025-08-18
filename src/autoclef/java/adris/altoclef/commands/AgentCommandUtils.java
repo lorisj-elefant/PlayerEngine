@@ -1,4 +1,4 @@
-package adris.altoclef.player2api;
+package adris.altoclef.commands;
 
 import adris.altoclef.AltoClefController;
 import adris.altoclef.util.ItemTarget;

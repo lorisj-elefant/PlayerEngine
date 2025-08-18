@@ -1,4 +1,4 @@
-package adris.altoclef.player2api;
+package adris.altoclef.brain.client.local;
 
 import java.util.Deque;
 import java.util.UUID;
@@ -11,13 +11,20 @@ import org.apache.logging.log4j.Logger;
 import com.google.gson.JsonObject;
 
 import adris.altoclef.AltoClefController;
-import adris.altoclef.player2api.AgentSideEffects.CommandExecutionStopReason;
-import adris.altoclef.player2api.Event.InfoMessage;
-import adris.altoclef.player2api.status.AgentStatus;
-import adris.altoclef.player2api.status.StatusUtils;
-import adris.altoclef.player2api.status.WorldStatus;
-import adris.altoclef.player2api.utils.Utils;
-import net.minecraft.server.world.ServerWorld;
+import adris.altoclef.brain.server.Event;
+import adris.altoclef.brain.server.EventQueueManager;
+import adris.altoclef.brain.server.Event.InfoMessage;
+import adris.altoclef.brain.server.EventQueueManager.LLMCompleter;
+import adris.altoclef.brain.server.local.ConversationHistory;
+import adris.altoclef.brain.server.local.AgentSideEffects.CommandExecutionStopReason;
+import adris.altoclef.brain.server.local.AgentSideEffects.CommandExecutionStopReason.Error;
+import adris.altoclef.brain.server.local.AgentSideEffects.CommandExecutionStopReason.Finished;
+import adris.altoclef.brain.server.local.status.AgentStatus;
+import adris.altoclef.brain.server.local.status.StatusUtils;
+import adris.altoclef.brain.server.local.status.WorldStatus;
+import adris.altoclef.brain.shared.Character;
+import adris.altoclef.brain.shared.Utils;
+
 
 public class EventQueueData {
 
@@ -36,12 +43,11 @@ public class EventQueueData {
 
     private MessageBuffer altoClefMsgBuffer = new MessageBuffer(10);
 
-    public EventQueueData(AltoClefController mod, Character character) {
+    public EventQueueData(Character character) {
         this.character = character;
-        this.mod = mod;
 
         String systemPrompt = Prompts.getAINPCSystemPrompt(this.character, mod.getCommandExecutor().allCommands());
-        this.conversationHistory = new ConversationHistory(systemPrompt, character);
+        this.conversationHistory = new ConversationHistory(systemPrompt, character.name(), character.shortName());
     }
 
     // ## Processing
@@ -196,12 +202,8 @@ public class EventQueueData {
         return StatusUtils.getUserNameDistance(mod, userName);
     }
 
-    public ServerWorld getWorld() {
-        return mod.getWorld();
-    }
-
     public UUID getUUID() {
-        return mod.getPlayer().getUuid();
+        return mod.getPlayer().getUUID();
     }
 
     public Character getCharacter() {

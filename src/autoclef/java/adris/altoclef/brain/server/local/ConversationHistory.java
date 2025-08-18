@@ -1,9 +1,13 @@
-package adris.altoclef.player2api;
 
-import adris.altoclef.player2api.status.ObjectStatus;
-import adris.altoclef.player2api.utils.Utils;
+package adris.altoclef.brain.server.local;
+
 import baritone.utils.DirUtil;
 import com.google.gson.JsonObject;
+
+import adris.altoclef.brain.client.Player2APIService;
+import adris.altoclef.brain.server.local.status.ObjectStatus;
+import adris.altoclef.brain.shared.Utils;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -18,13 +22,17 @@ public class ConversationHistory {
    private boolean loadedFromFile = false;
    private static final int MAX_HISTORY = 64;
    private static final int SUMMARY_COUNT = 48;
-   private final String player2GameId;
+   private static Player2APIService player2APIInstance;
 
-   public ConversationHistory(String player2GameId, String initialSystemPrompt, String characterName, String characterShortName) {
+
+   public static void setPlayer2APIInstance(Player2APIService player2apiService){
+      player2APIInstance = player2apiService;
+   }
+
+   public ConversationHistory(String initialSystemPrompt, String characterName, String characterShortName) {
       Path configDir = DirUtil.getConfigDir();
       String fileName = characterName.replaceAll("\\s+", "_") + "_" + characterName.replaceAll("\\s+", "_") + ".txt";
       this.historyFile = configDir.resolve(fileName);
-      this.player2GameId = player2GameId;
       if (Files.exists(this.historyFile)) {
          this.loadFromFile();
          this.setBaseSystemPrompt(initialSystemPrompt);
@@ -35,9 +43,8 @@ public class ConversationHistory {
       }
    }
 
-   private ConversationHistory(String player2GameId, String initialSystemPrompt) {
+   private ConversationHistory(String initialSystemPrompt) {
       this.historyFile = null;
-      this.player2GameId = player2GameId;
       this.setBaseSystemPrompt(initialSystemPrompt);
       this.loadedFromFile = false;
    }
@@ -75,15 +82,16 @@ public class ConversationHistory {
    }
 
    private String summarizeHistory(List<JsonObject> messages) {
+      // TODOL: Move this later into chat data
       String summarizationPrompt = "    Our AI agent that has been chatting with user and playing minecraft.\n    Update agent's memory by summarizing the following conversation in the next response.\n\n    Use natural language, not JSON format.\n\n    Prioritize preserving important facts, things user asked agent to remember, useful tips.\n    Do not record stats, inventory, code or docs; limit to 500 chars.\n";
-      ConversationHistory temp = new ConversationHistory(this.player2GameId, summarizationPrompt);
+      ConversationHistory temp = new ConversationHistory(summarizationPrompt);
 
       for (JsonObject msg : messages) {
          temp.addHistory(Utils.deepCopy(msg), false);
       }
 
       try {
-         String resp = Player2APIService.completeConversationToString(this.player2GameId, temp);
+         String resp = player2APIInstance.completeConversationToString(temp);
          return resp;
       } catch (Exception var6) {
          var6.printStackTrace();
@@ -203,7 +211,7 @@ public class ConversationHistory {
    }
 
    public ConversationHistory copyThenWrapLatestWithStatus(String worldStatus, String agentStatus, String altoclefStatusMsgs) {
-      ConversationHistory copy = new ConversationHistory(this.player2GameId, this.conversationHistory.get(0).get("content").getAsString());
+      ConversationHistory copy = new ConversationHistory(this.conversationHistory.get(0).get("content").getAsString());
 
       for (int i = 1; i < this.conversationHistory.size() - 1; i++) {
          copy.addHistory(Utils.deepCopy(this.conversationHistory.get(i)), false);

@@ -20,9 +20,10 @@ pluginManagement {
             name = 'Fabric'
             url = 'https://maven.fabricmc.net/'
         }
+        
         gradlePluginPortal()
         mavenLocal()
-    }
+    }   
 }
 
 rootProject.name = mod_name.toLowerCase(Locale.ROOT).replace(' ', '-')

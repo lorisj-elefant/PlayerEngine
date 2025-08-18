@@ -1,4 +1,4 @@
-package adris.altoclef.player2api.utils;
+package adris.altoclef.brain.shared;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;

@@ -1,4 +1,4 @@
-package adris.altoclef.player2api;
+package adris.altoclef.brain.shared;
 
 import java.util.Arrays;
 

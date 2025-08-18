@@ -1,13 +1,15 @@
-package adris.altoclef.player2api;
+package adris.altoclef.brain.client;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import adris.altoclef.brain.shared.Character;
+
 public class TTSQueue {
     private static final ExecutorService ttsThread = Executors.newSingleThreadExecutor();
-    public boolean isSpeaking = false;
+    public static boolean isSpeaking = false;
 
-    public void TTS(String text, Character character){
+    public static void TTS(String text, Character character){
         ttsThread.submit(() -> {
             isSpeaking = true;
             Player2APIService.textToSpeech(text, character);

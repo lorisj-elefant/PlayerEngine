@@ -1,5 +1,7 @@
 package adris.altoclef;
 
+import adris.altoclef.brain.server.EventQueueManager;
+import adris.altoclef.brain.shared.Character;
 import adris.altoclef.chains.FoodChain;
 import adris.altoclef.chains.MLGBucketFallChain;
 import adris.altoclef.chains.MobDefenseChain;
@@ -14,9 +16,6 @@ import adris.altoclef.commandsystem.CommandExecutor;
 import adris.altoclef.control.InputControls;
 import adris.altoclef.control.PlayerExtraController;
 import adris.altoclef.control.SlotHandler;
-import adris.altoclef.player2api.AICommandBridge;
-import adris.altoclef.player2api.Character;
-import adris.altoclef.player2api.EventQueueManager;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.tasksystem.TaskRunner;
 import adris.altoclef.trackers.CraftingRecipeTracker;
@@ -67,11 +66,10 @@ public class AltoClefController {
    private Settings settings;
    private boolean paused = false;
    private Task storedTask;
-   private AICommandBridge aiBridge;
    public boolean isStopping = false;
    private Player owner;
 
-   public AltoClefController(IBaritone baritone, Character character) {
+   public AltoClefController(IBaritone baritone, Character character, String player2GameId) {
       this.baritone = baritone;
       EventQueueManager.createEventQueueData(this, character);
       this.ctx = baritone.getEntityContext();
@@ -97,7 +95,6 @@ public class AltoClefController {
       this.userBlockRangeTracker = new UserBlockRangeTracker(this.trackerManager);
       this.inputControls = new InputControls(this);
       this.slotHandler = new SlotHandler(this);
-      this.aiBridge = new AICommandBridge(this.commandExecutor, this);
       this.extraController = new PlayerExtraController(this);
       this.initializeBaritoneSettings();
       this.botBehaviour = new BotBehaviour(this);

@@ -1,4 +1,4 @@
-package adris.altoclef.player2api;
+package adris.altoclef.brain.server;
 
 import java.util.Comparator;
 import java.util.List;
@@ -16,6 +16,10 @@ import org.apache.logging.log4j.Logger;
 import com.google.gson.JsonObject;
 
 import adris.altoclef.AltoClefController;
+import adris.altoclef.brain.client.Player2APIService;
+import adris.altoclef.brain.client.local.EventQueueData;
+import adris.altoclef.brain.server.local.ConversationHistory;
+import adris.altoclef.brain.shared.Character;
 
 public class EventQueueManager {
     public static final Logger LOGGER = LogManager.getLogger();
@@ -24,7 +28,7 @@ public class EventQueueManager {
 
     private static float messagePassingMaxDistance = 200; // let messages between entities pass iff <= this maximum
     private static boolean enabled;
-
+    
     private static final ExecutorService heartbeatThread = Executors.newSingleThreadExecutor();
 
     public static class LLMCompleter {
@@ -82,10 +86,10 @@ public class EventQueueManager {
 
     // ## Utils
     public static EventQueueData createEventQueueData(AltoClefController mod, Character character) {
-        return queueData.computeIfAbsent(mod.getPlayer().getUuid(), k -> {
+        return queueData.computeIfAbsent(mod.getPlayer().getUUID(), k -> {
             LOGGER.info(
                     "EventQueueManager/getOrCreateEventQueueData: creating new queue data for entId={} character={}",
-                    mod.getPlayer().getUuidAsString(),
+                    mod.getPlayer().getUUID().toString(),
                     character.toString());
             return new EventQueueData(mod, character);
         });
@@ -97,7 +101,7 @@ public class EventQueueManager {
     }
 
     private static EventQueueData modToData(AltoClefController mod) {
-        return queueData.get(mod.getPlayer().getUuid());
+        return queueData.get(mod.getPlayer().getUUID());
     }
 
     // ## Callbacks (need to register these externally)

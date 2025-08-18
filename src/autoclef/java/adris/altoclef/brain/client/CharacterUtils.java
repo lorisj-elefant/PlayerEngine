@@ -1,9 +1,12 @@
-package adris.altoclef.player2api.utils;
+package adris.altoclef.brain.client;
 
-import adris.altoclef.player2api.Character;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+
+import adris.altoclef.brain.shared.Character;
+import adris.altoclef.brain.shared.Utils;
+
 import java.util.Map;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -60,18 +63,18 @@ public class CharacterUtils {
       }
    }
 
-   public static Character[] requestCharacters(String player2GameId) {
+   public static Character[] requestCharacters() {
       try {
-         Map<String, JsonElement> responseMap = HTTPUtils.sendRequest(player2GameId, "/v1/selected_characters", false, null);
+         Map<String, JsonElement> responseMap = HTTPUtils.sendRequest( "/v1/selected_characters", false, null);
          return parseCharacters(responseMap);
       } catch (Exception var2) {
          return new Character[0];
       }
    }
 
-   public static Character requestFirstCharacter(String player2GameId) {
+   public static Character requestFirstCharacter() {
       try {
-         Map<String, JsonElement> responseMap = HTTPUtils.sendRequest(player2GameId, "/v1/selected_characters", false, null);
+         Map<String, JsonElement> responseMap = HTTPUtils.sendRequest( "/v1/selected_characters", false, null);
          return parseFirstCharacter(responseMap);
       } catch (Exception var2) {
          return DEFAULT_CHARACTER;
@@ -95,14 +98,14 @@ public class CharacterUtils {
    }
 
    public static void writeToBuf(FriendlyByteBuf buf, Character character) {
-      buf.writeUtf(character.name);
-      buf.writeUtf(character.shortName);
-      buf.writeUtf(character.greetingInfo);
-      buf.writeUtf(character.description);
-      buf.writeUtf(character.skinURL);
-      buf.writeInt(character.voiceIds.length);
+      buf.writeUtf(character.name());
+      buf.writeUtf(character.shortName());
+      buf.writeUtf(character.greetingInfo());
+      buf.writeUtf(character.description());
+      buf.writeUtf(character.skinURL());
+      buf.writeInt(character.voiceIds().length);
 
-      for (String id : character.voiceIds) {
+      for (String id : character.voiceIds()) {
          buf.writeUtf(id);
       }
    }

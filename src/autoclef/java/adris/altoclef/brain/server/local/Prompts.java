@@ -1,10 +1,11 @@
-package adris.altoclef.player2api;
+package adris.altoclef.brain.server.local;
 
 import java.util.Collection;
 import java.util.Map;
 
+import adris.altoclef.brain.shared.Character;
+import adris.altoclef.brain.shared.Utils;
 import adris.altoclef.commandsystem.Command;
-import adris.altoclef.player2api.utils.Utils;
 
 public class Prompts {
     private static String aiNPCPromptTemplate = """
