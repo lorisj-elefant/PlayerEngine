@@ -1,7 +1,7 @@
-package adris.altoclef.boundary.shared.packets;
+package adris.altoclef.brain.network.packets;
 
-import adris.altoclef.boundary.shared.PacketHelper;
-import adris.altoclef.boundary.shared.PacketHelper.S2CSchema;
+import adris.altoclef.brain.network.PacketHelper;
+import adris.altoclef.brain.network.PacketHelper.S2CSchema;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;

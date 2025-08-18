@@ -1,10 +1,10 @@
-package adris.altoclef.boundary.shared.packets;
+package adris.altoclef.brain.network.packets;
 
 import java.util.UUID;
 
-import adris.altoclef.boundary.shared.PacketHelper;
-import adris.altoclef.boundary.shared.PacketHelper.C2SSchema;
 import adris.altoclef.brain.client.CharacterUtils;
+import adris.altoclef.brain.network.PacketHelper;
+import adris.altoclef.brain.network.PacketHelper.C2SSchema;
 import adris.altoclef.brain.shared.Character;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;

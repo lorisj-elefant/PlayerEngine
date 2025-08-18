@@ -1,5 +1,5 @@
 
-package adris.altoclef.boundary.shared;
+package adris.altoclef.brain.network;
 
 import java.util.function.BiConsumer;
 import java.util.function.Function;

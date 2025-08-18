@@ -71,6 +71,7 @@ public class AltoClefController {
 
    public AltoClefController(IBaritone baritone, Character character, String player2GameId) {
       this.baritone = baritone;
+      
       EventQueueManager.createEventQueueData(this, character);
       this.ctx = baritone.getEntityContext();
       this.commandExecutor = new CommandExecutor(this);
@@ -349,4 +350,5 @@ public class AltoClefController {
    public void setOwner(Player owner) {
       this.owner = owner;
    }
+
 }
