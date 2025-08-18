@@ -12,7 +12,7 @@ import net.minecraft.resources.ResourceLocation;
 public class C2S {
     // packets
     private class EntityMessagePacket {
-        private static ResourceLocation channel = PacketHelper.ChannelNameOf("C2S/EntityMessage");
+        private static ResourceLocation channel = PacketHelper.ChannelNameOf("c2s/entity_message");
 
         private static record Payload(String message, Character character, UUID entityId) {
         };
@@ -21,6 +21,7 @@ public class C2S {
             channel,
             (payload) -> {
                 FriendlyByteBuf buf = PacketHelper.createBuffer();
+                buf.writeUtf(payload.message);
                 CharacterUtils.writeToBuf(buf, payload.character());
                 buf.writeUUID(payload.entityId());
                 return buf;
@@ -30,11 +31,13 @@ public class C2S {
                 Character character = CharacterUtils.readFromBuf(buf);
                 UUID id = buf.readUUID();
                 return new Payload(message, character, id); 
-            },
-            (server, sendingPlayer, charMsgEvent) -> {
-                
             }
         );
+
+        @net.fabricmc.api.Environment(net.fabricmc.api.EnvType.CLIENT)
+        private static 6
+        
+
     }
 
     // effects

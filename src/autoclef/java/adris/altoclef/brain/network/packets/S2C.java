@@ -22,10 +22,7 @@ public class S2C {
                     buf.writeVarInt(payload.number());
                     return buf;
                 },
-                (buf) -> new Payload(buf.readVarInt()),
-                (client, payload) -> {
-                    // do stuff on client here
-                });
+                (buf) -> new Payload(buf.readVarInt()));
     }
 
     // effects
