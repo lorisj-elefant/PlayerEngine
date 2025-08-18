@@ -17,14 +17,14 @@ import com.google.gson.JsonObject;
 
 import adris.altoclef.AltoClefController;
 import adris.altoclef.brain.client.Player2APIService;
-import adris.altoclef.brain.client.local.EventQueueData;
+import adris.altoclef.brain.client.local.ClientLocalManager;
 import adris.altoclef.brain.server.local.ConversationHistory;
 import adris.altoclef.brain.shared.Character;
 
 public class EventQueueManager {
     public static final Logger LOGGER = LogManager.getLogger();
 
-    public static ConcurrentHashMap<UUID, EventQueueData> queueData = new ConcurrentHashMap<>();
+    public static ConcurrentHashMap<UUID, ClientLocalManager> queueData = new ConcurrentHashMap<>();
 
     private static float messagePassingMaxDistance = 200; // let messages between entities pass iff <= this maximum
     private static boolean enabled;
@@ -85,22 +85,22 @@ public class EventQueueManager {
     private static List<LLMCompleter> llmCompleters = List.of(new LLMCompleter());
 
     // ## Utils
-    public static EventQueueData createEventQueueData(AltoClefController mod, Character character) {
+    public static ClientLocalManager createEventQueueData(AltoClefController mod, Character character) {
         return queueData.computeIfAbsent(mod.getPlayer().getUUID(), k -> {
             LOGGER.info(
                     "EventQueueManager/getOrCreateEventQueueData: creating new queue data for entId={} character={}",
                     mod.getPlayer().getUUID().toString(),
                     character.toString());
-            return new EventQueueData(mod, character);
+            return new ClientLocalManager(mod, character);
         });
     }
 
-    private static Stream<EventQueueData> getCloseData(String senderUserName) {
+    private static Stream<ClientLocalManager> getCloseData(String senderUserName) {
         return queueData.values().stream()
                 .filter(data -> data.getDistanceToUserName(senderUserName) < messagePassingMaxDistance);
     }
 
-    private static EventQueueData modToData(AltoClefController mod) {
+    private static ClientLocalManager modToData(AltoClefController mod) {
         return queueData.get(mod.getPlayer().getUUID());
     }
 
@@ -132,9 +132,9 @@ public class EventQueueManager {
         if (!enabled) {
             return;
         }
-        Optional<EventQueueData> dataToProcess = queueData.values().stream().filter(data -> {
+        Optional<ClientLocalManager> dataToProcess = queueData.values().stream().filter(data -> {
             return data.getPriority() != 0;
-        }).max(Comparator.comparingLong(EventQueueData::getPriority));
+        }).max(Comparator.comparingLong(ClientLocalManager::getPriority));
         llmCompleters.stream().filter(LLMCompleter::isAvailible).forEach(completer -> {
             dataToProcess.ifPresent(data -> {
                 data.process(AgentSideEffects::onEntityMessage, AgentSideEffects::onError, completer);
@@ -142,7 +142,7 @@ public class EventQueueManager {
         });
     }
 
-    public static void sendGreeting(EventQueueData data) {
+    public static void sendGreeting(ClientLocalManager data) {
         data.onGreeting();
     }
 
@@ -159,7 +159,7 @@ public class EventQueueManager {
     }
 
     public static void resetMemory(AltoClefController mod) {
-        EventQueueData data = modToData(mod);
+        ClientLocalManager data = modToData(mod);
         data.clearHistory();
     }
 }

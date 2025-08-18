@@ -1,6 +1,7 @@
 package adris.altoclef.brain.server.local.status;
 
 import adris.altoclef.AltoClefController;
+import adris.altoclef.brain.shared.ObjectStatus;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.helpers.ItemHelper;
 import baritone.api.entity.IAutomatone;

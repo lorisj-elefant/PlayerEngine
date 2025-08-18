@@ -26,7 +26,7 @@ import adris.altoclef.brain.shared.Character;
 import adris.altoclef.brain.shared.Utils;
 
 
-public class EventQueueData {
+public class ClientLocalManager {
 
     private static short MAX_EVENT_QUEUE_SIZE = 10;
 
@@ -41,9 +41,8 @@ public class EventQueueData {
     private long lastProcessTime = 0L;
     private boolean isProcessing = false;
 
-    private MessageBuffer altoClefMsgBuffer = new MessageBuffer(10);
 
-    public EventQueueData(Character character) {
+    public ClientLocalManager(Character character, String systemPrompt) {
         this.character = character;
 
         String systemPrompt = Prompts.getAINPCSystemPrompt(this.character, mod.getCommandExecutor().allCommands());

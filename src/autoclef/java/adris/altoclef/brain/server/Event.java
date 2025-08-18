@@ -22,7 +22,7 @@ public sealed interface Event // tagged union basically of the below events
         }
     }
 
-    public record CharacterMessage(String message, String command, EventQueueData sendingCharacterData) implements Event {
+    public record CharacterMessage(String message, String command, ClientLocalManager sendingCharacterData) implements Event {
         public String getConversationHistoryString(){
             return String.format("Other Agent Message: [%s]: %s", sendingCharacterData.getUsername(), message);
         }

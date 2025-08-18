@@ -5,7 +5,7 @@ import baritone.utils.DirUtil;
 import com.google.gson.JsonObject;
 
 import adris.altoclef.brain.client.Player2APIService;
-import adris.altoclef.brain.server.local.status.ObjectStatus;
+import adris.altoclef.brain.shared.ObjectStatus;
 import adris.altoclef.brain.shared.Utils;
 
 import java.io.BufferedReader;

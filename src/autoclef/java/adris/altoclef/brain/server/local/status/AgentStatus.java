@@ -1,6 +1,7 @@
 package adris.altoclef.brain.server.local.status;
 
 import adris.altoclef.AltoClefController;
+import adris.altoclef.brain.shared.ObjectStatus;
 import net.minecraft.world.entity.LivingEntity;
 
 public class AgentStatus extends ObjectStatus {

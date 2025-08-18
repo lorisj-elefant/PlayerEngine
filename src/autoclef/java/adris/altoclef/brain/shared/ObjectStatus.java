@@ -1,4 +1,4 @@
-package adris.altoclef.brain.server.local.status;
+package adris.altoclef.brain.shared;
 
 import java.util.HashMap;
 import java.util.Map;

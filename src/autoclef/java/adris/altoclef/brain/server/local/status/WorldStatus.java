@@ -1,6 +1,7 @@
 package adris.altoclef.brain.server.local.status;
 
 import adris.altoclef.AltoClefController;
+import adris.altoclef.brain.shared.ObjectStatus;
 
 public class WorldStatus extends ObjectStatus {
    public static WorldStatus fromMod(AltoClefController mod) {
