@@ -17,7 +17,6 @@ import adris.altoclef.player2api.status.AgentStatus;
 import adris.altoclef.player2api.status.StatusUtils;
 import adris.altoclef.player2api.status.WorldStatus;
 import adris.altoclef.player2api.utils.Utils;
-import net.minecraft.server.world.ServerWorld;
 
 public class EventQueueData {
 
@@ -41,7 +40,7 @@ public class EventQueueData {
         this.mod = mod;
 
         String systemPrompt = Prompts.getAINPCSystemPrompt(this.character, mod.getCommandExecutor().allCommands());
-        this.conversationHistory = new ConversationHistory(systemPrompt, character);
+        this.conversationHistory = new ConversationHistory(systemPrompt, character.name(), character.shortName());
     }
 
     // ## Processing
@@ -196,12 +195,9 @@ public class EventQueueData {
         return StatusUtils.getUserNameDistance(mod, userName);
     }
 
-    public ServerWorld getWorld() {
-        return mod.getWorld();
-    }
 
     public UUID getUUID() {
-        return mod.getPlayer().getUuid();
+        return mod.getPlayer().getUUID();
     }
 
     public Character getCharacter() {

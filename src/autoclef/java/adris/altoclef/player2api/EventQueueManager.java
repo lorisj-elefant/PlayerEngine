@@ -82,10 +82,10 @@ public class EventQueueManager {
 
     // ## Utils
     public static EventQueueData createEventQueueData(AltoClefController mod, Character character) {
-        return queueData.computeIfAbsent(mod.getPlayer().getUuid(), k -> {
+        return queueData.computeIfAbsent(mod.getPlayer().getUUID(), k -> {
             LOGGER.info(
                     "EventQueueManager/getOrCreateEventQueueData: creating new queue data for entId={} character={}",
-                    mod.getPlayer().getUuidAsString(),
+                    mod.getPlayer().getStringUUID(),
                     character.toString());
             return new EventQueueData(mod, character);
         });
@@ -97,7 +97,7 @@ public class EventQueueManager {
     }
 
     private static EventQueueData modToData(AltoClefController mod) {
-        return queueData.get(mod.getPlayer().getUuid());
+        return queueData.get(mod.getPlayer().getUUID());
     }
 
     // ## Callbacks (need to register these externally)
@@ -150,9 +150,9 @@ public class EventQueueManager {
         enabled = false;
     }
 
-    public static void sendHeartbeat() {
-        heartbeatThread.submit(() -> Player2APIService.sendHeartbeat());
-    }
+    // public static void sendHeartbeat() {
+    //     heartbeatThread.submit(() -> Player2APIService.sendHeartbeat());
+    // }
 
     public static void resetMemory(AltoClefController mod) {
         EventQueueData data = modToData(mod);
