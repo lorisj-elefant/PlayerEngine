@@ -25,8 +25,6 @@ public class EventQueueManager {
     private static float messagePassingMaxDistance = 200; // let messages between entities pass iff <= this maximum
     private static boolean enabled;
 
-    private static final ExecutorService heartbeatThread = Executors.newSingleThreadExecutor();
-
     public static class LLMCompleter {
         private boolean isProcessing = false;
 
@@ -151,7 +149,7 @@ public class EventQueueManager {
     }
 
     // public static void sendHeartbeat() {
-    //     heartbeatThread.submit(() -> Player2APIService.sendHeartbeat());
+    // heartbeatThread.submit(() -> Player2APIService.sendHeartbeat());
     // }
 
     public static void resetMemory(AltoClefController mod) {

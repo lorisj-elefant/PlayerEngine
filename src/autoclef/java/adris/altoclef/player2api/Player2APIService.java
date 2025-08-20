@@ -82,6 +82,7 @@ public class Player2APIService {
          requestBody.addProperty("play_in_app", true);
          requestBody.addProperty("speed", 1);
          requestBody.addProperty("text", message);
+         requestBody.addProperty("play_in_app", false);
          JsonArray voiceIdsArray = new JsonArray();
 
          for (String voiceId : character.voiceIds()) {
@@ -90,7 +91,7 @@ public class Player2APIService {
 
          requestBody.add("voice_ids", voiceIdsArray);
          System.out.println("Sending TTS request: " + message);
-         HTTPUtils.sendRequest("/v1/tts/speak", true, requestBody);
+         Map<String, JsonElement> responseMap = HTTPUtils.sendRequest("/v1/tts/speak", true, requestBody);
       } catch (Exception var9) {
       }
    }
