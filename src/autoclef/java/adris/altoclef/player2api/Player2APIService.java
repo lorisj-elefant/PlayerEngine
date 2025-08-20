@@ -7,9 +7,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.util.Map;
-
-
-
+import java.util.function.Consumer;
 import java.net.HttpURLConnection;
 
 public class Player2APIService {
@@ -76,7 +74,7 @@ public class Player2APIService {
       }
    }
 
-   public static void textToSpeech(String message, Character character) {
+   public static void textToSpeech(String message, Character character, Consumer<Map<String, JsonElement>> onFinish) {
       try {
          JsonObject requestBody = new JsonObject();
          requestBody.addProperty("play_in_app", true);
@@ -92,6 +90,7 @@ public class Player2APIService {
          requestBody.add("voice_ids", voiceIdsArray);
          System.out.println("Sending TTS request: " + message);
          Map<String, JsonElement> responseMap = HTTPUtils.sendRequest("/v1/tts/speak", true, requestBody);
+         onFinish.accept(responseMap);
       } catch (Exception var9) {
       }
    }

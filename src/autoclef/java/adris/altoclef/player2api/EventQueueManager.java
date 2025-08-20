@@ -16,6 +16,7 @@ import org.apache.logging.log4j.Logger;
 import com.google.gson.JsonObject;
 
 import adris.altoclef.AltoClefController;
+import net.minecraft.server.MinecraftServer;
 
 public class EventQueueManager {
     public static final Logger LOGGER = LogManager.getLogger();
@@ -23,7 +24,7 @@ public class EventQueueManager {
     public static ConcurrentHashMap<UUID, EventQueueData> queueData = new ConcurrentHashMap<>();
 
     private static float messagePassingMaxDistance = 200; // let messages between entities pass iff <= this maximum
-    private static boolean enabled;
+    private static boolean enabled = true;
 
     public static class LLMCompleter {
         private boolean isProcessing = false;
@@ -108,9 +109,6 @@ public class EventQueueManager {
         });
     }
 
-    // public static void onAltoclefLogMessage(EventQueueData data, String message){
-    // data.addAltoclefLogMessage(null);
-    // }
 
     // register when an AI character messages
     public static void onAICharacterMessage(Event.CharacterMessage msg, UUID senderId) {
@@ -121,19 +119,32 @@ public class EventQueueManager {
                 });
     }
 
-    // side effects are here:
-    public static void injectOnTick() {
-        if (!enabled) {
-            return;
-        }
+    private static void process(Consumer<Event.CharacterMessage> onCharacterEvent, Consumer<String> onErrEvent){
         Optional<EventQueueData> dataToProcess = queueData.values().stream().filter(data -> {
             return data.getPriority() != 0;
         }).max(Comparator.comparingLong(EventQueueData::getPriority));
         llmCompleters.stream().filter(LLMCompleter::isAvailible).forEach(completer -> {
             dataToProcess.ifPresent(data -> {
-                data.process(AgentSideEffects::onEntityMessage, AgentSideEffects::onError, completer);
+                data.process(onCharacterEvent, onErrEvent, completer);
             });
         });
+    }
+
+    // side effects are here:
+    public static void injectOnTick(MinecraftServer server) {
+        if (!enabled) {
+            return;
+        }
+        Consumer<Event.CharacterMessage> onCharacterEvent = (data) -> {
+            AgentSideEffects.onEntityMessage(server, data);
+        };
+        Consumer<String> onErrEvent = (errMsg) -> {
+            AgentSideEffects.onError(server, errMsg);
+        };
+        if(!TTSManager.isLocked()){
+            process(onCharacterEvent, onErrEvent);
+        }
+        TTSManager.injectOnTick();
     }
 
     public static void sendGreeting(EventQueueData data) {
@@ -147,10 +158,6 @@ public class EventQueueManager {
     public static void disable() {
         enabled = false;
     }
-
-    // public static void sendHeartbeat() {
-    // heartbeatThread.submit(() -> Player2APIService.sendHeartbeat());
-    // }
 
     public static void resetMemory(AltoClefController mod) {
         EventQueueData data = modToData(mod);

@@ -17,6 +17,7 @@ import adris.altoclef.player2api.status.AgentStatus;
 import adris.altoclef.player2api.status.StatusUtils;
 import adris.altoclef.player2api.status.WorldStatus;
 import adris.altoclef.player2api.utils.Utils;
+import net.minecraft.world.entity.LivingEntity;
 
 public class EventQueueData {
 
@@ -210,5 +211,13 @@ public class EventQueueData {
 
     public void clearHistory() {
         conversationHistory.clear();
+    }
+
+    public boolean isOwner(UUID playerToCheck){
+        return mod.isOwner(playerToCheck);
+    }
+
+    public LivingEntity getEntity(){
+        return mod.getPlayer();
     }
 }

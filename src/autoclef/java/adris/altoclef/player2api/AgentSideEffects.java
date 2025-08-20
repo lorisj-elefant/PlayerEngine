@@ -10,9 +10,16 @@ import adris.altoclef.commandsystem.CommandExecutor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
 
 public class AgentSideEffects {
     private static final Logger LOGGER = LogManager.getLogger();
+
+    // Util
+    private static boolean isClose(EventQueueData data, ServerPlayer player){
+        return data.getEntity().distanceTo(player) < 50;
+    }
+
 
     public sealed interface CommandExecutionStopReason
             permits CommandExecutionStopReason.Cancelled,
@@ -30,13 +37,18 @@ public class AgentSideEffects {
         }
     }
 
-    public static void onEntityMessage(Event.CharacterMessage characterMessage) {
+    public static void onEntityMessage(MinecraftServer server, Event.CharacterMessage characterMessage) {
         // message part:
         if (characterMessage.message() != null) {
-                        String message = String.format("<%s> %s", characterMessage.sendingCharacterData().getUsername(), characterMessage.message());
-            broadcastChatMessage(message, null);
-            // TTSQueue.TTS(characterMessage.message(),
-                    // characterMessage.sendingCharacterData().getCharacter());
+            EventQueueData sendingCharacterData = characterMessage.sendingCharacterData();
+                        String message = String.format("<%s> %s", sendingCharacterData, characterMessage.message());
+            for(ServerPlayer player : server.getPlayerList().getPlayers()){
+                // if you are an owner, or close, send to player.
+                // if(sendingCharacterData.isOwner(player.getUUID()) || isClose(sendingCharacterData, player)  ){
+                    broadcastChatToPlayer(server, message, player);
+                // }
+            }
+            TTSManager.TTS(message, sendingCharacterData.getCharacter());
             EventQueueManager.onAICharacterMessage(characterMessage, characterMessage.sendingCharacterData().getUUID());
         }
 
@@ -47,7 +59,7 @@ public class AgentSideEffects {
         }
     }
 
-    public static void onError(String errMsg) {
+    public static void onError(MinecraftServer server, String errMsg) {
         LOGGER.error(errMsg);
     }
 
@@ -76,10 +88,8 @@ public class AgentSideEffects {
         });
     }
 
-    private static void broadcastChatMessage(String message, MinecraftServer server) {
-        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            player.displayClientMessage(Component.literal(message), false);
-        }
+    private static void broadcastChatToPlayer(MinecraftServer server, String message, ServerPlayer player){
+        player.displayClientMessage(Component.literal(message), false);
     }
 
 }

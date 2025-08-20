@@ -35,6 +35,9 @@ import baritone.api.utils.IInteractionController;
 import baritone.autoclef.AltoClefSettings;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
+
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -117,6 +120,10 @@ public class AltoClefController {
       Playground.IDLE_TEST_INIT_FUNCTION(this);
    }
 
+   public static void staticServerTick(MinecraftServer server){
+      EventQueueManager.injectOnTick(server); 
+   }
+
    public void serverTick() {
       this.inputControls.onTickPre();
       this.storageTracker.setDirty();
@@ -126,7 +133,6 @@ public class AltoClefController {
       this.taskRunner.tick();
       this.inputControls.onTickPost();
       this.baritone.serverTick();
-      EventQueueManager.injectOnTick(); 
    }
 
    public void stop() {
@@ -344,6 +350,10 @@ public class AltoClefController {
 
    public Player getOwner() {
       return this.owner;
+   }
+
+   public boolean isOwner(UUID playerToCheck){
+      return playerToCheck.equals(owner.getUUID());
    }
 
    public void setOwner(Player owner) {
