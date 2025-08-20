@@ -22,8 +22,8 @@ public class EventQueueManager {
     public static final Logger LOGGER = LogManager.getLogger();
 
     public static ConcurrentHashMap<UUID, EventQueueData> queueData = new ConcurrentHashMap<>();
-
-    private static float messagePassingMaxDistance = 200; // let messages between entities pass iff <= this maximum
+    public static final ExecutorService heartbeatThread = Executors.newSingleThreadExecutor();
+    private static float messagePassingMaxDistance = 25; // let messages between entities pass iff <= this maximum
     private static boolean enabled = true;
 
     public static class LLMCompleter {
@@ -147,7 +147,8 @@ public class EventQueueManager {
         TTSManager.injectOnTick();
     }
 
-    public static void sendGreeting(EventQueueData data) {
+    public static void sendGreeting(AltoClefController mod, Character character) {
+        EventQueueData data = createEventQueueData(mod, character);
         data.onGreeting();
     }
 
@@ -162,5 +163,10 @@ public class EventQueueManager {
     public static void resetMemory(AltoClefController mod) {
         EventQueueData data = modToData(mod);
         data.clearHistory();
+    }
+    public static void sendHeartbeat(){
+        heartbeatThread.submit(() -> {
+            Player2APIService.sendHeartbeat();
+        });
     }
 }

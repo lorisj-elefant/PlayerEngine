@@ -15,11 +15,6 @@ import net.minecraft.world.entity.player.Player;
 public class AgentSideEffects {
     private static final Logger LOGGER = LogManager.getLogger();
 
-    // Util
-    private static boolean isClose(EventQueueData data, ServerPlayer player){
-        return data.getEntity().distanceTo(player) < 50;
-    }
-
 
     public sealed interface CommandExecutionStopReason
             permits CommandExecutionStopReason.Cancelled,
