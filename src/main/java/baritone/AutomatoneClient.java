@@ -13,6 +13,6 @@ public final class AutomatoneClient {
    @OnlyIn(Dist.CLIENT)
    @SubscribeEvent
    public static void registerEntityRenderer(EntityRenderersEvent.RegisterRenderers event){
-      event.registerEntityRenderer(Automatone.FISHING_BOBBER, CustomFishingBobberRenderer::new);
+      event.registerEntityRenderer(Automatone.FISHING_BOBBER.get(), CustomFishingBobberRenderer::new);
    }
 }

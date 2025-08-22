@@ -15,13 +15,16 @@ import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
+import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegisterEvent;
+import net.minecraftforge.registries.RegistryObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -33,12 +36,14 @@ public final class Automatone {
    public static final TagKey<Item> EMPTY_BUCKETS = TagKey.create(Registries.ITEM, id("empty_buckets"));
    public static final TagKey<Item> WATER_BUCKETS = TagKey.create(Registries.ITEM, id("water_buckets"));
    private static final ThreadPoolExecutor threadPool;
-   public static final EntityType<CustomFishingBobberEntity> FISHING_BOBBER = EntityType.Builder.<CustomFishingBobberEntity>of(CustomFishingBobberEntity::new,MobCategory.MISC)
+   private static final DeferredRegister<EntityType<?>> ENTITY_TYPES = DeferredRegister.create(ForgeRegistries.ENTITY_TYPES, MOD_ID);
+
+   public static final RegistryObject<EntityType<CustomFishingBobberEntity>> FISHING_BOBBER =  ENTITY_TYPES.register("fishing_bobber", ()->EntityType.Builder.<CustomFishingBobberEntity>of(CustomFishingBobberEntity::new,MobCategory.MISC)
       .sized(EntityType.FISHING_BOBBER.getWidth(), EntityType.FISHING_BOBBER.getHeight())
       .setTrackingRange(64)
       .setUpdateInterval(1)
       .setShouldReceiveVelocityUpdates(true)
-      .build(id("fishing_bobber").toString());
+      .build("fishing_bobber"));
 
    public static ResourceLocation id(String path) {
       return new ResourceLocation("automatone", path);
@@ -50,6 +55,10 @@ public final class Automatone {
 
    public Automatone() {
       FMLJavaModLoadingContext.get().getModEventBus().addListener(this::setup);
+
+      IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
+
+      ENTITY_TYPES.register(modEventBus);
    }
 
    private void setup(final FMLCommonSetupEvent event) {
@@ -60,13 +69,6 @@ public final class Automatone {
    public void registerCommand(RegisterCommandsEvent e) {
       DefaultCommands.registerAll();
       DefaultCommands.register(e.getDispatcher());
-   }
-
-   @SubscribeEvent
-   public static void registerEntities(RegisterEvent event) {
-      if (event.getRegistryKey() == ForgeRegistries.Keys.ENTITY_TYPES) {
-         event.getForgeRegistry().register(id("fishing_bobber"), FISHING_BOBBER);
-      }
    }
 
    static {
