@@ -6,6 +6,7 @@ import adris.altoclef.tasksystem.Task;
 public class IdleTask extends Task {
    @Override
    protected void onStart() {
+
    }
 
    @Override
