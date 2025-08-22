@@ -32,17 +32,20 @@ public class AIPersistantData {
         }
     }
 
-    public void dumpEventQueueToConversationHistory(Deque<Event> eventQueue){
+    public void dumpEventQueueToConversationHistory(Deque<Event> eventQueue, Player2APIService player2apiService){
         while(!eventQueue.isEmpty()){
             Event event = eventQueue.poll();
-            conversationHistory.addUserMessage(event.toString());
+            conversationHistory.addUserMessage(event.toString(), player2apiService);
         }
     }
-    public ConversationHistory getConversationHistoryWrappedWithStatus(String worldStatus, String agentStatus, String altoClefDebugMsgs){
+    public ConversationHistory getConversationHistoryWrappedWithStatus(String worldStatus, String agentStatus, String altoClefDebugMsgs, Player2APIService player2apiService){
         return this.conversationHistory
-                .copyThenWrapLatestWithStatus(worldStatus, agentStatus, altoClefDebugMsgs);
+                .copyThenWrapLatestWithStatus(worldStatus, agentStatus, altoClefDebugMsgs, player2apiService);
     }
-    public void addAssistantMessage(String llmMessage){
-        this.conversationHistory.addAssistantMessage(llmMessage);
+    public void addAssistantMessage(String llmMessage, Player2APIService player2apiService){
+        this.conversationHistory.addAssistantMessage(llmMessage, player2apiService);
+    }
+    public Character getCharacter(){
+        return this.character;
     }
 }

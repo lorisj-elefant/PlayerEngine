@@ -74,12 +74,12 @@ public class EventQueueData {
         this.isProcessing = true;
 
         // prepare conversation history for LLM call
-        mod.getAIPersistantData().dumpEventQueueToConversationHistory(eventQueue);
+        mod.getAIPersistantData().dumpEventQueueToConversationHistory(eventQueue, mod.getPlayer2APIService());
         String agentStatus = AgentStatus.fromMod(this.mod).toString();
         String worldStatus = WorldStatus.fromMod(this.mod).toString();
         String altoClefDebugMsgs = this.altoClefMsgBuffer.dumpAndGetString();
         ConversationHistory historyWithWrappedStatus = mod.getAIPersistantData()
-                .getConversationHistoryWrappedWithStatus(worldStatus, agentStatus, altoClefDebugMsgs);
+                .getConversationHistoryWrappedWithStatus(worldStatus, agentStatus, altoClefDebugMsgs, mod.getPlayer2APIService());
 
         LOGGER.info("[AICommandBridge/processChatWithAPI]: Calling LLM: history={}",
                 new Object[] { historyWithWrappedStatus.toString() });
@@ -91,7 +91,7 @@ public class EventQueueData {
                     llmMessage, command);
             try {
                 if (llmMessage != null || command != null) {
-                    mod.getAIPersistantData().addAssistantMessage(llmMessage);
+                    mod.getAIPersistantData().addAssistantMessage(llmMessage, mod.getPlayer2APIService());
                     onCharacterEvent.accept(new Event.CharacterMessage(llmMessage, command, this));
                 } else {
                     LOGGER.warn(
@@ -104,7 +104,7 @@ public class EventQueueData {
                 this.isProcessing = false;
             }
         };
-        completer.process(historyWithWrappedStatus, onLLMResponse, onErrMsg);
+        completer.process(mod.getPlayer2APIService(), historyWithWrappedStatus, onLLMResponse, onErrMsg);
     }
 
     private boolean isEventDuplicateOfLastMessage(Event evt) {
@@ -194,5 +194,11 @@ public class EventQueueData {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+    public Character getCharacter(){
+        return mod.getAIPersistantData().getCharacter();
+    }
+    public Player2APIService getPlayer2apiService(){
+        return mod.getPlayer2APIService();
     }
 }
