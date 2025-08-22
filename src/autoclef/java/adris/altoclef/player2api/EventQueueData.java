@@ -25,23 +25,17 @@ public class EventQueueData {
 
     public static final Logger LOGGER = LogManager.getLogger();
 
-    private final Character character;
     private final AltoClefController mod;
-
-    private ConversationHistory conversationHistory;
 
     private final Deque<Event> eventQueue = new ConcurrentLinkedDeque<>();
     private long lastProcessTime = 0L;
     private boolean isProcessing = false;
+    private boolean enabled = true;
 
     private MessageBuffer altoClefMsgBuffer = new MessageBuffer(10);
 
-    public EventQueueData(AltoClefController mod, Character character) {
-        this.character = character;
+    public EventQueueData(AltoClefController mod) {
         this.mod = mod;
-
-        String systemPrompt = Prompts.getAINPCSystemPrompt(this.character, mod.getCommandExecutor().allCommands());
-        this.conversationHistory = new ConversationHistory(systemPrompt, character.name(), character.shortName());
     }
 
     // ## Processing
@@ -50,7 +44,7 @@ public class EventQueueData {
     // otherwise gives a number that increases based on higher priority
     // (for now it is #ns from last processing time)
     public long getPriority() {
-        if (isProcessing || eventQueue.isEmpty()) {
+        if (!enabled || isProcessing || eventQueue.isEmpty()) {
             return 0;
         }
         return System.nanoTime() - lastProcessTime;
@@ -80,13 +74,12 @@ public class EventQueueData {
         this.isProcessing = true;
 
         // prepare conversation history for LLM call
-        moveFromQueueToConversationHistory();
+        mod.getAIPersistantData().dumpEventQueueToConversationHistory(eventQueue);
         String agentStatus = AgentStatus.fromMod(this.mod).toString();
         String worldStatus = WorldStatus.fromMod(this.mod).toString();
         String altoClefDebugMsgs = this.altoClefMsgBuffer.dumpAndGetString();
-
-        ConversationHistory historyWithWrappedStatus = this.conversationHistory
-                .copyThenWrapLatestWithStatus(worldStatus, agentStatus, altoClefDebugMsgs);
+        ConversationHistory historyWithWrappedStatus = mod.getAIPersistantData()
+                .getConversationHistoryWrappedWithStatus(worldStatus, agentStatus, altoClefDebugMsgs);
 
         LOGGER.info("[AICommandBridge/processChatWithAPI]: Calling LLM: history={}",
                 new Object[] { historyWithWrappedStatus.toString() });
@@ -98,7 +91,7 @@ public class EventQueueData {
                     llmMessage, command);
             try {
                 if (llmMessage != null || command != null) {
-                    conversationHistory.addAssistantMessage(llmMessage);
+                    mod.getAIPersistantData().addAssistantMessage(llmMessage);
                     onCharacterEvent.accept(new Event.CharacterMessage(llmMessage, command, this));
                 } else {
                     LOGGER.warn(
@@ -114,16 +107,8 @@ public class EventQueueData {
         completer.process(historyWithWrappedStatus, onLLMResponse, onErrMsg);
     }
 
-    private void moveFromQueueToConversationHistory() {
-        while (!eventQueue.isEmpty()) {
-            Event event = eventQueue.poll();
-            conversationHistory.addUserMessage(event.toString());
-        }
-    }
-
     private boolean isEventDuplicateOfLastMessage(Event evt) {
         boolean isDuplicate = eventQueue.peekLast() != null && eventQueue.peekLast().equals(evt);
-
         if (isDuplicate) {
             LOGGER.warn("[EventQueueData]: evt={} was added twice!", evt.toString());
             return true;
@@ -131,12 +116,12 @@ public class EventQueueData {
         return false;
     }
 
-    private void addEventToQueue(Event event){
+    private void addEventToQueue(Event event) {
         if (isEventDuplicateOfLastMessage(event)) {
             return; // skip
         }
-        if(eventQueue.size() > MAX_EVENT_QUEUE_SIZE){
-            eventQueue.removeFirst(); 
+        if (eventQueue.size() > MAX_EVENT_QUEUE_SIZE) {
+            eventQueue.removeFirst();
         }
         eventQueue.add(event);
     }
@@ -147,7 +132,7 @@ public class EventQueueData {
         this.altoClefMsgBuffer.addMsg(message);
     }
 
-    public void onEvent(Event event){
+    public void onEvent(Event event) {
         addEventToQueue(event);
     }
 
@@ -162,13 +147,8 @@ public class EventQueueData {
     }
 
     public void onGreeting() {
-        // queues up greeting:
-        String suffix = " IMPORTANT: SINCE THIS IS THE FIRST MESSAGE, DO NOT SEND A COMMAND!!";
-        if (conversationHistory.isLoadedFromFile()) {
-            addEventToQueue(new InfoMessage("You want to welcome user back." + suffix));
-        } else {
-            addEventToQueue(new InfoMessage(character.greetingInfo() + suffix));
-        }
+        // queue up greeting
+        addEventToQueue(mod.getAIPersistantData().getGreetingEvent());
     }
 
     public void onCommandFinish(AgentSideEffects.CommandExecutionStopReason stopReason) {
@@ -196,28 +176,23 @@ public class EventQueueData {
         return StatusUtils.getUserNameDistance(mod, userName);
     }
 
-
     public UUID getUUID() {
         return mod.getPlayer().getUUID();
-    }
-
-    public Character getCharacter() {
-        return character;
     }
 
     public AltoClefController getMod() {
         return mod;
     }
 
-    public void clearHistory() {
-        conversationHistory.clear();
-    }
-
-    public boolean isOwner(UUID playerToCheck){
+    public boolean isOwner(UUID playerToCheck) {
         return mod.isOwner(playerToCheck);
     }
 
-    public LivingEntity getEntity(){
+    public LivingEntity getEntity() {
         return mod.getPlayer();
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
     }
 }

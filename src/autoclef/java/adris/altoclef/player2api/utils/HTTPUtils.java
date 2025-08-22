@@ -1,39 +1,41 @@
 package adris.altoclef.player2api.utils;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-import adris.altoclef.player2api.Player2APIService;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import javax.annotation.Nullable;
+
 public class HTTPUtils {
    private static final String BASE_URL = "http://127.0.0.1:4315";
 
-   public static Map<String, JsonElement> sendRequest(String endpoint, boolean postRequest, JsonObject requestBody)
+   public static Map<String, JsonElement> sendRequest(String endpoint, boolean postRequest, JsonObject requestBody,
+         @Nullable Map<String, String> extraHeaders)
          throws Exception {
       URL url = new URI(BASE_URL + endpoint).toURL();
       HttpURLConnection connection = (HttpURLConnection) url.openConnection();
       connection.setRequestMethod(postRequest ? "POST" : "GET");
       connection.setRequestProperty("Content-Type", "application/json; charset=utf-8");
       connection.setRequestProperty("Accept", "application/json; charset=utf-8");
-      Player2APIService.player2ProcessConnection(connection);
+      if (extraHeaders != null) {
+         for (Map.Entry<String, String> entry : extraHeaders.entrySet()) {
+            connection.setRequestProperty(entry.getKey(), entry.getValue());
+         }
+      }
+
       if (postRequest && requestBody != null) {
          connection.setDoOutput(true);
 

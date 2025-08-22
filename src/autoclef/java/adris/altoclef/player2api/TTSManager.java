@@ -20,10 +20,10 @@ public class TTSManager {
         estimatedEndTime = System.nanoTime() + waitTimeSec * 1_000_000_000;
     }
 
-    public static void TTS(String message, Character character) {
+    public static void TTS(String message, Character character, Player2APIService player2apiService) {
         TTSLocked = true;
         ttsThread.submit(() -> {
-            Player2APIService.textToSpeech(message, character, (_unusedMap)-> {
+            player2apiService.textToSpeech(message, character, (_unusedMap)-> {
                 setEstimatedEndTime(message);
             } );
         });

@@ -1,6 +1,8 @@
 package adris.altoclef.player2api.utils;
 
 import adris.altoclef.player2api.Character;
+import adris.altoclef.player2api.Player2APIService;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -60,18 +62,18 @@ public class CharacterUtils {
       }
    }
 
-   public static Character[] requestCharacters() {
+   public static Character[] requestCharacters(String player2GameId) {
       try {
-         Map<String, JsonElement> responseMap = HTTPUtils.sendRequest( "/v1/selected_characters", false, null);
+         Map<String, JsonElement> responseMap = HTTPUtils.sendRequest( "/v1/selected_characters", false, null, Player2APIService.getHeaders(player2GameId));
          return parseCharacters(responseMap);
       } catch (Exception var2) {
          return new Character[0];
       }
    }
 
-   public static Character requestFirstCharacter() {
+   public static Character requestFirstCharacter(String player2GameId) {
       try {
-         Map<String, JsonElement> responseMap = HTTPUtils.sendRequest( "/v1/selected_characters", false, null);
+         Map<String, JsonElement> responseMap = HTTPUtils.sendRequest( "/v1/selected_characters", false, null, Player2APIService.getHeaders(player2GameId));
          return parseFirstCharacter(responseMap);
       } catch (Exception var2) {
          return DEFAULT_CHARACTER;

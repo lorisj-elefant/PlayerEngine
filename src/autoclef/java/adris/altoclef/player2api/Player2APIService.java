@@ -6,18 +6,25 @@ import adris.altoclef.player2api.utils.Utils;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
+
 import java.net.HttpURLConnection;
 
 public class Player2APIService {
 
-   private static String player2GameID;
-   public static void setPlayer2GameID(String id){
-      player2GameID = id;
-   }
+   private String player2GameID;
 
-   public static JsonObject completeConversation(ConversationHistory conversationHistory) throws Exception {
+   public Player2APIService(String player2GameID){
+      this.player2GameID = player2GameID;
+   }
+   private Map<String, JsonElement> sendRequest(String endpoint, boolean postRequest, JsonObject requestBody) throws Exception{
+      Map<String, String> headers = getHeaders(player2GameID);
+      return HTTPUtils.sendRequest(endpoint, postRequest, requestBody, headers);
+   }
+   public JsonObject completeConversation(ConversationHistory conversationHistory) throws Exception {
       JsonObject requestBody = new JsonObject();
       JsonArray messagesArray = new JsonArray();
 
@@ -26,7 +33,7 @@ public class Player2APIService {
       }
 
       requestBody.add("messages", messagesArray);
-      Map<String, JsonElement> responseMap = HTTPUtils.sendRequest("/v1/chat/completions", true, requestBody);
+      Map<String, JsonElement> responseMap = sendRequest("/v1/chat/completions", true, requestBody);
       if (responseMap.containsKey("choices")) {
          JsonArray choices = responseMap.get("choices").getAsJsonArray();
          if (choices.size() != 0) {
@@ -41,7 +48,7 @@ public class Player2APIService {
       throw new Exception("Invalid response format: " + responseMap.toString());
    }
 
-   public static String completeConversationToString(ConversationHistory conversationHistory) throws Exception {
+   public String completeConversationToString(ConversationHistory conversationHistory) throws Exception {
       JsonObject requestBody = new JsonObject();
       JsonArray messagesArray = new JsonArray();
 
@@ -50,7 +57,7 @@ public class Player2APIService {
       }
 
       requestBody.add("messages", messagesArray);
-      Map<String, JsonElement> responseMap = HTTPUtils.sendRequest("/v1/chat/completions", true, requestBody);
+      Map<String, JsonElement> responseMap = sendRequest("/v1/chat/completions", true, requestBody);
       if (responseMap.containsKey("choices")) {
          JsonArray choices = responseMap.get("choices").getAsJsonArray();
          if (choices.size() != 0) {
@@ -64,9 +71,9 @@ public class Player2APIService {
       throw new Exception("Invalid response format: " + responseMap.toString());
    }
 
-   public static  Character getSelectedCharacter() {
+   public Character getSelectedCharacter() {
       try {
-         Map<String, JsonElement> responseMap = HTTPUtils.sendRequest(
+         Map<String, JsonElement> responseMap = sendRequest(
                "/v1/selected_characters", false, null);
          return CharacterUtils.parseFirstCharacter(responseMap);
       } catch (Exception var2) {
@@ -74,7 +81,7 @@ public class Player2APIService {
       }
    }
 
-   public static void textToSpeech(String message, Character character, Consumer<Map<String, JsonElement>> onFinish) {
+   public void textToSpeech(String message, Character character, Consumer<Map<String, JsonElement>> onFinish) {
       try {
          JsonObject requestBody = new JsonObject();
          requestBody.addProperty("play_in_app", true);
@@ -89,26 +96,26 @@ public class Player2APIService {
 
          requestBody.add("voice_ids", voiceIdsArray);
          System.out.println("Sending TTS request: " + message);
-         Map<String, JsonElement> responseMap = HTTPUtils.sendRequest("/v1/tts/speak", true, requestBody);
+         Map<String, JsonElement> responseMap = sendRequest("/v1/tts/speak", true, requestBody);
          onFinish.accept(responseMap);
       } catch (Exception var9) {
       }
    }
 
-   public static void startSTT() {
+   public void startSTT() {
       JsonObject requestBody = new JsonObject();
       requestBody.addProperty("timeout", 30);
 
       try {
-         HTTPUtils.sendRequest("/v1/stt/start", true, requestBody);
+         sendRequest("/v1/stt/start", true, requestBody);
       } catch (Exception var3) {
          System.err.println("[Player2APIService/startSTT]: Error" + var3.getMessage());
       }
    }
 
-   public static String stopSTT() {
+   public String stopSTT() {
       try {
-         Map<String, JsonElement> responseMap = HTTPUtils.sendRequest("/v1/stt/stop", true, null);
+         Map<String, JsonElement> responseMap = sendRequest("/v1/stt/stop", true, null);
          if (!responseMap.containsKey("text")) {
             throw new Exception("Could not find key 'text' in response");
          } else {
@@ -119,10 +126,10 @@ public class Player2APIService {
       }
    }
 
-   public static void sendHeartbeat() {
+   public void sendHeartbeat() {
       try {
          System.out.println("Sending Heartbeat " + player2GameID);
-         Map<String, JsonElement> responseMap = HTTPUtils.sendRequest("/v1/health", false, null);
+         Map<String, JsonElement> responseMap = sendRequest("/v1/health", false, null);
          if (responseMap.containsKey("client_version")) {
             System.out.println("Heartbeat Successful");
          }
@@ -131,9 +138,15 @@ public class Player2APIService {
       }
    }
 
-   public static void player2ProcessConnection(HttpURLConnection connection) {
+   public void player2ProcessConnection(HttpURLConnection connection) {
       if (player2GameID != null) {
          connection.setRequestProperty("player2-game-key", player2GameID);
       }
+   }
+
+   public static Map<String, String> getHeaders(String player2Apikey){
+      Map<String, String> headers = new HashMap<>();
+      headers.put("player2-game-key", player2Apikey);
+      return headers;
    }
 }
