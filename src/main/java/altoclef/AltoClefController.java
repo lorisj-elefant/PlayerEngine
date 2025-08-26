@@ -96,10 +96,7 @@ public class AltoClefController {
    private Player owner;
 
    public AltoClefController(IBaritone baritone, Character character, String player2GameId) {
-      // AI setup:
-      EventQueueManager.getOrCreateEventQueueData(this);
-      this.aiPersistantData = new AIPersistantData(this, character);
-      this.player2apiService = new Player2APIService(player2GameId);
+
 
       // baritone/action setup:
       this.baritone = baritone;
@@ -146,6 +143,11 @@ public class AltoClefController {
                this.getExtraBaritoneSettings().avoidBlockPlace(this.entityStuckTracker::isBlockedByEntity);
             });
       Playground.IDLE_TEST_INIT_FUNCTION(this);
+
+      // AI setup: (should be at end to ensure as many things are not null as possible)
+      EventQueueManager.getOrCreateEventQueueData(this);
+      this.aiPersistantData = new AIPersistantData(this, character);
+      this.player2apiService = new Player2APIService(player2GameId);
    }
 
    public static void staticServerTick(MinecraftServer server) {
