@@ -20,6 +20,7 @@ package altoclef.commands;
 import altoclef.AltoClefController;
 import altoclef.commandsystem.ArgParser;
 import altoclef.commandsystem.Command;
+import altoclef.player2api.EventQueueManager;
 
 public class ResetMemoryCommand extends Command {
    public ResetMemoryCommand() {
@@ -28,7 +29,7 @@ public class ResetMemoryCommand extends Command {
 
    @Override
    protected void call(AltoClefController mod, ArgParser parser) {
-      mod.getAiBridge().conversationHistory().clear();
+      EventQueueManager.resetMemory(mod);
       this.finish();
    }
 }
