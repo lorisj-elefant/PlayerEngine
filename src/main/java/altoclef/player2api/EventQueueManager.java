@@ -23,6 +23,13 @@ public class EventQueueManager {
 
     public static ConcurrentHashMap<UUID, EventQueueData> queueData = new ConcurrentHashMap<>();
     private static float messagePassingMaxDistance = 25; // let messages between entities pass iff <= this maximum
+    private static boolean hasInit = false;
+    public static void init(){
+        if(!hasInit){
+            hasInit = true;
+            ForgeEventHandler handler = new ForgeEventHandler();
+        }
+    }
 
     public static class LLMCompleter {
         private boolean isProcessing = false;
@@ -99,6 +106,7 @@ public class EventQueueManager {
 
     // register when a user sends a chat message
     public static void onUserChatMessage(Event.UserMessage msg) {
+        LOGGER.info("User message event={}", msg);
         // will add to entities close to the user:
         getCloseData(msg.userName()).forEach(data -> {
             data.onEvent(msg);
@@ -127,6 +135,9 @@ public class EventQueueManager {
 
     // side effects are here:
     public static void injectOnTick(MinecraftServer server) {
+        if(!hasInit){
+            init();
+        }
 
         Consumer<Event.CharacterMessage> onCharacterEvent = (data) -> {
             AgentSideEffects.onEntityMessage(server, data);
@@ -141,6 +152,7 @@ public class EventQueueManager {
     }
 
     public static void sendGreeting(AltoClefController mod, Character character) {
+        LOGGER.info("Sending greeting character={}", character);
         EventQueueData data = getOrCreateEventQueueData(mod);
         data.onGreeting();
     }
