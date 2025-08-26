@@ -9,7 +9,7 @@ public sealed interface Event // tagged union basically of the below events
             return String.format("Other Player Message: [%s]: %s", userName, message);
         }
         public String toString(){
-            return String.format("UserMessage(userName='%s', message='%s')");
+            return String.format("UserMessage(userName='%s', message='%s')", userName, message);
         }
     }
 

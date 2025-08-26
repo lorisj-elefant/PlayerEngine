@@ -47,7 +47,7 @@ public class AgentSideEffects {
         }
 
         // command part:
-        if (characterMessage.command() != null) {
+        if (characterMessage.command() != null || !characterMessage.command().isBlank()) {
             onCommandListGenerated(characterMessage.sendingCharacterData().getMod(), characterMessage.command(),
                     characterMessage.sendingCharacterData()::onCommandFinish);
         }
