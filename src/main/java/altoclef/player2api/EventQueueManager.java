@@ -154,7 +154,7 @@ public class EventQueueManager {
         if (!TTSManager.isLocked()) {
             process(onCharacterEvent, onErrEvent);
         }
-        TTSManager.injectOnTick();
+        TTSManager.injectOnTick(server);
     }
 
     public static void sendGreeting(AltoClefController mod, Character character) {
