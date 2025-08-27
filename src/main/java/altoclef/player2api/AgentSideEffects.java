@@ -33,7 +33,7 @@ public class AgentSideEffects {
 
     public static void onEntityMessage(MinecraftServer server, Event.CharacterMessage characterMessage) {
         // message part:
-        if (characterMessage.message() != null) {
+        if (characterMessage.message() != null && !characterMessage.message().isBlank()) {
             EventQueueData sendingCharacterData = characterMessage.sendingCharacterData();
                         String message = String.format("<%s> %s", sendingCharacterData.getName(), characterMessage.message());
             for(ServerPlayer player : server.getPlayerList().getPlayers()){
