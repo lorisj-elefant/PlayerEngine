@@ -198,7 +198,7 @@ public class EventQueueData {
         return mod.getPlayer2APIService();
     }
     public String getName(){
-        return getCharacter().name();
+        return getCharacter().shortName();
     }
 
     
