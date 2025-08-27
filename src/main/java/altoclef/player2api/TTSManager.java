@@ -21,6 +21,9 @@ public class TTSManager {
 
     public static void TTS(String message, Character character, Player2APIService player2apiService) {
         TTSLocked = true;
+        LOGGER.info("Locking TTS based on msg={}", message);
+        estimatedEndTime = Long.MAX_VALUE;
+        
         ttsThread.submit(() -> {
             player2apiService.textToSpeech(message, character, (_unusedMap)-> {
                 setEstimatedEndTime(message);
@@ -35,6 +38,7 @@ public class TTSManager {
     public static void injectOnTick() {
         // release lock if we think we have finished.
         if(System.nanoTime() > estimatedEndTime){
+            LOGGER.info("TTS releasing lock");
             TTSLocked = false;
         }
     }

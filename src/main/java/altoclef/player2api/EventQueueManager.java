@@ -118,6 +118,7 @@ public class EventQueueManager {
         String sendingCharacterUsername = msg.sendingCharacterData().getUsername();
         getCloseData(sendingCharacterUsername).filter(data -> !(data.getUsername().equals(sendingCharacterUsername)))
                 .forEach(data -> {
+                    LOGGER.info("onCharMsg/ msg={}, sender={}, running onCharMsg for ={}", msg.message(), sendingCharacterUsername, data.getUsername());
                     data.onAICharacterMessage(msg);
                 });
     }

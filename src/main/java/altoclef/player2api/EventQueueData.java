@@ -122,6 +122,7 @@ public class EventQueueData {
         if (eventQueue.size() > MAX_EVENT_QUEUE_SIZE) {
             eventQueue.removeFirst();
         }
+        LOGGER.info("queue for={} adding event={} ", getUsername(), event);
         eventQueue.add(event);
     }
 
