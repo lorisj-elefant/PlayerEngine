@@ -199,10 +199,16 @@ public class StatusUtils {
             : "[" + String.join(",", descriptions.stream().map(s -> "\"" + s + "\"").toArray(String[]::new)) + "]";
    }
 
+
    public static float getDistanceToUUID(AltoClefController mod, UUID target) {
-      for (Player player : mod.getWorld().players()) {
-         if (player.getUUID().equals(target)) {
-            return player.distanceTo(mod.getPlayer());
+      // for (Player player : mod.getWorld().players()) {
+      //    if (player.getUUID().equals(target)) {
+      //       return player.distanceTo(mod.getPlayer());
+      //    }
+      // }
+      for(Entity entity : mod.getWorld().getEntities().getAll()){
+         if(entity.getUUID().equals(target)){
+            return entity.distanceTo(mod.getPlayer());
          }
       }
       return Float.MAX_VALUE;
