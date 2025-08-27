@@ -26,8 +26,11 @@ import com.google.gson.JsonObject;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.net.HttpURLConnection;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import java.util.HashMap;
 public class Player2APIService {
+   private static final Logger LOGGER = LogManager.getLogger();
 
    private String player2GameID;
 
@@ -101,7 +104,7 @@ public class Player2APIService {
          requestBody.addProperty("play_in_app", true);
          requestBody.addProperty("speed", 1);
          requestBody.addProperty("text", message);
-         requestBody.addProperty("play_in_app", false);
+         requestBody.addProperty("play_in_app", true);
          JsonArray voiceIdsArray = new JsonArray();
 
          for (String voiceId : character.voiceIds()) {
@@ -109,7 +112,7 @@ public class Player2APIService {
          }
 
          requestBody.add("voice_ids", voiceIdsArray);
-         System.out.println("Sending TTS request: " + message);
+         LOGGER.info("TTS request w/ msg={}", message);
          Map<String, JsonElement> responseMap = sendRequest("/v1/tts/speak", true, requestBody);
          onFinish.accept(responseMap);
       } catch (Exception var9) {
