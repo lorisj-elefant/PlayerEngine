@@ -3,6 +3,7 @@ package altoclef.player2api;
 public sealed interface Event // tagged union basically of the below events
         permits Event.UserMessage, Event.CharacterMessage, Event.InfoMessage {
     String message();
+    public String getConversationHistoryString();
 
     public record UserMessage(String message, String userName) implements Event {
         public String getConversationHistoryString(){

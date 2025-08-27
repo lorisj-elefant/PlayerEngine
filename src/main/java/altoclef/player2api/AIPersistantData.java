@@ -35,7 +35,7 @@ public class AIPersistantData {
     public void dumpEventQueueToConversationHistory(Deque<Event> eventQueue, Player2APIService player2apiService){
         while(!eventQueue.isEmpty()){
             Event event = eventQueue.poll();
-            conversationHistory.addUserMessage(event.toString(), player2apiService);
+            conversationHistory.addUserMessage(event.getConversationHistoryString(), player2apiService);
         }
     }
     public ConversationHistory getConversationHistoryWrappedWithStatus(String worldStatus, String agentStatus, String altoClefDebugMsgs, Player2APIService player2apiService){
