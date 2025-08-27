@@ -122,13 +122,13 @@ public class EventQueueData {
         if (eventQueue.size() > MAX_EVENT_QUEUE_SIZE) {
             eventQueue.removeFirst();
         }
-        LOGGER.info("queue for={} adding event={} ", getUsername(), event);
+        LOGGER.info("queue for UUID={} name={} adding event={} ", getUUID(), getName(), event);
         eventQueue.add(event);
     }
 
     // ## Callbacks:
     public void addAltoclefLogMessage(String message) {
-        System.out.printf("ADDING Altoclef System Message: %s", new Object[] { message });
+        LOGGER.info("Adding altoclef system msg={}", message);
         this.altoClefMsgBuffer.addMsg(message);
     }
 
@@ -137,7 +137,7 @@ public class EventQueueData {
     }
 
     public void onAICharacterMessage(Event.CharacterMessage msg) {
-        boolean comingFromThisCharacter = msg.sendingCharacterData().getUsername().equals(getUsername());
+        boolean comingFromThisCharacter = msg.sendingCharacterData().getUUID().equals(getUUID());
         // is our character <=> dont add because we will already have added assistant
         // msg
         if (comingFromThisCharacter) {
@@ -168,12 +168,8 @@ public class EventQueueData {
     }
 
     // Utils:
-    public String getUsername() {
-        return mod.getPlayer().getName().getString();
-    }
-
-    public float getDistanceToUserName(String userName) {
-        return StatusUtils.getUserNameDistance(mod, userName);
+    public float getDistance(UUID target) {
+        return StatusUtils.getDistanceToUUID(mod, target);
     }
 
     public UUID getUUID() {
@@ -201,4 +197,9 @@ public class EventQueueData {
     public Player2APIService getPlayer2apiService(){
         return mod.getPlayer2APIService();
     }
+    public String getName(){
+        return getCharacter().name();
+    }
+
+    
 }

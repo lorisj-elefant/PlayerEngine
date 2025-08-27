@@ -35,7 +35,7 @@ public class AgentSideEffects {
         // message part:
         if (characterMessage.message() != null) {
             EventQueueData sendingCharacterData = characterMessage.sendingCharacterData();
-                        String message = String.format("<%s> %s", sendingCharacterData.getUsername(), characterMessage.message());
+                        String message = String.format("<%s> %s", sendingCharacterData.getCharacter().name(), characterMessage.message());
             for(ServerPlayer player : server.getPlayerList().getPlayers()){
                 // if you are an owner, or close, send to player.
                 // if(sendingCharacterData.isOwner(player.getUUID()) || isClose(sendingCharacterData, player)  ){

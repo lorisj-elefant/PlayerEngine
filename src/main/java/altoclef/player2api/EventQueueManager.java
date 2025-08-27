@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
@@ -16,6 +17,7 @@ import org.apache.logging.log4j.Logger;
 import com.google.gson.JsonObject;
 
 import altoclef.AltoClefController;
+import altoclef.player2api.status.StatusUtils;
 import net.minecraft.server.MinecraftServer;
 
 public class EventQueueManager {
@@ -97,9 +99,12 @@ public class EventQueueManager {
         });
     }
 
-    private static Stream<EventQueueData> getCloseData(String senderUserName) {
-        return queueData.values().stream()
-                .filter(data -> data.getDistanceToUserName(senderUserName) < messagePassingMaxDistance);
+    private static Stream<EventQueueData> filterQueueData(Predicate<EventQueueData> pred){
+        return queueData.values().stream().filter(pred);
+    }
+
+    private static Stream<EventQueueData> getCloseDataByUUID(UUID sender) {
+        return filterQueueData(data -> data.getDistance(sender) < messagePassingMaxDistance);
     }
 
     // ## Callbacks (need to register these externally)
@@ -108,17 +113,17 @@ public class EventQueueManager {
     public static void onUserChatMessage(Event.UserMessage msg) {
         LOGGER.info("User message event={}", msg);
         // will add to entities close to the user:
-        getCloseData(msg.userName()).forEach(data -> {
+        filterQueueData(d -> isCloseToPlayer(d, msg.userName())).forEach(data -> {
             data.onEvent(msg);
         });
     }
 
     // register when an AI character messages
     public static void onAICharacterMessage(Event.CharacterMessage msg, UUID senderId) {
-        String sendingCharacterUsername = msg.sendingCharacterData().getUsername();
-        getCloseData(sendingCharacterUsername).filter(data -> !(data.getUsername().equals(sendingCharacterUsername)))
+        UUID sendingUUID = msg.sendingCharacterData().getUUID();
+        getCloseDataByUUID(sendingUUID).filter(data -> !(data.getUUID().equals(senderId)))
                 .forEach(data -> {
-                    LOGGER.info("onCharMsg/ msg={}, sender={}, running onCharMsg for ={}", msg.message(), sendingCharacterUsername, data.getUsername());
+                    LOGGER.info("onCharMsg/ msg={}, sender={}, running onCharMsg for ={}", msg.message(), senderId, data.getName());
                     data.onAICharacterMessage(msg);
                 });
     }
@@ -160,5 +165,10 @@ public class EventQueueManager {
 
     public static void resetMemory(AltoClefController mod) {
         mod.getAIPersistantData().clearHistory();
+    }
+
+
+    private static boolean isCloseToPlayer(EventQueueData data, String userName){
+        return StatusUtils.getDistanceToUsername(data.getMod(), userName) < messagePassingMaxDistance;
     }
 }

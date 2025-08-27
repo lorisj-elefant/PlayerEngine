@@ -37,7 +37,7 @@ public class TTSManager {
 
     public static void injectOnTick() {
         // release lock if we think we have finished.
-        if(System.nanoTime() > estimatedEndTime){
+        if(System.nanoTime() > estimatedEndTime && TTSLocked){
             LOGGER.info("TTS releasing lock");
             TTSLocked = false;
         }

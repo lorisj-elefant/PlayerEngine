@@ -24,10 +24,10 @@ public sealed interface Event // tagged union basically of the below events
 
     public record CharacterMessage(String message, String command, EventQueueData sendingCharacterData) implements Event {
         public String getConversationHistoryString(){
-            return String.format("Other Agent Message: [%s]: %s", sendingCharacterData.getUsername(), message);
+            return String.format("Other Agent Message: [%s]: %s", sendingCharacterData.getName(), message);
         }
         public String toString(){
-            return String.format("CharacterMessage(name='%s', message='%s', command='%s')", sendingCharacterData.getUsername(), message, command);
+            return String.format("CharacterMessage(name='%s', message='%s', command='%s')", sendingCharacterData.getName(), message, command);
         }
     }
 }

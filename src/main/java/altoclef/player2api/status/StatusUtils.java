@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.Map.Entry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction.Axis;
@@ -67,7 +68,8 @@ public class StatusUtils {
    public static String getWeatherString(AltoClefController mod) {
       boolean isRaining = mod.getWorld().isRaining();
       boolean isThundering = mod.getWorld().isThundering();
-      ObjectStatus status = new ObjectStatus().add("isRaining", String.valueOf(isRaining)).add("isThundering", String.valueOf(isThundering));
+      ObjectStatus status = new ObjectStatus().add("isRaining", String.valueOf(isRaining)).add("isThundering",
+            String.valueOf(isThundering));
       return status.toString();
    }
 
@@ -90,7 +92,8 @@ public class StatusUtils {
          for (int dy = -radius; dy <= radius; dy++) {
             for (int dz = -radius; dz <= radius; dz++) {
                BlockPos pos = center.offset(dx, dy, dz);
-               String blockName = mod.getWorld().getBlockState(pos).getBlock().getDescriptionId().replace("block.minecraft.", "");
+               String blockName = mod.getWorld().getBlockState(pos).getBlock().getDescriptionId()
+                     .replace("block.minecraft.", "");
                if (!blockName.equals("air")) {
                   blockCounts.put(blockName, blockCounts.getOrDefault(blockName, 0) + 1);
                }
@@ -125,8 +128,8 @@ public class StatusUtils {
       }
 
       return descriptions.isEmpty()
-         ? String.format("no nearby hostile mobs within %d", radius)
-         : "[" + String.join(",", descriptions.stream().map(s -> "\"" + s + "\"").toArray(String[]::new)) + "]";
+            ? String.format("no nearby hostile mobs within %d", radius)
+            : "[" + String.join(",", descriptions.stream().map(s -> "\"" + s + "\"").toArray(String[]::new)) + "]";
    }
 
    public static String getEquippedArmorStatusString(AltoClefController mod) {
@@ -137,16 +140,28 @@ public class StatusUtils {
       ItemStack legs = player.getItemBySlot(EquipmentSlot.LEGS);
       ItemStack feet = player.getItemBySlot(EquipmentSlot.FEET);
       ItemStack offhand = player.getItemBySlot(EquipmentSlot.OFFHAND);
-      status.add("helmet", !head.isEmpty() && head.getItem() instanceof ArmorItem ? head.getItem().getDescriptionId().replace("item.minecraft.", "") : "none");
+      status.add("helmet",
+            !head.isEmpty() && head.getItem() instanceof ArmorItem
+                  ? head.getItem().getDescriptionId().replace("item.minecraft.", "")
+                  : "none");
       status.add(
-         "chestplate", !chest.isEmpty() && chest.getItem() instanceof ArmorItem ? chest.getItem().getDescriptionId().replace("item.minecraft.", "") : "none"
-      );
-      status.add("leggings", !legs.isEmpty() && legs.getItem() instanceof ArmorItem ? legs.getItem().getDescriptionId().replace("item.minecraft.", "") : "none");
-      status.add("boots", !feet.isEmpty() && feet.getItem() instanceof ArmorItem ? feet.getItem().getDescriptionId().replace("item.minecraft.", "") : "none");
+            "chestplate",
+            !chest.isEmpty() && chest.getItem() instanceof ArmorItem
+                  ? chest.getItem().getDescriptionId().replace("item.minecraft.", "")
+                  : "none");
+      status.add("leggings",
+            !legs.isEmpty() && legs.getItem() instanceof ArmorItem
+                  ? legs.getItem().getDescriptionId().replace("item.minecraft.", "")
+                  : "none");
+      status.add("boots",
+            !feet.isEmpty() && feet.getItem() instanceof ArmorItem
+                  ? feet.getItem().getDescriptionId().replace("item.minecraft.", "")
+                  : "none");
       status.add(
-         "offhand_shield",
-         !offhand.isEmpty() && offhand.getItem() instanceof ShieldItem ? offhand.getItem().getDescriptionId().replace("item.minecraft.", "") : "none"
-      );
+            "offhand_shield",
+            !offhand.isEmpty() && offhand.getItem() instanceof ShieldItem
+                  ? offhand.getItem().getDescriptionId().replace("item.minecraft.", "")
+                  : "none");
       return status.toString();
    }
 
@@ -162,8 +177,8 @@ public class StatusUtils {
       }
 
       return descriptions.isEmpty()
-         ? String.format("no nearby users within %d", 32)
-         : "[" + String.join(",", descriptions.stream().map(s -> "\"" + s + "\"").toArray(String[]::new)) + "]";
+            ? String.format("no nearby users within %d", 32)
+            : "[" + String.join(",", descriptions.stream().map(s -> "\"" + s + "\"").toArray(String[]::new)) + "]";
    }
 
    public static String getNearbyNPCs(AltoClefController mod) {
@@ -180,19 +195,25 @@ public class StatusUtils {
       }
 
       return descriptions.isEmpty()
-         ? String.format("no nearby npcs within %d", 32)
-         : "[" + String.join(",", descriptions.stream().map(s -> "\"" + s + "\"").toArray(String[]::new)) + "]";
+            ? String.format("no nearby npcs within %d", 32)
+            : "[" + String.join(",", descriptions.stream().map(s -> "\"" + s + "\"").toArray(String[]::new)) + "]";
    }
 
-   public static float getUserNameDistance(AltoClefController mod, String targetUsername) {
+   public static float getDistanceToUUID(AltoClefController mod, UUID target) {
       for (Player player : mod.getWorld().players()) {
-         String username = player.getName().getString();
-         if (username.equals(targetUsername)) {
+         if (player.getUUID().equals(target)) {
             return player.distanceTo(mod.getPlayer());
          }
       }
-
       return Float.MAX_VALUE;
+   }
+
+   public static float getDistanceToUsername(AltoClefController mod, String username) {
+      return mod.getWorld().players().stream()
+            .filter(p -> p.getName().getString().equals(username))
+            .findFirst()
+            .map(p -> p.distanceTo(mod.getPlayer()))
+            .orElse(Float.MAX_VALUE);
    }
 
    public static String getDifficulty(AltoClefController mod) {
