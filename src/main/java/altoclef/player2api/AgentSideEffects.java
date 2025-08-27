@@ -42,7 +42,7 @@ public class AgentSideEffects {
                     broadcastChatToPlayer(server, message, player);
                 // }
             }
-            TTSManager.TTS(message, sendingCharacterData.getCharacter(), sendingCharacterData.getPlayer2apiService());
+            TTSManager.TTS(characterMessage.message(), sendingCharacterData.getCharacter(), sendingCharacterData.getPlayer2apiService());
             EventQueueManager.onAICharacterMessage(characterMessage, characterMessage.sendingCharacterData().getUUID());
         }
 

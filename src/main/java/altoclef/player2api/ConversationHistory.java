@@ -36,6 +36,7 @@ public class ConversationHistory {
    private boolean loadedFromFile = false;
    private static final int MAX_HISTORY = 64;
    private static final int SUMMARY_COUNT = 48;
+   private static final String reminderString = "Remember when talking with other AI, dont respond w/ message if the conversation has been going on for a while and no meaningful content.";
    public ConversationHistory(String initialSystemPrompt, String characterName, String characterShortName) {
       Path configDir = DirUtil.getConfigDir();
       String fileName = characterName.replaceAll("\\s+", "_") + "_" + characterName.replaceAll("\\s+", "_") + ".txt";
@@ -228,7 +229,7 @@ public class ConversationHistory {
          if ("user".equals(last.get("role").getAsString())) {
             String originalContent = last.get("content").getAsString();
             ObjectStatus msgObj = new ObjectStatus();
-            msgObj.add("userMessage", originalContent);
+            msgObj.add("userMessage", reminderString != null ? String.format("%s|%s", originalContent , reminderString) : originalContent);
             msgObj.add("worldStatus", worldStatus);
             msgObj.add("agentStatus", agentStatus);
             msgObj.add("gameDebugMessages", altoclefStatusMsgs);

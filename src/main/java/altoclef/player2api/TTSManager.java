@@ -15,29 +15,24 @@ public class TTSManager {
     private static boolean TTSLocked = false;
     private static long estimatedEndTime = 0;
     private static final ExecutorService ttsThread = Executors.newSingleThreadExecutor();
-    private static MinecraftServer server = null;
 
     private static void setEstimatedEndTime(String message) {
-        server.execute(() -> {
-            int waitTimeSec = (int) Math.ceil(message.length() / (double) TTScharactersPerSecond) + 1;
-            
-            LOGGER.info("TTSManager/ waiting time={} (sec) for message={}", waitTimeSec, message);
+        int waitTimeSec = (int) Math.ceil(message.length() / (double) TTScharactersPerSecond) + 1;
 
-            long waitNanos = TimeUnit.SECONDS.toNanos(waitTimeSec); 
-            estimatedEndTime = System.nanoTime() +  waitNanos;
-        });
+        LOGGER.info("TTSManager/ waiting time={} (sec) for message={}", waitTimeSec, message);
+
+        long waitNanos = TimeUnit.SECONDS.toNanos(waitTimeSec);
+        estimatedEndTime = System.nanoTime() + waitNanos;
     }
 
     public static void TTS(String message, Character character, Player2APIService player2apiService) {
-        server.execute(() -> {
-            TTSLocked = true;
-            LOGGER.info("Locking TTS based on msg={}", message);
-            estimatedEndTime = Long.MAX_VALUE;
-            
-            ttsThread.submit(() -> {
-                player2apiService.textToSpeech(message, character, (_unusedMap) -> {
-                    setEstimatedEndTime(message);
-                });
+        TTSLocked = true;
+        LOGGER.info("Locking TTS based on msg={}", message);
+        estimatedEndTime = Long.MAX_VALUE;
+
+        ttsThread.submit(() -> {
+            player2apiService.textToSpeech(message, character, (_unusedMap) -> {
+                setEstimatedEndTime(message);
             });
         });
     }
@@ -48,9 +43,6 @@ public class TTSManager {
 
     public static void injectOnTick(MinecraftServer server) {
         // release lock if we think we have finished.
-        if(TTSManager.server == null){
-            TTSManager.server = server;
-        }
         server.execute(() -> {
             if ((System.nanoTime() > estimatedEndTime) && TTSLocked) {
                 LOGGER.info("TTS releasing lock");

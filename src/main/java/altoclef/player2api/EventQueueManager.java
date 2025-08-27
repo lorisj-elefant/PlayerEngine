@@ -55,6 +55,7 @@ public class EventQueueManager {
                             "[EventQueueManager/LLMCompleter/process/onLLMResponse]: Error in external llm resp, errMsg={} llmResp={}",
                             e.getMessage(), resp.toString());
                 } finally {
+                    LOGGER.info("Done processing, isprocessing -> false");
                     isProcessing = false;
                 }
             };
