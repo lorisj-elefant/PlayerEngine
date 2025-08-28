@@ -33,7 +33,7 @@ public class AIPersistantData {
         }
     }
 
-    public Event dumpEventQueueToConversationHistoryAndReturnLastEvent(Deque<Event> eventQueue, Player2APIService player2apiService, String username){
+    public Event dumpEventQueueToConversationHistoryAndReturnLastEvent(Deque<Event> eventQueue, Player2APIService player2apiService){
         Event lastEvent = null;
         while(!eventQueue.isEmpty()){
             Event event = eventQueue.poll();
