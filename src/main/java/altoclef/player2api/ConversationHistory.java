@@ -221,6 +221,7 @@ public class ConversationHistory {
       return this.conversationHistory;
    }
 
+   // ReminderString adds a reminder to the latest user message if present.
    public ConversationHistory copyThenWrapLatestWithStatus(String worldStatus, String agentStatus,
          String altoclefStatusMsgs, Player2APIService player2apiService, Optional<String> reminderString) {
       ConversationHistory copy = new ConversationHistory(this.conversationHistory.get(0).get("content").getAsString());
