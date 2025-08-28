@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.Map.Entry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction.Axis;
@@ -196,5 +197,28 @@ public class StatusUtils {
    public static String getTaskTree(AltoClefController mod) {
       Task task = mod.getUserTaskChain().getCurrentTask();
       return task == null ? "Task tree is empty" : task.getTaskTree();
+   }
+
+   public static float getDistanceToUUID(AltoClefController mod, UUID target) {
+      // for (Player player : mod.getWorld().players()) {
+      //    if (player.getUUID().equals(target)) {
+      //       return player.distanceTo(mod.getPlayer());
+      //    }
+      // }
+      for(Entity entity : mod.getWorld().getAllEntities()){
+         if(entity.getUUID().equals(target)){
+            return entity.distanceTo(mod.getPlayer());
+         }
+      }
+
+      return Float.MAX_VALUE;
+   }
+
+   public static float getDistanceToUsername(AltoClefController mod, String username) {
+      return mod.getWorld().players().stream()
+            .filter(p -> p.getName().getString().equals(username))
+            .findFirst()
+            .map(p -> p.distanceTo(mod.getPlayer()))
+            .orElse(Float.MAX_VALUE);
    }
 }
