@@ -24,11 +24,12 @@ public class EventQueueManager {
     public static final Logger LOGGER = LogManager.getLogger();
 
     public static ConcurrentHashMap<UUID, EventQueueData> queueData = new ConcurrentHashMap<>();
-    private static float messagePassingMaxDistance = 25; // let messages between entities pass iff <= this maximum
+    private static float messagePassingMaxDistance = 64; // let messages between entities pass iff <= this maximum
     private static boolean hasInit = false;
     public static void init(){
         if(!hasInit){
             hasInit = true;
+            // unused but need to keep this so subscribes to events
             ForgeEventHandler handler = new ForgeEventHandler();
         }
     }

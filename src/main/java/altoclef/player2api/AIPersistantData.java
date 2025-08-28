@@ -1,6 +1,7 @@
 package altoclef.player2api;
 
 import java.util.Deque;
+import java.util.Optional;
 
 import altoclef.AltoClefController;
 import altoclef.player2api.Event.InfoMessage;
@@ -32,15 +33,18 @@ public class AIPersistantData {
         }
     }
 
-    public void dumpEventQueueToConversationHistory(Deque<Event> eventQueue, Player2APIService player2apiService){
+    public Event dumpEventQueueToConversationHistoryAndReturnLastEvent(Deque<Event> eventQueue, Player2APIService player2apiService){
+        Event lastEvent = null;
         while(!eventQueue.isEmpty()){
             Event event = eventQueue.poll();
             conversationHistory.addUserMessage(event.getConversationHistoryString(), player2apiService);
+            lastEvent = event;
         }
+        return lastEvent;
     }
-    public ConversationHistory getConversationHistoryWrappedWithStatus(String worldStatus, String agentStatus, String altoClefDebugMsgs, Player2APIService player2apiService){
+    public ConversationHistory getConversationHistoryWrappedWithStatus(String worldStatus, String agentStatus, String altoClefDebugMsgs, Player2APIService player2apiService, Optional<String> reminderString){
         return this.conversationHistory
-                .copyThenWrapLatestWithStatus(worldStatus, agentStatus, altoClefDebugMsgs, player2apiService);
+                .copyThenWrapLatestWithStatus(worldStatus, agentStatus, altoClefDebugMsgs, player2apiService, reminderString);
     }
     public void addAssistantMessage(String llmMessage, Player2APIService player2apiService){
         this.conversationHistory.addAssistantMessage(llmMessage, player2apiService);

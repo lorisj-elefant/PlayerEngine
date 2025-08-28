@@ -28,7 +28,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
+import javax.annotation.Nullable;
 
 public class ConversationHistory {
    private final List<JsonObject> conversationHistory = new ArrayList<>();
@@ -36,7 +38,7 @@ public class ConversationHistory {
    private boolean loadedFromFile = false;
    private static final int MAX_HISTORY = 64;
    private static final int SUMMARY_COUNT = 48;
-   private static final String reminderString = "Remember when talking with other AI, dont respond w/ message if the conversation has been going on for a while and no meaningful content.";
+
    public ConversationHistory(String initialSystemPrompt, String characterName, String characterShortName) {
       Path configDir = DirUtil.getConfigDir();
       String fileName = characterName.replaceAll("\\s+", "_") + "_" + characterName.replaceAll("\\s+", "_") + ".txt";
@@ -71,7 +73,8 @@ public class ConversationHistory {
          } else {
             JsonObject systemPrompt = this.conversationHistory.get(0);
             int tailStart = this.conversationHistory.size() - 16;
-            List<JsonObject> tail = new ArrayList<>(this.conversationHistory.subList(tailStart, this.conversationHistory.size()));
+            List<JsonObject> tail = new ArrayList<>(
+                  this.conversationHistory.subList(tailStart, this.conversationHistory.size()));
             this.conversationHistory.clear();
             this.conversationHistory.add(systemPrompt);
             JsonObject summaryMsg = new JsonObject();
@@ -189,7 +192,8 @@ public class ConversationHistory {
    }
 
    public void setBaseSystemPrompt(String newPrompt) {
-      if (!this.conversationHistory.isEmpty() && "system".equals(this.conversationHistory.get(0).get("role").getAsString())) {
+      if (!this.conversationHistory.isEmpty()
+            && "system".equals(this.conversationHistory.get(0).get("role").getAsString())) {
          this.conversationHistory.get(0).addProperty("content", newPrompt);
       } else {
          JsonObject systemMessage = new JsonObject();
@@ -217,7 +221,8 @@ public class ConversationHistory {
       return this.conversationHistory;
    }
 
-   public ConversationHistory copyThenWrapLatestWithStatus(String worldStatus, String agentStatus, String altoclefStatusMsgs, Player2APIService player2apiService) {
+   public ConversationHistory copyThenWrapLatestWithStatus(String worldStatus, String agentStatus,
+         String altoclefStatusMsgs, Player2APIService player2apiService, Optional<String> reminderString) {
       ConversationHistory copy = new ConversationHistory(this.conversationHistory.get(0).get("content").getAsString());
 
       for (int i = 1; i < this.conversationHistory.size() - 1; i++) {
@@ -229,10 +234,15 @@ public class ConversationHistory {
          if ("user".equals(last.get("role").getAsString())) {
             String originalContent = last.get("content").getAsString();
             ObjectStatus msgObj = new ObjectStatus();
-            msgObj.add("userMessage", reminderString != null ? String.format("%s|%s", originalContent , reminderString) : originalContent);
+            msgObj.add("userMessage", originalContent);
+            reminderString.ifPresent(remind -> {
+               msgObj.add("reminders", remind);
+            });
             msgObj.add("worldStatus", worldStatus);
             msgObj.add("agentStatus", agentStatus);
-            msgObj.add("gameDebugMessages", altoclefStatusMsgs);
+            if (!altoclefStatusMsgs.isBlank()) {
+               msgObj.add("gameDebugMessages", altoclefStatusMsgs);
+            }
             last.addProperty("content", msgObj.toString());
          }
 

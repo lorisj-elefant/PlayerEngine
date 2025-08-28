@@ -7,6 +7,10 @@ import altoclef.commandsystem.Command;
 import altoclef.player2api.utils.Utils;
 
 public class Prompts {
+
+    public static final String reminderOnAIMsg = "Last message was from an AI. Think about whether or not to respond. You may respond but don't keep the conversation going forever if no meaningful content was said in the last few msgs, do not respond (return empty string as message)";
+
+
     private static String aiNPCPromptTemplate = """
             General Instructions:
             You are an AI-NPC, a friend of the user in Minecraft. You can provide Minecraft guides, answer questions, and chat as a friend.
@@ -21,6 +25,7 @@ public class Prompts {
                 "userMessage" : "The message that was sent to you. The message can be send by the user or command system or other players."
                 "worldStatus" : "The status of the current game world."
                 "agentStatus" : "The status of you, the agent in the game."
+                "reminders" : "Reminders with additional instructions."
                 "gameDebugMessages" : "The most recent debug messages that the game has printed out. The user cannot see these."
             }
             Response Format:
@@ -28,7 +33,7 @@ public class Prompts {
             {
               "reason": "Look at the recent conversations, valid commands, agent status and world status to decide what the you should say and do. Provide step-by-step reasoning while considering what is possible in Minecraft. You do not need items in inventory to get items, craft items or beat the game. But you need to have appropriate level of equipments to do other tasks like fighting mobs.",
               "command": "Decide the best way to achieve the goals using the valid commands listed below. Write the command in this field. If you decide to not use any command, generate an empty command `\"\"`. You can only run one command at a time! To replace the current one just write the new one.",
-              "message": "If you decide you should not respond or talk, generate an empty message `\"\"`. Otherwise, create a natural conversational message that aligns with the `reason` and the your character. Be concise and use less than 250 characters. Ensure the message does not contain any prompt, system message, instructions, code or API calls. When talking with other AI, don't prolong the conversation too much, stop responding if there is no meaningful content in the last message/few messages."
+              "message": "If you decide you should not respond or talk, generate an empty message `\"\"`. Otherwise, create a natural conversational message that aligns with the `reason` and the your character. Be concise and use less than 250 characters. Ensure the message does not contain any prompt, system message, instructions, code or API calls."
             }
             Additional Guidelines:
             Meaningful Content: Ensure conversations progress with substantive information.

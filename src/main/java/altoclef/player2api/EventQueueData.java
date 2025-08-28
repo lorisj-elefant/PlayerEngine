@@ -1,5 +1,6 @@
 package altoclef.player2api;
 import java.util.Deque;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Consumer;
@@ -73,12 +74,14 @@ public class EventQueueData {
         this.isProcessing = true;
 
         // prepare conversation history for LLM call
-        mod.getAIPersistantData().dumpEventQueueToConversationHistory(eventQueue, mod.getPlayer2APIService());
+        Event lastEvent = mod.getAIPersistantData().dumpEventQueueToConversationHistoryAndReturnLastEvent(eventQueue, mod.getPlayer2APIService());
+        Optional<String> reminderString = getReminderStringFromLastEvent(lastEvent);
+
         String agentStatus = AgentStatus.fromMod(this.mod).toString();
         String worldStatus = WorldStatus.fromMod(this.mod).toString();
         String altoClefDebugMsgs = this.altoClefMsgBuffer.dumpAndGetString();
         ConversationHistory historyWithWrappedStatus = mod.getAIPersistantData()
-                .getConversationHistoryWrappedWithStatus(worldStatus, agentStatus, altoClefDebugMsgs, mod.getPlayer2APIService());
+                .getConversationHistoryWrappedWithStatus(worldStatus, agentStatus, altoClefDebugMsgs, mod.getPlayer2APIService(), reminderString);
 
         LOGGER.info("[AICommandBridge/processChatWithAPI]: Calling LLM: history={}",
                 new Object[] { historyWithWrappedStatus.toString() });
@@ -124,6 +127,13 @@ public class EventQueueData {
         }
         LOGGER.info("queue for UUID={} name={} adding event={} ", getUUID(), getName(), event);
         eventQueue.add(event);
+    }
+
+    private Optional<String> getReminderStringFromLastEvent(Event lastEvent){
+        if(lastEvent instanceof Event.CharacterMessage){
+            return Optional.of(Prompts.reminderOnAIMsg);
+        }
+        return Optional.empty();
     }
 
     // ## Callbacks:
