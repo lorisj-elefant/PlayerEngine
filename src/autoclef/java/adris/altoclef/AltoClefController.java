@@ -40,6 +40,8 @@ import baritone.autoclef.AltoClefSettings;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -138,6 +140,9 @@ public class AltoClefController {
       this.taskRunner.tick();
       this.inputControls.onTickPost();
       this.baritone.serverTick();
+   }
+   public static void staticServerTick(MinecraftServer server) {
+      EventQueueManager.injectOnTick(server);
    }
 
    public void stop() {
