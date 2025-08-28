@@ -9,7 +9,7 @@ import java.util.concurrent.Executors;
 
 import altoclef.player2api.Player2APIService;
 
-// static is one per client
+// static => one per client
 public class ClientHeartbeatManager {
     private static final ExecutorService worker = Executors.newSingleThreadExecutor();
 
