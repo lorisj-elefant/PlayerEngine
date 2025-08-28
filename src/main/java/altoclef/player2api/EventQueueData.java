@@ -112,7 +112,7 @@ public class EventQueueData {
     private boolean isEventDuplicateOfLastMessage(Event evt) {
         boolean isDuplicate = eventQueue.peekLast() != null && eventQueue.peekLast().equals(evt);
         if (isDuplicate) {
-            LOGGER.warn("[EventQueueData]: evt={} was added twice!", evt.toString());
+            LOGGER.warn("[EventQueueData]: evt={} was added twice!", evt.getConversationHistoryString());
             return true;
         }
         return false;
