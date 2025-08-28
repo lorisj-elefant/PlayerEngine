@@ -16,7 +16,7 @@ public class AIPersistantData {
 
     public AIPersistantData(AltoClefController mod, Character character) {
         this.character = character;
-        String systemPrompt = Prompts.getAINPCSystemPrompt(character, mod.getCommandExecutor().allCommands());
+        String systemPrompt = Prompts.getAINPCSystemPrompt(character, mod.getCommandExecutor().allCommands(), mod.getOwnerUsername());
         this.conversationHistory = new ConversationHistory(systemPrompt, character.name(), character.shortName());
     }
 
@@ -33,7 +33,7 @@ public class AIPersistantData {
         }
     }
 
-    public Event dumpEventQueueToConversationHistoryAndReturnLastEvent(Deque<Event> eventQueue, Player2APIService player2apiService){
+    public Event dumpEventQueueToConversationHistoryAndReturnLastEvent(Deque<Event> eventQueue, Player2APIService player2apiService, String username){
         Event lastEvent = null;
         while(!eventQueue.isEmpty()){
             Event event = eventQueue.poll();

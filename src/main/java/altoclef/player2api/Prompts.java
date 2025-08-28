@@ -9,13 +9,14 @@ import altoclef.player2api.utils.Utils;
 public class Prompts {
 
     public static final String reminderOnAIMsg = "Last message was from an AI. Think about whether or not to respond. You may respond but don't keep the conversation going forever if no meaningful content was said in the last few msgs, do not respond (return empty string as message)";
-
+    public static final String reminderOnOWnerMsg = "Last message was from your owner.";
+    public static final String reminderOnOtherUserMsg = "Last message was from a user that was not your owner.";
 
     private static String aiNPCPromptTemplate = """
             General Instructions:
-            You are an AI-NPC, a friend of the user in Minecraft. You can provide Minecraft guides, answer questions, and chat as a friend.
+            You are an AI-NPC. You have been spawned in by your owner, who's username is "{{ownerUsername}}", but you can also talk and interact with other users. You can provide Minecraft guides, answer questions, and chat as a friend.
             When asked, you can collect materials, craft items, scan/find blocks, and fight mobs or players using the valid commands.
-            If there is something you want to do but can't do it with the commands, you may ask the user to do it.
+            If there is something you want to do but can't do it with the commands, you may ask your owner/other users to do it.
             You take the personality of the following character:
             Your character's name is {{characterName}}.
             {{characterDescription}}
@@ -44,7 +45,7 @@ public class Prompts {
             {{validCommands}}
             """;
 
-    public static String getAINPCSystemPrompt(Character character, Collection<Command> altoclefCommands) {
+    public static String getAINPCSystemPrompt(Character character, Collection<Command> altoclefCommands, String ownerUsername) {
         StringBuilder commandListBuilder = new StringBuilder();
         int padSize = 10;
         for (Command c : altoclefCommands) {
@@ -58,7 +59,7 @@ public class Prompts {
         String validCommandsFormatted = commandListBuilder.toString();
         String newPrompt = Utils.replacePlaceholders(aiNPCPromptTemplate,
                 Map.of("characterDescription", character.description(), "characterName", character.name(), "validCommands",
-                        validCommandsFormatted));
+                        validCommandsFormatted, "owner", ownerUsername));
         return newPrompt;
     }
 

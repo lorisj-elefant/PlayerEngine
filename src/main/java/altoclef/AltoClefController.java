@@ -379,6 +379,9 @@ public class AltoClefController {
    public Player getOwner() {
       return this.owner;
    }
+   public String getOwnerUsername(){
+      return getOwner().getName().getString();
+   }
 
    public void setOwner(Player owner) {
       this.owner = owner;
