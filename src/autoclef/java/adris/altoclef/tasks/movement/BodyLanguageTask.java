@@ -90,7 +90,8 @@ public class BodyLanguageTask extends Task {
         int sneakCount = 3;
         int holdTicks = 6, pauseTicks = 6;
         for (int i = 0; i < sneakCount; i++) {
-            b.hold(Input.SNEAK).waitTicks(holdTicks).release(Input.SNEAK).waitTicks(pauseTicks);
+            b.jump().waitTicks(pauseTicks).jump().waitTicks(pauseTicks);
+            // b.hold(Input.SNEAK).waitTicks(holdTicks).release(Input.SNEAK).waitTicks(pauseTicks);
         }
         return b.build();
     }

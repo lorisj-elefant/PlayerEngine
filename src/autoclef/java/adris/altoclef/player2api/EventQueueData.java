@@ -93,6 +93,7 @@ public class EventQueueData {
         Consumer<JsonObject> onLLMResponse = jsonResp -> {
             String llmMessage = Utils.getStringJsonSafely(jsonResp, "message");
             String command = this.isGreetingResponse? "bodylang greeting": Utils.getStringJsonSafely(jsonResp, "command");
+            this.isGreetingResponse = false;
             LOGGER.info("[AICommandBridge/processCharWithAPI]: Processed LLM repsonse: message={} command={}",
                     llmMessage, command);
             try {
@@ -107,7 +108,6 @@ public class EventQueueData {
                 LOGGER.error("[AICommandBridge/processChatWithAPI/onLLMRepsonse: ERROR RUNNING SIDE EFFECTS, errMsg={}",
                         e.getMessage());
             } finally {
-                this.isGreetingResponse = true;
                 this.isProcessing = false;
             }
         };

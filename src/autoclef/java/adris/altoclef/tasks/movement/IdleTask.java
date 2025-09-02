@@ -14,6 +14,13 @@ public class IdleTask extends Task {
       if(this.controller.getOwner() != null){
          LookHelper.lookAt(this.controller, this.controller.getOwner().getEyePosition());
       }
+      else{
+         this.controller.getClosestPlayer().ifPresent(
+            (player) -> {
+               LookHelper.lookAt(controller, player.getEyePosition());
+            }
+         );
+      }
       Playground.IDLE_TEST_TICK_FUNCTION(this.controller);
       return null;
    }
