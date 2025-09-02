@@ -17,7 +17,7 @@ public class AIPersistantData {
 
     public AIPersistantData(AltoClefController mod, Character character) {
         this.character = character;
-        String systemPrompt = Prompts.getAINPCSystemPrompt(character, mod.getCommandExecutor().allCommands());
+        String systemPrompt = Prompts.getAINPCSystemPrompt(character, mod.getCommandExecutor().allCommands(), mod.getOwnerUsername());
         this.conversationHistory = new ConversationHistory(systemPrompt, character.name(), character.shortName());
     }
 

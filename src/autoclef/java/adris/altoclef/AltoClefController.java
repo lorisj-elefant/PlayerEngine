@@ -369,4 +369,11 @@ public class AltoClefController {
    public adris.altoclef.player2api.Player2APIService getPlayer2APIService(){
       return this.player2apiService;
    }
+
+   public String getOwnerUsername(){
+      if(getOwner() == null){
+         return "UNKNOWN OWNER";
+      }
+      return getOwner().getName().getString();
+   }
 }
