@@ -18,6 +18,8 @@
 package altoclef.player2api.utils;
 
 import altoclef.player2api.Character;
+import altoclef.player2api.Player2APIService;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -79,7 +81,7 @@ public class CharacterUtils {
 
    public static Character[] requestCharacters(String player2GameId) {
       try {
-         Map<String, JsonElement> responseMap = HTTPUtils.sendRequest(player2GameId, "/v1/selected_characters", false, null);
+         Map<String, JsonElement> responseMap = HTTPUtils.sendRequest( "/v1/selected_characters", false, null, Player2APIService.getHeaders(player2GameId));
          return parseCharacters(responseMap);
       } catch (Exception var2) {
          return new Character[0];
@@ -88,7 +90,7 @@ public class CharacterUtils {
 
    public static Character requestFirstCharacter(String player2GameId) {
       try {
-         Map<String, JsonElement> responseMap = HTTPUtils.sendRequest(player2GameId, "/v1/selected_characters", false, null);
+         Map<String, JsonElement> responseMap = HTTPUtils.sendRequest( "/v1/selected_characters", false, null, Player2APIService.getHeaders(player2GameId));
          return parseFirstCharacter(responseMap);
       } catch (Exception var2) {
          return DEFAULT_CHARACTER;
@@ -112,14 +114,14 @@ public class CharacterUtils {
    }
 
    public static void writeToBuf(FriendlyByteBuf buf, Character character) {
-      buf.writeUtf(character.name);
-      buf.writeUtf(character.shortName);
-      buf.writeUtf(character.greetingInfo);
-      buf.writeUtf(character.description);
-      buf.writeUtf(character.skinURL);
-      buf.writeInt(character.voiceIds.length);
+      buf.writeUtf(character.name());
+      buf.writeUtf(character.shortName());
+      buf.writeUtf(character.greetingInfo());
+      buf.writeUtf(character.description());
+      buf.writeUtf(character.skinURL());
+      buf.writeInt(character.voiceIds().length);
 
-      for (String id : character.voiceIds) {
+      for (String id : character.voiceIds()) {
          buf.writeUtf(id);
       }
    }
@@ -141,14 +143,14 @@ public class CharacterUtils {
    }
 
    public static void writeToNBT(CompoundTag compound, Character character) {
-      compound.putString("name", character.name);
-      compound.putString("shortName", character.shortName);
-      compound.putString("greetingInfo", character.greetingInfo);
-      compound.putString("description", character.description);
-      compound.putString("skinURL", character.skinURL);
+      compound.putString("name", character.name());
+      compound.putString("shortName", character.shortName());
+      compound.putString("greetingInfo", character.greetingInfo());
+      compound.putString("description", character.description());
+      compound.putString("skinURL", character.skinURL());
       ListTag voiceIds = new ListTag();
 
-      for (String id : character.voiceIds) {
+      for (String id : character.voiceIds()) {
          voiceIds.add(StringTag.valueOf(id));
       }
 

@@ -28,6 +28,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+
+import javax.annotation.Nullable;
 
 public class ConversationHistory {
    private final List<JsonObject> conversationHistory = new ArrayList<>();
@@ -35,13 +38,11 @@ public class ConversationHistory {
    private boolean loadedFromFile = false;
    private static final int MAX_HISTORY = 64;
    private static final int SUMMARY_COUNT = 48;
-   private final String player2GameId;
 
-   public ConversationHistory(String player2GameId, String initialSystemPrompt, String characterName, String characterShortName) {
+   public ConversationHistory(String initialSystemPrompt, String characterName, String characterShortName) {
       Path configDir = DirUtil.getConfigDir();
       String fileName = characterName.replaceAll("\\s+", "_") + "_" + characterName.replaceAll("\\s+", "_") + ".txt";
       this.historyFile = configDir.resolve(fileName);
-      this.player2GameId = player2GameId;
       if (Files.exists(this.historyFile)) {
          this.loadFromFile();
          this.setBaseSystemPrompt(initialSystemPrompt);
@@ -52,9 +53,8 @@ public class ConversationHistory {
       }
    }
 
-   private ConversationHistory(String player2GameId, String initialSystemPrompt) {
+   private ConversationHistory(String initialSystemPrompt) {
       this.historyFile = null;
-      this.player2GameId = player2GameId;
       this.setBaseSystemPrompt(initialSystemPrompt);
       this.loadedFromFile = false;
    }
@@ -63,17 +63,18 @@ public class ConversationHistory {
       return this.loadedFromFile;
    }
 
-   public void addHistory(JsonObject text, boolean doCutOff) {
+   public void addHistory(JsonObject text, boolean doCutOff, Player2APIService player2apiService) {
       this.conversationHistory.add(text);
       if (doCutOff && this.conversationHistory.size() > 64) {
          List<JsonObject> toSummarize = new ArrayList<>(this.conversationHistory.subList(1, 49));
-         String summary = this.summarizeHistory(toSummarize);
+         String summary = this.summarizeHistory(toSummarize, player2apiService);
          if (summary == "") {
             this.conversationHistory.remove(1);
          } else {
             JsonObject systemPrompt = this.conversationHistory.get(0);
             int tailStart = this.conversationHistory.size() - 16;
-            List<JsonObject> tail = new ArrayList<>(this.conversationHistory.subList(tailStart, this.conversationHistory.size()));
+            List<JsonObject> tail = new ArrayList<>(
+                  this.conversationHistory.subList(tailStart, this.conversationHistory.size()));
             this.conversationHistory.clear();
             this.conversationHistory.add(systemPrompt);
             JsonObject summaryMsg = new JsonObject();
@@ -91,16 +92,16 @@ public class ConversationHistory {
       }
    }
 
-   private String summarizeHistory(List<JsonObject> messages) {
+   private String summarizeHistory(List<JsonObject> messages, Player2APIService player2apiService) {
       String summarizationPrompt = "    Our AI agent that has been chatting with user and playing minecraft.\n    Update agent's memory by summarizing the following conversation in the next response.\n\n    Use natural language, not JSON format.\n\n    Prioritize preserving important facts, things user asked agent to remember, useful tips.\n    Do not record stats, inventory, code or docs; limit to 500 chars.\n";
-      ConversationHistory temp = new ConversationHistory(this.player2GameId, summarizationPrompt);
+      ConversationHistory temp = new ConversationHistory(summarizationPrompt);
 
       for (JsonObject msg : messages) {
-         temp.addHistory(Utils.deepCopy(msg), false);
+         temp.addHistory(Utils.deepCopy(msg), false, player2apiService);
       }
 
       try {
-         String resp = Player2APIService.completeConversationToString(this.player2GameId, temp);
+         String resp = player2apiService.completeConversationToString(temp);
          return resp;
       } catch (Exception var6) {
          var6.printStackTrace();
@@ -183,15 +184,16 @@ public class ConversationHistory {
       }
    }
 
-   public void addUserMessage(String userText) {
+   public void addUserMessage(String userText, Player2APIService player2apiService) {
       JsonObject objectToAdd = new JsonObject();
       objectToAdd.addProperty("role", "user");
       objectToAdd.addProperty("content", userText);
-      this.addHistory(objectToAdd, false);
+      this.addHistory(objectToAdd, false, player2apiService);
    }
 
    public void setBaseSystemPrompt(String newPrompt) {
-      if (!this.conversationHistory.isEmpty() && "system".equals(this.conversationHistory.get(0).get("role").getAsString())) {
+      if (!this.conversationHistory.isEmpty()
+            && "system".equals(this.conversationHistory.get(0).get("role").getAsString())) {
          this.conversationHistory.get(0).addProperty("content", newPrompt);
       } else {
          JsonObject systemMessage = new JsonObject();
@@ -201,29 +203,31 @@ public class ConversationHistory {
       }
    }
 
-   public void addSystemMessage(String systemText) {
+   public void addSystemMessage(String systemText, Player2APIService player2apiService) {
       JsonObject objectToAdd = new JsonObject();
       objectToAdd.addProperty("role", "system");
       objectToAdd.addProperty("content", systemText);
-      this.addHistory(objectToAdd, false);
+      this.addHistory(objectToAdd, false, player2apiService);
    }
 
-   public void addAssistantMessage(String messageText) {
+   public void addAssistantMessage(String messageText, Player2APIService player2apiService) {
       JsonObject objectToAdd = new JsonObject();
       objectToAdd.addProperty("role", "assistant");
       objectToAdd.addProperty("content", messageText);
-      this.addHistory(objectToAdd, true);
+      this.addHistory(objectToAdd, true, player2apiService);
    }
 
    public List<JsonObject> getListJSON() {
       return this.conversationHistory;
    }
 
-   public ConversationHistory copyThenWrapLatestWithStatus(String worldStatus, String agentStatus, String altoclefStatusMsgs) {
-      ConversationHistory copy = new ConversationHistory(this.player2GameId, this.conversationHistory.get(0).get("content").getAsString());
+   // ReminderString adds a reminder to the latest user message if present.
+   public ConversationHistory copyThenWrapLatestWithStatus(String worldStatus, String agentStatus,
+         String altoclefStatusMsgs, Player2APIService player2apiService, Optional<String> reminderString) {
+      ConversationHistory copy = new ConversationHistory(this.conversationHistory.get(0).get("content").getAsString());
 
       for (int i = 1; i < this.conversationHistory.size() - 1; i++) {
-         copy.addHistory(Utils.deepCopy(this.conversationHistory.get(i)), false);
+         copy.addHistory(Utils.deepCopy(this.conversationHistory.get(i)), false, player2apiService);
       }
 
       if (this.conversationHistory.size() > 1) {
@@ -232,13 +236,18 @@ public class ConversationHistory {
             String originalContent = last.get("content").getAsString();
             ObjectStatus msgObj = new ObjectStatus();
             msgObj.add("userMessage", originalContent);
+            reminderString.ifPresent(remind -> {
+               msgObj.add("reminders", remind);
+            });
             msgObj.add("worldStatus", worldStatus);
             msgObj.add("agentStatus", agentStatus);
-            msgObj.add("gameDebugMessages", altoclefStatusMsgs);
+            if (!altoclefStatusMsgs.isBlank()) {
+               msgObj.add("gameDebugMessages", altoclefStatusMsgs);
+            }
             last.addProperty("content", msgObj.toString());
          }
 
-         copy.addHistory(last, false);
+         copy.addHistory(last, false, player2apiService);
       }
 
       return copy;
