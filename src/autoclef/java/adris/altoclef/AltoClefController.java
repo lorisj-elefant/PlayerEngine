@@ -14,7 +14,11 @@ import adris.altoclef.commandsystem.CommandExecutor;
 import adris.altoclef.control.InputControls;
 import adris.altoclef.control.PlayerExtraController;
 import adris.altoclef.control.SlotHandler;
-import adris.altoclef.player2api.AICommandBridge;
+
+import adris.altoclef.player2api.EventQueueManager;
+import adris.altoclef.player2api.AIPersistantData;
+import adris.altoclef.player2api.Player2APIService;
+
 import adris.altoclef.player2api.Character;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.tasksystem.TaskRunner;
@@ -35,13 +39,19 @@ import baritone.api.utils.IInteractionController;
 import baritone.autoclef.AltoClefSettings;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
+
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 
+
 public class AltoClefController {
    private final IBaritone baritone;
+   private AIPersistantData aiPersistantData;
+   private Player2APIService player2apiService;
    private final IEntityContext ctx;
    private CommandExecutor commandExecutor;
    private TaskRunner taskRunner;
@@ -66,11 +76,10 @@ public class AltoClefController {
    private Settings settings;
    private boolean paused = false;
    private Task storedTask;
-   private AICommandBridge aiBridge;
    public boolean isStopping = false;
    private Player owner;
 
-   public AltoClefController(IBaritone baritone) {
+   public AltoClefController(IBaritone baritone, Character character, String player2GameId) {
       this.baritone = baritone;
       this.ctx = baritone.getEntityContext();
       this.commandExecutor = new CommandExecutor(this);
@@ -95,7 +104,6 @@ public class AltoClefController {
       this.userBlockRangeTracker = new UserBlockRangeTracker(this.trackerManager);
       this.inputControls = new InputControls(this);
       this.slotHandler = new SlotHandler(this);
-      this.aiBridge = new AICommandBridge(this.commandExecutor, this);
       this.extraController = new PlayerExtraController(this);
       this.initializeBaritoneSettings();
       this.botBehaviour = new BotBehaviour(this);
@@ -116,6 +124,11 @@ public class AltoClefController {
          }
       );
       Playground.IDLE_TEST_INIT_FUNCTION(this);
+
+      // AI setup: (should be at end to ensure as many things are not null as possible)
+      EventQueueManager.getOrCreateEventQueueData(this);
+      this.aiPersistantData = new AIPersistantData(this, character);
+      this.player2apiService = new Player2APIService(player2GameId);
    }
 
    public void serverTick() {
@@ -127,9 +140,9 @@ public class AltoClefController {
       this.taskRunner.tick();
       this.inputControls.onTickPost();
       this.baritone.serverTick();
-      if (this.aiBridge.getEnabled()) {
-         this.aiBridge.onTick();
-      }
+   }
+   public static void staticServerTick(MinecraftServer server) {
+      EventQueueManager.injectOnTick(server);
    }
 
    public void stop() {
@@ -315,12 +328,9 @@ public class AltoClefController {
       return this.extraController;
    }
 
-   public AICommandBridge getAiBridge() {
-      return this.aiBridge;
-   }
-
    public void setChatClefEnabled(boolean enabled) {
-      this.getAiBridge().setEnabled(enabled);
+      EventQueueManager.getOrCreateEventQueueData(this).setEnabled(enabled);
+
       if (!enabled) {
          this.getUserTaskChain().cancel(this);
          this.getTaskRunner().disable();
@@ -348,5 +358,15 @@ public class AltoClefController {
 
    public void setOwner(Player owner) {
       this.owner = owner;
+   }
+   public boolean isOwner(UUID playerToCheck) {
+      return playerToCheck.equals(owner.getUUID());
+   }
+   public adris.altoclef.player2api.AIPersistantData getAIPersistantData() {
+      return this.aiPersistantData;
+   }
+
+   public adris.altoclef.player2api.Player2APIService getPlayer2APIService(){
+      return this.player2apiService;
    }
 }
