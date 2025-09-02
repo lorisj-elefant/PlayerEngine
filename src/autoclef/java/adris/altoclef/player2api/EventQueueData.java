@@ -32,6 +32,10 @@ public class EventQueueData {
     private boolean isProcessing = false;
     private boolean enabled = true;
 
+    // seperating these to be safe:
+    private boolean isGreetingResponse = true;
+    private boolean shouldIgnoreGreetingDance = true;
+
     private MessageBuffer altoClefMsgBuffer = new MessageBuffer(10);
 
     public EventQueueData(AltoClefController mod) {
@@ -88,7 +92,7 @@ public class EventQueueData {
 
         Consumer<JsonObject> onLLMResponse = jsonResp -> {
             String llmMessage = Utils.getStringJsonSafely(jsonResp, "message");
-            String command = Utils.getStringJsonSafely(jsonResp, "command");
+            String command = this.isGreetingResponse? "bodylang greeting": Utils.getStringJsonSafely(jsonResp, "command");
             LOGGER.info("[AICommandBridge/processCharWithAPI]: Processed LLM repsonse: message={} command={}",
                     llmMessage, command);
             try {
@@ -103,6 +107,7 @@ public class EventQueueData {
                 LOGGER.error("[AICommandBridge/processChatWithAPI/onLLMRepsonse: ERROR RUNNING SIDE EFFECTS, errMsg={}",
                         e.getMessage());
             } finally {
+                this.isGreetingResponse = true;
                 this.isProcessing = false;
             }
         };
@@ -163,6 +168,11 @@ public class EventQueueData {
 
     public void onCommandFinish(AgentSideEffects.CommandExecutionStopReason stopReason) {
         if (stopReason instanceof CommandExecutionStopReason.Finished) {
+            if(shouldIgnoreGreetingDance){
+                // ignore first greeting command finish:
+                shouldIgnoreGreetingDance = false;
+                return;
+            }
             if (eventQueue.isEmpty()) {
                 addEventToQueue(new InfoMessage(String.format(
                         "Command feedback: %s finished running. What shall we do next? If no new action is needed to finish user's request, generate empty command `\"\"`.",

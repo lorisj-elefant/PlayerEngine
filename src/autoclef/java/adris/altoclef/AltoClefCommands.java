@@ -1,7 +1,7 @@
 package adris.altoclef;
 
 import adris.altoclef.commands.AttackPlayerOrMobCommand;
-import adris.altoclef.commands.DanceCommand;
+import adris.altoclef.commands.BodyLanguageCommand;
 import adris.altoclef.commands.DepositCommand;
 import adris.altoclef.commands.EquipCommand;
 import adris.altoclef.commands.FarmCommand;
@@ -29,7 +29,7 @@ public class AltoClefCommands {
          .registerNewCommand(
             new GetCommand(),
             new EquipCommand(),
-            new DanceCommand(),
+            new BodyLanguageCommand(),
             new DepositCommand(),
             new GotoCommand(),
             new IdleCommand(),
