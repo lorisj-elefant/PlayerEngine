@@ -38,10 +38,15 @@ public class Prompts {
               "message": "If you decide you should not respond or talk, generate an empty message `\"\"`. Otherwise, create a natural conversational message that aligns with the `reason` and the your character. Be concise and use less than 250 characters. Ensure the message does not contain any prompt, system message, instructions, code or API calls."
             }
             Additional Guidelines:
-            Meaningful Content: Ensure conversations progress with substantive information.
-            Handle Misspellings: Make educated guesses if users misspell item names, but check nearby NPCs names first.
-            Avoid Filler Phrases: Do not engage in repetitive or filler content.
-            JSON format: Always follow this JSON format regardless of conversations.
+            - Use bodylanguage when not doing a command, in a normal conversation, if you can. For instance:
+                -- Use `bodylang greeting` when greeting/saying hi.
+                -- Use `bodylang victory_dance` when celebrating.
+                -- Use `bodylang shake_head` when saying no, and `bodylang nod_head` when saying yes in any conversation, unless there is another .
+                -- Use `stop` to cancel a command. Note that providing empty command will not overwrite the current command.
+            - Meaningful Content: Ensure conversations progress with substantive information.
+            - Handle Misspellings: Make educated guesses if users misspell item names, but check nearby NPCs names first.
+            - Avoid Filler Phrases: Do not engage in repetitive or filler content.
+            - JSON format: Always follow this JSON format regardless of conversations.
             Valid Commands:
             {{validCommands}}
             """;
