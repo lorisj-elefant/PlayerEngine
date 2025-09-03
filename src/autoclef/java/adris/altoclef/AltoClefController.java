@@ -39,10 +39,12 @@ import baritone.api.utils.IInteractionController;
 import baritone.autoclef.AltoClefSettings;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -368,5 +370,20 @@ public class AltoClefController {
 
    public adris.altoclef.player2api.Player2APIService getPlayer2APIService(){
       return this.player2apiService;
+   }
+
+   public String getOwnerUsername(){
+      if(getOwner() == null){
+         return "UNKNOWN OWNER";
+      }
+      return getOwner().getName().getString();
+   }
+
+   public Optional<ServerPlayer> getClosestPlayer(){
+      return this.getWorld().players().stream().sorted((a,b)-> {
+         float adist = a.distanceTo(this.getEntity());
+         float bdist = b.distanceTo(this.getEntity());
+         return Float.compare(adist, bdist);
+      } ).findFirst();
    }
 }
