@@ -360,6 +360,7 @@ public class AltoClefController {
 
    public void setOwner(Player owner) {
       this.owner = owner;
+      aiPersistantData.updateSystemPrompt();
    }
    public boolean isOwner(UUID playerToCheck) {
       return playerToCheck.equals(owner.getUUID());

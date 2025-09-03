@@ -14,9 +14,11 @@ public class AIPersistantData {
 
     private ConversationHistory conversationHistory;
     private Character character;
+    private AltoClefController mod;
 
     public AIPersistantData(AltoClefController mod, Character character) {
         this.character = character;
+        this.mod = mod;
         String systemPrompt = Prompts.getAINPCSystemPrompt(character, mod.getCommandExecutor().allCommands(), mod.getOwnerUsername());
         this.conversationHistory = new ConversationHistory(systemPrompt, character.name(), character.shortName());
     }
@@ -52,5 +54,10 @@ public class AIPersistantData {
     }
     public Character getCharacter(){
         return this.character;
+    }
+
+    public void updateSystemPrompt(){
+        String systemPrompt = Prompts.getAINPCSystemPrompt(character, mod.getCommandExecutor().allCommands(), mod.getOwnerUsername());
+        conversationHistory.setBaseSystemPrompt(systemPrompt);
     }
 }
