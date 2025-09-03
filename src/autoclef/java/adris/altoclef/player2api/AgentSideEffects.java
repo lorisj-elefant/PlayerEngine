@@ -7,6 +7,7 @@ import org.apache.logging.log4j.Logger;
 
 import adris.altoclef.AltoClefController;
 import adris.altoclef.commandsystem.CommandExecutor;
+import adris.altoclef.tasks.LookAtOwnerTask;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -74,11 +75,21 @@ public class AgentSideEffects {
                         commandWithPrefix);
                 // Other canceled logic here
                 onStop.accept(new CommandExecutionStopReason.Cancelled(commandWithPrefix));
+                LOGGER.info("after cancel, not running look at owner");
             } else {
-                onStop.accept(new CommandExecutionStopReason.Finished(commandWithPrefix));
+                if(!commandWithPrefix.equals("@bodylang greeting")){
+                    onStop.accept(new CommandExecutionStopReason.Finished(commandWithPrefix));
+                }
+                else{
+                    LOGGER.info("Ignore bodylang onStop greeting stop");
+                }
+                LOGGER.info("after finish, running look at owner");
+                mod.runUserTask(new LookAtOwnerTask());
             }
         }, (err) -> {
             onStop.accept(new CommandExecutionStopReason.Error(commandWithPrefix, err.getMessage()));
+            LOGGER.info("after error, running look at owner");
+            mod.runUserTask(new LookAtOwnerTask());
         });
     }
 

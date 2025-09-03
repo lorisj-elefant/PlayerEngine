@@ -14,8 +14,9 @@ public class BodyLanguageCommand extends Command{
     @Override
     protected void call(AltoClefController mod, ArgParser parser) throws CommandException {
         String bodyLanguage = parser.get(String.class);
-
-        mod.runUserTask(new BodyLanguageTask(bodyLanguage));
+        mod.runUserTask(new BodyLanguageTask(bodyLanguage), () -> {
+            System.out.println("Body language done");
+            this.finish();});
     }
 
 }

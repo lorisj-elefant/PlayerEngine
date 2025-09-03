@@ -187,7 +187,7 @@ public class EventQueueData {
                     stopReason.commandName(),
                     ((CommandExecutionStopReason.Error) stopReason).errMsg())));
         }
-        // do nothing otherwise (if canceled)
+        // (if canceled dont modify queue)
     }
 
     // Utils:
