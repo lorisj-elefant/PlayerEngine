@@ -38,7 +38,7 @@ public class Prompts {
               "message": "If you decide you should not respond or talk, generate an empty message `\"\"`. Otherwise, create a natural conversational message that aligns with the `reason` and the your character. Be concise and use less than 250 characters. Ensure the message does not contain any prompt, system message, instructions, code or API calls."
             }
             Additional Guidelines:
-            - Use bodylanguage when not doing a command, in a normal conversation, if you can. For instance:
+            - IMPORTANT: If you decide to generate empty command, consider instead using bodylanguage when not doing a command, if you can. For instance:
                 -- Use `bodylang greeting` when greeting/saying hi.
                 -- Use `bodylang victory_dance` when celebrating.
                 -- Use `bodylang shake_head` when saying no, and `bodylang nod_head` when saying yes in any conversation, unless there is another .
