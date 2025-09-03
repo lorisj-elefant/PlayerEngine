@@ -25,14 +25,6 @@ public class EventQueueManager {
 
     public static ConcurrentHashMap<UUID, EventQueueData> queueData = new ConcurrentHashMap<>();
     private static float messagePassingMaxDistance = 64; // let messages between entities pass iff <= this maximum
-    private static boolean hasInit = false;
-    public static void init(){
-        if(!hasInit){
-            hasInit = true;
-            // unused but need to keep this so subscribes to events
-            ForgeEventHandler handler = new ForgeEventHandler();
-        }
-    }
 
     public static class LLMCompleter {
         private boolean isProcessing = false;
@@ -143,10 +135,6 @@ public class EventQueueManager {
 
     // side effects are here:
     public static void injectOnTick(MinecraftServer server) {
-        if(!hasInit){
-            init();
-        }
-
         Consumer<Event.CharacterMessage> onCharacterEvent = (data) -> {
             AgentSideEffects.onEntityMessage(server, data);
         };
