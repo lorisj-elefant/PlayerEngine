@@ -3,7 +3,7 @@ package adris.altoclef.commands;
 import adris.altoclef.AltoClefController;
 import adris.altoclef.commandsystem.ArgParser;
 import adris.altoclef.commandsystem.Command;
-import adris.altoclef.tasks.LookAtOwnerTask;
+import adris.altoclef.tasks.movement.IdleTask;
 
 public class IdleCommand extends Command {
    public IdleCommand() {
@@ -12,6 +12,6 @@ public class IdleCommand extends Command {
 
    @Override
    protected void call(AltoClefController mod, ArgParser parser) {
-      mod.runUserTask(new LookAtOwnerTask(), () -> this.finish());
+      mod.runUserTask(new IdleTask(), () -> this.finish());
    }
 }
