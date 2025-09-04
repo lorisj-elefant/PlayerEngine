@@ -70,7 +70,7 @@ public class AgentSideEffects {
         }
         cmdExecutor.execute(commandWithPrefix, () -> {
             if (mod.isStopping) {
-                System.out.printf(
+                LOGGER.info(
                         "[AgentSideEffects/AgentSideEffects]: (%s) was cancelled. Not adding finish event to queue.",
                         commandWithPrefix);
                 // Other canceled logic here
@@ -81,10 +81,8 @@ public class AgentSideEffects {
                     onStop.accept(new CommandExecutionStopReason.Finished(commandWithPrefix));
                 }
                 else{
-                    LOGGER.info("Ignore bodylang onStop greeting stop");
+                    LOGGER.info("Ignore onStop for bodylang greeting");
                 }
-                LOGGER.info("after finish, running look at owner");
-                mod.runUserTask(new LookAtOwnerTask());
             }
         }, (err) -> {
             onStop.accept(new CommandExecutionStopReason.Error(commandWithPrefix, err.getMessage()));

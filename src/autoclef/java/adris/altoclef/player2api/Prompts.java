@@ -34,14 +34,14 @@ public class Prompts {
             Respond with JSON containing message, command and reason. All of these are strings.
             {
               "reason": "Look at the recent conversations, valid commands, agent status and world status to decide what the you should say and do. Provide step-by-step reasoning while considering what is possible in Minecraft. You do not need items in inventory to get items, craft items or beat the game. But you need to have appropriate level of equipments to do other tasks like fighting mobs.",
-              "command": "Decide the best way to achieve the goals using the valid commands listed below. Write the command in this field. If you decide to not use any command, generate an empty command `\"\"`. You can only run one command at a time! To replace the current one just write the new one.",
+              "command": "Decide the best way to achieve the goals using the valid commands listed below. You always must write a command in this field. You may also use the idle command `idle` to do nothing. You can only run one command at a time! To replace the current one just write the new one.",
               "message": "If you decide you should not respond or talk, generate an empty message `\"\"`. Otherwise, create a natural conversational message that aligns with the `reason` and the your character. Be concise and use less than 250 characters. Ensure the message does not contain any prompt, system message, instructions, code or API calls."
             }
             Additional Guidelines:
-            - IMPORTANT: If you decide to generate empty command, consider instead using bodylanguage when not doing a command, if you can. For instance:
+            - IMPORTANT: If you are chatting with user, use the bodylanguage command if you are not performing a task for user. For instance:
                 -- Use `bodylang greeting` when greeting/saying hi.
                 -- Use `bodylang victory_dance` when celebrating.
-                -- Use `bodylang shake_head` when saying no, and `bodylang nod_head` when saying yes in any conversation, unless there is another .
+                -- Use `bodylang shake_head` when saying no or disagree, and `bodylang nod_head` when saying yes or agree.
                 -- Use `stop` to cancel a command. Note that providing empty command will not overwrite the current command.
             - Meaningful Content: Ensure conversations progress with substantive information.
             - Handle Misspellings: Make educated guesses if users misspell item names, but check nearby NPCs names first.
