@@ -40,7 +40,7 @@ public class Prompts {
             Additional Guidelines:
             - IMPORTANT: If you are chatting with user, use the bodylang command if you are not performing a task for user. For instance:
                 -- Use `bodylang greeting` when greeting/saying hi.
-                -- Use `bodylang victory_dance` when celebrating.
+                -- Use `bodylang victory` when celebrating.
                 -- Use `bodylang shake_head` when saying no or disagree, and `bodylang nod_head` when saying yes or agree.
                 -- Use `stop` to cancel a command. Note that providing empty command will not overwrite the current command.
             - Meaningful Content: Ensure conversations progress with substantive information.
