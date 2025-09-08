@@ -13,7 +13,7 @@ import com.google.gson.JsonObject;
 
 public class LLMCompleter {
     public static final Logger LOGGER = LogManager.getLogger();
-    private boolean isProcessing = false;
+    private boolean isCallingLLM = false;
 
     private static final ExecutorService llmThread = Executors.newSingleThreadExecutor();
     private static List<LLMCompleter> llmCompleters = List.of(new LLMCompleter());
@@ -23,11 +23,12 @@ public class LLMCompleter {
             ConversationHistory history,
             BiConsumer<String, LLMCompleter> extOnLLMResponse,
             Consumer<String> extOnErrMsg) {
-        if (isProcessing) {
+        if (isCallingLLM) {
             LOGGER.warn("Called llmcompleter.process when it was already processing! This should not happen.");
             return;
         }
         Consumer<String> onLLMResponse = resp -> {
+            isCallingLLM = false;
             try {
                 extOnLLMResponse.accept(resp, this);
             } catch (Exception e) {
@@ -36,21 +37,19 @@ public class LLMCompleter {
                         e.getMessage(), resp.toString());
             } finally {
                 LOGGER.info("Done processing, isprocessing -> false");
-                isProcessing = false;
             }
         };
         Consumer<String> onErrMsg = errMsg -> {
+            isCallingLLM = false;
             try {
                 extOnErrMsg.accept(errMsg);
             } catch (Exception e) {
                 LOGGER.error(
                         "[EventQueueManager/LLMCompleter/process/onErrMsg]: Error in external onErrmsg, errMsgFromException={} errMsg={}",
                         e.getMessage(), errMsg);
-            } finally {
-                isProcessing = false;
             }
         };
-        isProcessing = true;
+        isCallingLLM = true;
         llmThread.submit(() -> {
             try {
                 String response = player2apiService.completeConversationToString(history);
@@ -68,7 +67,7 @@ public class LLMCompleter {
             ConversationHistory history,
             BiConsumer<JsonObject, LLMCompleter> extOnLLMResponse,
             Consumer<String> extOnErrMsg) {
-        if (isProcessing) {
+        if (isCallingLLM) {
             LOGGER.warn("Called llmcompleter.process when it was already processing! This should not happen.");
             return;
         }
@@ -82,7 +81,7 @@ public class LLMCompleter {
                         e.getMessage(), resp.toString());
             } finally {
                 LOGGER.info("Done processing, isprocessing -> false");
-                isProcessing = false;
+                isCallingLLM = false;
             }
         };
 
@@ -94,10 +93,10 @@ public class LLMCompleter {
                         "[EventQueueManager/LLMCompleter/process/onErrMsg]: Error in external onErrmsg, errMsgFromException={} errMsg={}",
                         e.getMessage(), errMsg);
             } finally {
-                isProcessing = false;
+                isCallingLLM = false;
             }
         };
-        isProcessing = true;
+        isCallingLLM = true;
         llmThread.submit(() -> {
             try {
                 JsonObject response = player2apiService.completeConversation(history);
@@ -111,7 +110,7 @@ public class LLMCompleter {
     }
 
     public boolean isAvailible() {
-        return !isProcessing;
+        return !isCallingLLM;
     }
 
     public static void processUsingAvailibleCompleter(Consumer<LLMCompleter> processer) {
