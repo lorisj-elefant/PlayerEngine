@@ -32,7 +32,8 @@ public class AgentSideEffects {
         }
     }
 
-    public static void onEntityMessage(MinecraftServer server, Event.CharacterMessage characterMessage) {
+    public static void onEntityMessage(MinecraftServer server, Event.CharacterMessage characterMessage,
+            LLMCompleter completer, Player2APIService service) {
         // message part:
         if (characterMessage.message() != null && !characterMessage.message().isBlank()) {
             EventQueueData sendingCharacterData = characterMessage.sendingCharacterData();
@@ -52,7 +53,7 @@ public class AgentSideEffects {
         // command part:
         if (characterMessage.command() != null && !characterMessage.command().isBlank()) {
             onCommandListGenerated(characterMessage.sendingCharacterData().getMod(), characterMessage.command(),
-                    characterMessage.sendingCharacterData()::onCommandFinish);
+                    characterMessage.sendingCharacterData()::onCommandFinish, completer, service);
         }
     }
 
@@ -61,7 +62,7 @@ public class AgentSideEffects {
     }
 
     public static void onCommandListGenerated(AltoClefController mod, String command,
-            Consumer<CommandExecutionStopReason> onStop) {
+            Consumer<CommandExecutionStopReason> onStop, LLMCompleter completer, Player2APIService service) {
         CommandExecutor cmdExecutor = mod.getCommandExecutor();
         String commandWithPrefix = cmdExecutor.isClientCommand(command) ? command
                 : (cmdExecutor.getCommandPrefix() + command);
@@ -73,7 +74,7 @@ public class AgentSideEffects {
 
         PseudoCommands.getPseudocommandOption(commandWithPrefix).ifPresentOrElse(
                 (pseudoCommand) -> {
-                    PseudoCommands.process(pseudoCommand, commandWithPrefix);
+                    PseudoCommands.process(pseudoCommand, commandWithPrefix, completer, service);
                 },
                 () -> {
                     executeAltoclefCommand(mod, commandWithPrefix, onStop);

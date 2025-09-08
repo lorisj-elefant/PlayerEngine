@@ -4,12 +4,14 @@ import java.util.Comparator;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.util.TriConsumer;
 
 import adris.altoclef.AltoClefController;
 import adris.altoclef.player2api.Event.UserMessage;
@@ -78,7 +80,8 @@ public class EventQueueManager {
                 });
     }
 
-    private static void process(Consumer<Event.CharacterMessage> onCharacterEvent, Consumer<String> onErrEvent) {
+    private static void process(TriConsumer<Event.CharacterMessage, LLMCompleter, Player2APIService> onCharacterEvent,
+            Consumer<String> onErrEvent) {
         Optional<EventQueueData> dataToProcess = queueData.values().stream().filter(data -> {
             return data.getPriority() != 0;
         }).max(Comparator.comparingLong(EventQueueData::getPriority));
@@ -95,14 +98,19 @@ public class EventQueueManager {
             init();
         }
 
-        Consumer<Event.CharacterMessage> onCharacterEvent = (data) -> {
-            AgentSideEffects.onEntityMessage(server, data);
+        TriConsumer<Event.CharacterMessage, LLMCompleter, Player2APIService> onCharacterEvent = (data, completer,
+                service) -> {
+            AgentSideEffects.onEntityMessage(server, data, completer, service);
         };
         Consumer<String> onErrEvent = (errMsg) -> {
             AgentSideEffects.onError(server, errMsg);
         };
         if (!LockManager.globalIsLocked()) {
-            process(onCharacterEvent, onErrEvent);
+            LLMCompleter.processUsingAvailibleCompleter(
+                    (cmp) -> {
+                        process(onCharacterEvent, onErrEvent);
+
+                    });
         }
         TTSManager.injectOnTick(server);
     }

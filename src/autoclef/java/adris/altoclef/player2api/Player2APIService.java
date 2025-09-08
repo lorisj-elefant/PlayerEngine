@@ -12,18 +12,22 @@ import java.net.HttpURLConnection;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 import java.util.HashMap;
+
 public class Player2APIService {
    private static final Logger LOGGER = LogManager.getLogger();
 
    private String player2GameID;
 
-   public Player2APIService(String player2GameID){
+   public Player2APIService(String player2GameID) {
       this.player2GameID = player2GameID;
    }
-   private Map<String, JsonElement> sendRequest(String endpoint, boolean postRequest, JsonObject requestBody) throws Exception{
+
+   private Map<String, JsonElement> sendRequest(String endpoint, boolean postRequest, JsonObject requestBody)
+         throws Exception {
       Map<String, String> headers = getHeaders(player2GameID);
       return HTTPUtils.sendRequest(endpoint, postRequest, requestBody, headers);
    }
+
    public JsonObject completeConversation(ConversationHistory conversationHistory) throws Exception {
       JsonObject requestBody = new JsonObject();
       JsonArray messagesArray = new JsonArray();
@@ -144,7 +148,7 @@ public class Player2APIService {
       }
    }
 
-   public static Map<String, String> getHeaders(String player2Apikey){
+   public static Map<String, String> getHeaders(String player2Apikey) {
       Map<String, String> headers = new HashMap<>();
       headers.put("player2-game-key", player2Apikey);
       return headers;

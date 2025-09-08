@@ -4,10 +4,12 @@ import java.util.Deque;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.util.TriConsumer;
 
 import com.google.gson.JsonObject;
 
@@ -57,7 +59,7 @@ public class EventQueueData {
 
     // get LLM response and add to conversation history
     public void process(
-            Consumer<Event.CharacterMessage> onCharacterEvent,
+            TriConsumer<Event.CharacterMessage, LLMCompleter, Player2APIService> onCharacterEvent,
             Consumer<String> extOnErrMsg,
             LLMCompleter completer) {
 
@@ -77,10 +79,10 @@ public class EventQueueData {
 
         this.lastProcessTime = System.nanoTime();
         this.isProcessing = true;
-
+        Player2APIService service = mod.getPlayer2APIService();
         // prepare conversation history for LLM call
         Event lastEvent = mod.getAIPersistantData().dumpEventQueueToConversationHistoryAndReturnLastEvent(eventQueue,
-                mod.getPlayer2APIService());
+                service);
         Optional<String> reminderString = getReminderStringFromLastEvent(lastEvent);
 
         String agentStatus = AgentStatus.fromMod(this.mod).toString();
@@ -93,7 +95,7 @@ public class EventQueueData {
         LOGGER.info("[AICommandBridge/processChatWithAPI]: Calling LLM: history={}",
                 new Object[] { historyWithWrappedStatus.toString() });
 
-        Consumer<JsonObject> onLLMResponse = jsonResp -> {
+        BiConsumer<JsonObject, LLMCompleter> onLLMResponse = (jsonResp, cmp) -> {
             String llmMessage = Utils.getStringJsonSafely(jsonResp, "message");
             String command = this.isGreetingResponse ? "bodylang greeting"
                     : Utils.getStringJsonSafely(jsonResp, "command");
@@ -103,7 +105,7 @@ public class EventQueueData {
             try {
                 if (llmMessage != null || command != null) {
                     mod.getAIPersistantData().addAssistantMessage(llmMessage, mod.getPlayer2APIService());
-                    onCharacterEvent.accept(new Event.CharacterMessage(llmMessage, command, this));
+                    onCharacterEvent.accept(new Event.CharacterMessage(llmMessage, command, this), completer, service);
                 } else {
                     LOGGER.warn(
                             "[AICommandBridge/processChatWithAPI/onLLMResponse]: Generated null llm message and command");

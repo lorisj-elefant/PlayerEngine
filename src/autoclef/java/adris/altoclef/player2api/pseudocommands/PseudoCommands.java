@@ -6,7 +6,9 @@ import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import adris.altoclef.player2api.LockManager;
+import adris.altoclef.player2api.LLMCompleter;
+import adris.altoclef.player2api.Player2APIService;
+import adris.altoclef.player2api.pseudocommands.codegen.BuildStructure;
 
 public class PseudoCommands {
     public static Logger LOGGER = LogManager.getLogger();
@@ -37,18 +39,16 @@ public class PseudoCommands {
         return pseudoCommands.stream().filter((p) -> cmd.contains(p.getName())).findFirst();
     }
 
-    public static void process(PseudoCommand cmd, String commandWithPrefix) {
+    public static void process(PseudoCommand cmd, String commandWithPrefix, LLMCompleter completer,
+            Player2APIService service) {
         LOGGER.info("Processing PseudoCommand={}, commandWithPrefix={}", cmd, commandWithPrefix);
         switch (cmd.name) {
             case "build_structure":
-                processBuildStructure(commandWithPrefix.split("build_structure")[1].strip()); // after build_structure
-                                                                                              // is desc
+                String description = commandWithPrefix.split("build_structure")[1].strip();
+                BuildStructure.buildStructure(description, completer, service);
+                break;
             default:
                 LOGGER.error("for cmdWithPrefix={} could not find matching pseudocommand", commandWithPrefix);
         }
-    }
-
-    private static void processBuildStructure(String description) {
-
     }
 }

@@ -3,6 +3,7 @@ package adris.altoclef.player2api;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -20,7 +21,7 @@ public class LLMCompleter {
     public void processWithStringResponse(
             Player2APIService player2apiService,
             ConversationHistory history,
-            Consumer<String> extOnLLMResponse,
+            BiConsumer<String, LLMCompleter> extOnLLMResponse,
             Consumer<String> extOnErrMsg) {
         if (isProcessing) {
             LOGGER.warn("Called llmcompleter.process when it was already processing! This should not happen.");
@@ -28,7 +29,7 @@ public class LLMCompleter {
         }
         Consumer<String> onLLMResponse = resp -> {
             try {
-                extOnLLMResponse.accept(resp);
+                extOnLLMResponse.accept(resp, this);
             } catch (Exception e) {
                 LOGGER.error(
                         "[EventQueueManager/LLMCompleter/process/onLLMResponse]: Error in external llm resp, errMsg={} llmResp={}",
@@ -65,15 +66,16 @@ public class LLMCompleter {
     public void processWithJsonResponse(
             Player2APIService player2apiService,
             ConversationHistory history,
-            Consumer<JsonObject> extOnLLMResponse,
+            BiConsumer<JsonObject, LLMCompleter> extOnLLMResponse,
             Consumer<String> extOnErrMsg) {
         if (isProcessing) {
             LOGGER.warn("Called llmcompleter.process when it was already processing! This should not happen.");
             return;
         }
+
         Consumer<JsonObject> onLLMResponse = resp -> {
             try {
-                extOnLLMResponse.accept(resp);
+                extOnLLMResponse.accept(resp, this);
             } catch (Exception e) {
                 LOGGER.error(
                         "[EventQueueManager/LLMCompleter/process/onLLMResponse]: Error in external llm resp, errMsg={} llmResp={}",
@@ -83,6 +85,7 @@ public class LLMCompleter {
                 isProcessing = false;
             }
         };
+
         Consumer<String> onErrMsg = errMsg -> {
             try {
                 extOnErrMsg.accept(errMsg);
@@ -112,6 +115,9 @@ public class LLMCompleter {
     }
 
     public static void processUsingAvailibleCompleter(Consumer<LLMCompleter> processer) {
+        if (LockManager.globalIsLocked()) {
+            return;
+        }
         Stream<LLMCompleter> availibles = llmCompleters.stream().filter(LLMCompleter::isAvailible);
         if (availibles.toArray().length < 1) {
             LOGGER.error("ALL LLM COMPLETERS BUSY, should not happen. Some locking error has occured");
