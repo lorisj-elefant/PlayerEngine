@@ -115,7 +115,8 @@ public class EventQueueData {
                 this.isProcessing = false;
             }
         };
-        completer.process(mod.getPlayer2APIService(), historyWithWrappedStatus, onLLMResponse, onErrMsg);
+        completer.processWithJsonResponse(mod.getPlayer2APIService(), historyWithWrappedStatus, onLLMResponse,
+                onErrMsg);
     }
 
     private boolean isEventDuplicateOfLastMessage(Event evt) {

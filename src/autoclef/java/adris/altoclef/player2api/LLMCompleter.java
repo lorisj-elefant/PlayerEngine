@@ -17,7 +17,52 @@ public class LLMCompleter {
     private static final ExecutorService llmThread = Executors.newSingleThreadExecutor();
     private static List<LLMCompleter> llmCompleters = List.of(new LLMCompleter());
 
-    public void process(
+    public void processWithStringResponse(
+            Player2APIService player2apiService,
+            ConversationHistory history,
+            Consumer<String> extOnLLMResponse,
+            Consumer<String> extOnErrMsg) {
+        if (isProcessing) {
+            LOGGER.warn("Called llmcompleter.process when it was already processing! This should not happen.");
+            return;
+        }
+        Consumer<String> onLLMResponse = resp -> {
+            try {
+                extOnLLMResponse.accept(resp);
+            } catch (Exception e) {
+                LOGGER.error(
+                        "[EventQueueManager/LLMCompleter/process/onLLMResponse]: Error in external llm resp, errMsg={} llmResp={}",
+                        e.getMessage(), resp.toString());
+            } finally {
+                LOGGER.info("Done processing, isprocessing -> false");
+                isProcessing = false;
+            }
+        };
+        Consumer<String> onErrMsg = errMsg -> {
+            try {
+                extOnErrMsg.accept(errMsg);
+            } catch (Exception e) {
+                LOGGER.error(
+                        "[EventQueueManager/LLMCompleter/process/onErrMsg]: Error in external onErrmsg, errMsgFromException={} errMsg={}",
+                        e.getMessage(), errMsg);
+            } finally {
+                isProcessing = false;
+            }
+        };
+        isProcessing = true;
+        llmThread.submit(() -> {
+            try {
+                String response = player2apiService.completeConversationToString(history);
+                LOGGER.info("LLMCompleter returned as string={}", response);
+                onLLMResponse.accept(response);
+            } catch (Exception e) {
+                onErrMsg.accept(
+                        e.getMessage() == null ? "Unknown error from CompleteConversation API" : e.getMessage());
+            }
+        });
+    }
+
+    public void processWithJsonResponse(
             Player2APIService player2apiService,
             ConversationHistory history,
             Consumer<JsonObject> extOnLLMResponse,
@@ -69,7 +114,7 @@ public class LLMCompleter {
     public static void processUsingAvailibleCompleter(Consumer<LLMCompleter> processer) {
         Stream<LLMCompleter> availibles = llmCompleters.stream().filter(LLMCompleter::isAvailible);
         if (availibles.toArray().length < 1) {
-            LOGGER.error("ALL LLM COMPLETERS BUSY, should not happen. Some locking error occured");
+            LOGGER.error("ALL LLM COMPLETERS BUSY, should not happen. Some locking error has occured");
         }
         llmCompleters.stream().filter(LLMCompleter::isAvailible).forEach(processer);
     }

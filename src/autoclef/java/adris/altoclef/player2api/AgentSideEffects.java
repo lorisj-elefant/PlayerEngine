@@ -76,11 +76,11 @@ public class AgentSideEffects {
                     PseudoCommands.process(pseudoCommand, commandWithPrefix);
                 },
                 () -> {
-                    executeNormalCommand(mod, commandWithPrefix, onStop);
+                    executeAltoclefCommand(mod, commandWithPrefix, onStop);
                 });
     }
 
-    private static void executeNormalCommand(AltoClefController mod, String commandWithPrefix,
+    private static void executeAltoclefCommand(AltoClefController mod, String commandWithPrefix,
             Consumer<CommandExecutionStopReason> onStop) {
         CommandExecutor cmdExecutor = mod.getCommandExecutor();
         cmdExecutor.execute(commandWithPrefix, () -> {
