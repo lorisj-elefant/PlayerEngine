@@ -5,16 +5,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import com.google.gson.JsonObject;
 
 import adris.altoclef.AltoClefController;
 import adris.altoclef.player2api.Event.UserMessage;
@@ -42,63 +38,6 @@ public class EventQueueManager {
             });
         }
     }
-
-    public static class LLMCompleter {
-        private boolean isProcessing = false;
-
-        private static final ExecutorService llmThread = Executors.newSingleThreadExecutor();
-
-        public void process(
-                Player2APIService player2apiService,
-                ConversationHistory history,
-                Consumer<JsonObject> extOnLLMResponse,
-                Consumer<String> extOnErrMsg) {
-            if (isProcessing) {
-                LOGGER.warn("Called llmcompleter.process when it was already processing! This should not happen.");
-                return;
-            }
-            Consumer<JsonObject> onLLMResponse = resp -> {
-                try {
-                    extOnLLMResponse.accept(resp);
-                } catch (Exception e) {
-                    LOGGER.error(
-                            "[EventQueueManager/LLMCompleter/process/onLLMResponse]: Error in external llm resp, errMsg={} llmResp={}",
-                            e.getMessage(), resp.toString());
-                } finally {
-                    LOGGER.info("Done processing, isprocessing -> false");
-                    isProcessing = false;
-                }
-            };
-            Consumer<String> onErrMsg = errMsg -> {
-                try {
-                    extOnErrMsg.accept(errMsg);
-                } catch (Exception e) {
-                    LOGGER.error(
-                            "[EventQueueManager/LLMCompleter/process/onErrMsg]: Error in external onErrmsg, errMsgFromException={} errMsg={}",
-                            e.getMessage(), errMsg);
-                } finally {
-                    isProcessing = false;
-                }
-            };
-            isProcessing = true;
-            llmThread.submit(() -> {
-                try {
-                    JsonObject response = player2apiService.completeConversation(history);
-                    LOGGER.info("LLMCompleter returned json={}", response);
-                    onLLMResponse.accept(response);
-                } catch (Exception e) {
-                    onErrMsg.accept(
-                            e.getMessage() == null ? "Unknown error from CompleteConversation API" : e.getMessage());
-                }
-            });
-        }
-
-        public boolean isAvailible() {
-            return !isProcessing;
-        }
-    }
-
-    private static List<LLMCompleter> llmCompleters = List.of(new LLMCompleter());
 
     // ## Utils
     public static EventQueueData getOrCreateEventQueueData(AltoClefController mod) {
@@ -144,7 +83,7 @@ public class EventQueueManager {
         Optional<EventQueueData> dataToProcess = queueData.values().stream().filter(data -> {
             return data.getPriority() != 0;
         }).max(Comparator.comparingLong(EventQueueData::getPriority));
-        llmCompleters.stream().filter(LLMCompleter::isAvailible).forEach(completer -> {
+        LLMCompleter.processUsingAvailibleCompleter(completer -> {
             dataToProcess.ifPresent(data -> {
                 data.process(onCharacterEvent, onErrEvent, completer);
             });
@@ -163,7 +102,7 @@ public class EventQueueManager {
         Consumer<String> onErrEvent = (errMsg) -> {
             AgentSideEffects.onError(server, errMsg);
         };
-        if (!TTSManager.isLocked()) {
+        if (!LockManager.globalIsLocked()) {
             process(onCharacterEvent, onErrEvent);
         }
         TTSManager.injectOnTick(server);

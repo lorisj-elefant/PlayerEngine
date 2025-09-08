@@ -34,7 +34,7 @@ public class ConversationHistory {
       }
    }
 
-   private ConversationHistory(String initialSystemPrompt) {
+   public ConversationHistory(String initialSystemPrompt) {
       this.historyFile = null;
       this.setBaseSystemPrompt(initialSystemPrompt);
       this.loadedFromFile = false;

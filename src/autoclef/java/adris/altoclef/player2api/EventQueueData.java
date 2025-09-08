@@ -1,4 +1,5 @@
 package adris.altoclef.player2api;
+
 import java.util.Deque;
 import java.util.Optional;
 import java.util.UUID;
@@ -58,7 +59,7 @@ public class EventQueueData {
     public void process(
             Consumer<Event.CharacterMessage> onCharacterEvent,
             Consumer<String> extOnErrMsg,
-            EventQueueManager.LLMCompleter completer) {
+            LLMCompleter completer) {
 
         if (isProcessing) {
             LOGGER.warn("Called queueData.process even though it was already processing! this should not happen");
@@ -78,21 +79,24 @@ public class EventQueueData {
         this.isProcessing = true;
 
         // prepare conversation history for LLM call
-        Event lastEvent = mod.getAIPersistantData().dumpEventQueueToConversationHistoryAndReturnLastEvent(eventQueue, mod.getPlayer2APIService());
+        Event lastEvent = mod.getAIPersistantData().dumpEventQueueToConversationHistoryAndReturnLastEvent(eventQueue,
+                mod.getPlayer2APIService());
         Optional<String> reminderString = getReminderStringFromLastEvent(lastEvent);
 
         String agentStatus = AgentStatus.fromMod(this.mod).toString();
         String worldStatus = WorldStatus.fromMod(this.mod).toString();
         String altoClefDebugMsgs = this.altoClefMsgBuffer.dumpAndGetString();
         ConversationHistory historyWithWrappedStatus = mod.getAIPersistantData()
-                .getConversationHistoryWrappedWithStatus(worldStatus, agentStatus, altoClefDebugMsgs, mod.getPlayer2APIService(), reminderString);
+                .getConversationHistoryWrappedWithStatus(worldStatus, agentStatus, altoClefDebugMsgs,
+                        mod.getPlayer2APIService(), reminderString);
 
         LOGGER.info("[AICommandBridge/processChatWithAPI]: Calling LLM: history={}",
                 new Object[] { historyWithWrappedStatus.toString() });
 
         Consumer<JsonObject> onLLMResponse = jsonResp -> {
             String llmMessage = Utils.getStringJsonSafely(jsonResp, "message");
-            String command = this.isGreetingResponse? "bodylang greeting": Utils.getStringJsonSafely(jsonResp, "command");
+            String command = this.isGreetingResponse ? "bodylang greeting"
+                    : Utils.getStringJsonSafely(jsonResp, "command");
             this.isGreetingResponse = false;
             LOGGER.info("[AICommandBridge/processCharWithAPI]: Processed LLM repsonse: message={} command={}",
                     llmMessage, command);
@@ -134,11 +138,13 @@ public class EventQueueData {
         eventQueue.add(event);
     }
 
-    private Optional<String> getReminderStringFromLastEvent(Event lastEvent){
-        if(lastEvent instanceof Event.UserMessage){
-            return Optional.of(((Event.UserMessage) lastEvent).userName().equals(getMod().getOwnerUsername()) ? Prompts.reminderOnOwnerMsg : Prompts.reminderOnOtherUSerMsg);
+    private Optional<String> getReminderStringFromLastEvent(Event lastEvent) {
+        if (lastEvent instanceof Event.UserMessage) {
+            return Optional.of(((Event.UserMessage) lastEvent).userName().equals(getMod().getOwnerUsername())
+                    ? Prompts.reminderOnOwnerMsg
+                    : Prompts.reminderOnOtherUSerMsg);
         }
-        if(lastEvent instanceof Event.CharacterMessage){
+        if (lastEvent instanceof Event.CharacterMessage) {
             return Optional.of(Prompts.reminderOnAIMsg);
         }
         return Optional.empty();
@@ -171,7 +177,7 @@ public class EventQueueData {
 
     public void onCommandFinish(AgentSideEffects.CommandExecutionStopReason stopReason) {
         if (stopReason instanceof CommandExecutionStopReason.Finished) {
-            if(shouldIgnoreGreetingDance){
+            if (shouldIgnoreGreetingDance) {
                 // ignore first greeting command finish:
                 shouldIgnoreGreetingDance = false;
                 return;
@@ -214,15 +220,17 @@ public class EventQueueData {
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
     }
-    public Character getCharacter(){
+
+    public Character getCharacter() {
         return mod.getAIPersistantData().getCharacter();
     }
-    public Player2APIService getPlayer2apiService(){
+
+    public Player2APIService getPlayer2apiService() {
         return mod.getPlayer2APIService();
     }
-    public String getName(){
+
+    public String getName() {
         return getCharacter().shortName();
     }
-
 
 }

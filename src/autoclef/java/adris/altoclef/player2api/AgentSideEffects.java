@@ -1,5 +1,6 @@
 
 package adris.altoclef.player2api;
+
 import java.util.function.Consumer;
 
 import org.apache.logging.log4j.LogManager;
@@ -7,13 +8,13 @@ import org.apache.logging.log4j.Logger;
 
 import adris.altoclef.AltoClefController;
 import adris.altoclef.commandsystem.CommandExecutor;
+import adris.altoclef.player2api.pseudocommands.PseudoCommands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 public class AgentSideEffects {
     private static final Logger LOGGER = LogManager.getLogger();
-
 
     public sealed interface CommandExecutionStopReason
             permits CommandExecutionStopReason.Cancelled,
@@ -35,14 +36,16 @@ public class AgentSideEffects {
         // message part:
         if (characterMessage.message() != null && !characterMessage.message().isBlank()) {
             EventQueueData sendingCharacterData = characterMessage.sendingCharacterData();
-                        String message = String.format("<%s> %s", sendingCharacterData.getName(), characterMessage.message());
-            for(ServerPlayer player : server.getPlayerList().getPlayers()){
+            String message = String.format("<%s> %s", sendingCharacterData.getName(), characterMessage.message());
+            for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                 // if you are an owner, or close, send to player.
-                // if(sendingCharacterData.isOwner(player.getUUID()) || isClose(sendingCharacterData, player)  ){
-                    broadcastChatToPlayer(server, message, player);
+                // if(sendingCharacterData.isOwner(player.getUUID()) ||
+                // isClose(sendingCharacterData, player) ){
+                broadcastChatToPlayer(server, message, player);
                 // }
             }
-            TTSManager.TTS(characterMessage.message(), sendingCharacterData.getCharacter(), sendingCharacterData.getPlayer2apiService());
+            TTSManager.TTS(characterMessage.message(), sendingCharacterData.getCharacter(),
+                    sendingCharacterData.getPlayer2apiService());
             EventQueueManager.onAICharacterMessage(characterMessage, characterMessage.sendingCharacterData().getUUID());
         }
 
@@ -67,6 +70,19 @@ public class AgentSideEffects {
         } else {
             mod.isStopping = false;
         }
+
+        PseudoCommands.getPseudocommandOption(commandWithPrefix).ifPresentOrElse(
+                (pseudoCommand) -> {
+                    PseudoCommands.process(pseudoCommand, commandWithPrefix);
+                },
+                () -> {
+                    executeNormalCommand(mod, commandWithPrefix, onStop);
+                });
+    }
+
+    private static void executeNormalCommand(AltoClefController mod, String commandWithPrefix,
+            Consumer<CommandExecutionStopReason> onStop) {
+        CommandExecutor cmdExecutor = mod.getCommandExecutor();
         cmdExecutor.execute(commandWithPrefix, () -> {
             if (mod.isStopping) {
                 System.out.printf(
@@ -82,7 +98,7 @@ public class AgentSideEffects {
         });
     }
 
-    private static void broadcastChatToPlayer(MinecraftServer server, String message, ServerPlayer player){
+    private static void broadcastChatToPlayer(MinecraftServer server, String message, ServerPlayer player) {
         player.displayClientMessage(Component.literal(message), false);
     }
 

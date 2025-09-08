@@ -13,7 +13,6 @@ import net.minecraft.server.MinecraftServer;
 public class TTSManager {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final int TTScharactersPerSecond = 25; // approx how fast (characters/sec) does the TTS talk
-    private static boolean TTSLocked = false;
     private static long estimatedEndTime = 0;
     private static final ExecutorService ttsThread = Executors.newSingleThreadExecutor();
 
@@ -27,8 +26,8 @@ public class TTSManager {
     }
 
     public static void TTS(String message, Character character, Player2APIService player2apiService) {
-        TTSLocked = true;
-        LOGGER.info("Locking TTS based on msg={}", message);
+        LOGGER.info("TTS for msg={}", message);
+        LockManager.setTTS(true);
         estimatedEndTime = Long.MAX_VALUE;
 
         ttsThread.submit(() -> {
@@ -38,16 +37,12 @@ public class TTSManager {
         });
     }
 
-    public static boolean isLocked() {
-        return TTSLocked;
-    }
 
     public static void injectOnTick(MinecraftServer server) {
         // release lock if we think we have finished.
         server.execute(() -> {
-            if ((System.nanoTime() > estimatedEndTime) && TTSLocked) {
-                LOGGER.info("TTS releasing lock");
-                TTSLocked = false;
+            if ((System.nanoTime() > estimatedEndTime) && LockManager.isTTSLocked()) {
+                LockManager.setTTS(false);
             }
         });
     }
