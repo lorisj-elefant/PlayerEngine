@@ -1220,7 +1220,7 @@ public class BuildStructureFromCode {
     // "}");
 
     public static void buildStructureFromCode(String code, Consumer<SetBlockCommand> onSetBlock,
-            Consumer<String> onErrString) {
+            Consumer<String> onErrString, Runnable onFinishSuccess) {
         try {
             // run once to validate
             BuildStructureFromCode.runCode(code,
@@ -1230,6 +1230,7 @@ public class BuildStructureFromCode {
             LOGGER.info("Code validated, running code for real now.");
             // code validated, can safely set block
             BuildStructureFromCode.runCode(code, onSetBlock);
+            onFinishSuccess.run();
         } catch (Exception e) {
             LOGGER.error("LLM build structure err={} ", e.getMessage());
             onErrString.accept(e.getMessage());

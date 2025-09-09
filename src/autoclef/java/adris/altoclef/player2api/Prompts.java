@@ -133,6 +133,8 @@ public class Prompts {
 
                               IMPORTANT: conditional (ternary) operators are NOT ALLOWED! DO NOT include them in your code.
 
+                              IMPORTANT: binary operators, like &, |, etc are NOT ALLOWED! DO NOT include them either.
+
                               No extra commentary before or after. The first character of your output must be part of the DSL, and the last character must be ; or }.
 
                               Mini Example (illustrative only; do not echo this)

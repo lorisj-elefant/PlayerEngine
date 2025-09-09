@@ -72,7 +72,6 @@ public class BuildStructure {
             String description,
             ConversationHistory history,
             AltoClefController mod) {
-
         LOGGER.info("LLM responded with code as string={}", llmResponse);
 
         String code = llmResponseToCode(llmResponse);
@@ -97,8 +96,12 @@ public class BuildStructure {
                 (errStr) -> {
                     LOGGER.error("While building got err={}", errStr);
                     onCodeValidationError(errStr, code, completer, service, description, history, mod);
+                },
+                () -> {
+                    LOGGER.info("Building structure done, releasing code gen lock");
+                    LockManager.setCodeGenLock(false);
                 });
-        LockManager.setCodeGenLock(false);
+
     }
 
     private static void onLLMTransportError(
@@ -122,13 +125,14 @@ public class BuildStructure {
             AltoClefController mod) {
 
         if (numErrors < maxNumErrors) {
+            LOGGER.info("onCodeValidationError: trying again, errMsg={}", errMsg);
             numErrors += 1;
 
             appendUserRegenerationPrompt(history, service, description, errMsg);
             requestCodeFromLLM(history, completer, service, description, mod);
             return;
         }
-
+        LOGGER.info("Too many erorrs, exiting. Last errMsg={}", errMsg);
         numErrors = 0;
         LockManager.setCodeGenLock(false);
     }
