@@ -82,8 +82,8 @@ public class BuildStructure {
         BuildStructureFromCode.buildStructureFromCode(
                 code,
                 (setBlockData) -> {
-                    LOGGER.info("setBlock(x={}, y={}, z={}, blockName={})");
-                    // setBlockData.x, setBlockData.y, setBlockData.z, setBlockData.blockName);
+                    LOGGER.info("setBlock(x={}, y={}, z={}, blockName={})",
+                            setBlockData.x, setBlockData.y, setBlockData.z, setBlockData.blockName);
                     ResourceLocation id = new ResourceLocation("minecraft", setBlockData.blockName);
                     Block block = BuiltInRegistries.BLOCK.get(id);
                     // 3 means send to clients (2) and notify neighbors/update block states (1).
