@@ -6,9 +6,11 @@ import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import adris.altoclef.AltoClefController;
 import adris.altoclef.player2api.LLMCompleter;
 import adris.altoclef.player2api.Player2APIService;
 import adris.altoclef.player2api.pseudocommands.codegen.BuildStructure;
+import net.minecraft.server.level.ServerLevel;
 
 public class PseudoCommands {
     public static Logger LOGGER = LogManager.getLogger();
@@ -40,12 +42,12 @@ public class PseudoCommands {
     }
 
     public static void process(PseudoCommand cmd, String commandWithPrefix, LLMCompleter completer,
-            Player2APIService service) {
+            Player2APIService service, AltoClefController mod) {
         LOGGER.info("Processing PseudoCommand={}, commandWithPrefix={}", cmd, commandWithPrefix);
         switch (cmd.name) {
             case "build_structure":
                 String description = commandWithPrefix.split("build_structure")[1].strip();
-                BuildStructure.buildStructure(description, completer, service);
+                BuildStructure.buildStructure(description, completer, service, mod);
                 break;
             default:
                 LOGGER.error("for cmdWithPrefix={} could not find matching pseudocommand", commandWithPrefix);

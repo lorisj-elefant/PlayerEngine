@@ -74,7 +74,7 @@ public class AgentSideEffects {
 
         PseudoCommands.getPseudocommandOption(commandWithPrefix).ifPresentOrElse(
                 (pseudoCommand) -> {
-                    PseudoCommands.process(pseudoCommand, commandWithPrefix, completer, service);
+                    PseudoCommands.process(pseudoCommand, commandWithPrefix, completer, service, mod);
                 },
                 () -> {
                     executeAltoclefCommand(mod, commandWithPrefix, onStop);

@@ -105,11 +105,10 @@ public class EventQueueManager {
         Consumer<String> onErrEvent = (errMsg) -> {
             AgentSideEffects.onError(server, errMsg);
         };
-        if (!LockManager.globalIsLocked()) {
+        if (!LockManager.processingNextQueueLock()) {
             LLMCompleter.processUsingAvailibleCompleter(
                     (cmp) -> {
                         process(onCharacterEvent, onErrEvent);
-
                     });
         }
         TTSManager.injectOnTick(server);
