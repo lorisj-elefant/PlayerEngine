@@ -18,7 +18,7 @@ import adris.altoclef.control.SlotHandler;
 import adris.altoclef.player2api.EventQueueManager;
 import adris.altoclef.player2api.AIPersistantData;
 import adris.altoclef.player2api.Player2APIService;
-
+import adris.altoclef.player2api.pseudocommands.PseudoCommands.PseudoCommand;
 import adris.altoclef.player2api.Character;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.tasksystem.TaskRunner;
@@ -48,7 +48,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
-
 
 public class AltoClefController {
    private final IBaritone baritone;
@@ -80,6 +79,8 @@ public class AltoClefController {
    private Task storedTask;
    public boolean isStopping = false;
    private Player owner;
+   private Optional<String> currentPseudoCommandInfoAsString;
+   public boolean shouldStopPseudoCommand = false;
 
    public AltoClefController(IBaritone baritone, Character character, String player2GameId) {
       this.baritone = baritone;
@@ -96,7 +97,8 @@ public class AltoClefController {
       new WorldSurvivalChain(this.taskRunner);
       this.foodChain = new FoodChain(this.taskRunner);
       new PlayerDefenseChain(this.taskRunner);
-      this.storageTracker = new ItemStorageTracker(this, this.trackerManager, container -> this.containerSubTracker = container);
+      this.storageTracker = new ItemStorageTracker(this, this.trackerManager,
+            container -> this.containerSubTracker = container);
       this.entityTracker = new EntityTracker(this.trackerManager);
       this.blockScanner = new BlockScanner(this);
       this.chunkTracker = new SimpleChunkTracker(this);
@@ -111,23 +113,23 @@ public class AltoClefController {
       this.botBehaviour = new BotBehaviour(this);
       this.initializeCommands();
       Settings.load(
-         newSettings -> {
-            this.settings = newSettings;
-            List<Item> baritoneCanPlace = Arrays.stream(this.settings.getThrowawayItems(this, true)).toList();
-            this.getBaritoneSettings().acceptableThrowawayItems.get().addAll(baritoneCanPlace);
-            if ((!this.getUserTaskChain().isActive() || this.getUserTaskChain().isRunningIdleTask())
-               && this.getModSettings().shouldRunIdleCommandWhenNotActive()) {
-               this.getUserTaskChain().signalNextTaskToBeIdleTask();
-               this.getCommandExecutor().executeWithPrefix(this.getModSettings().getIdleCommand());
-            }
+            newSettings -> {
+               this.settings = newSettings;
+               List<Item> baritoneCanPlace = Arrays.stream(this.settings.getThrowawayItems(this, true)).toList();
+               this.getBaritoneSettings().acceptableThrowawayItems.get().addAll(baritoneCanPlace);
+               if ((!this.getUserTaskChain().isActive() || this.getUserTaskChain().isRunningIdleTask())
+                     && this.getModSettings().shouldRunIdleCommandWhenNotActive()) {
+                  this.getUserTaskChain().signalNextTaskToBeIdleTask();
+                  this.getCommandExecutor().executeWithPrefix(this.getModSettings().getIdleCommand());
+               }
 
-            this.getExtraBaritoneSettings().avoidBlockBreak(this.userBlockRangeTracker::isNearUserTrackedBlock);
-            this.getExtraBaritoneSettings().avoidBlockPlace(this.entityStuckTracker::isBlockedByEntity);
-         }
-      );
+               this.getExtraBaritoneSettings().avoidBlockBreak(this.userBlockRangeTracker::isNearUserTrackedBlock);
+               this.getExtraBaritoneSettings().avoidBlockPlace(this.entityStuckTracker::isBlockedByEntity);
+            });
       Playground.IDLE_TEST_INIT_FUNCTION(this);
 
-      // AI setup: (should be at end to ensure as many things are not null as possible)
+      // AI setup: (should be at end to ensure as many things are not null as
+      // possible)
       EventQueueManager.getOrCreateEventQueueData(this);
       this.aiPersistantData = new AIPersistantData(this, character);
       this.player2apiService = new Player2APIService(player2GameId);
@@ -143,6 +145,7 @@ public class AltoClefController {
       this.inputControls.onTickPost();
       this.baritone.serverTick();
    }
+
    public static void staticServerTick(MinecraftServer server) {
       EventQueueManager.injectOnTick(server);
    }
@@ -195,7 +198,8 @@ public class AltoClefController {
    }
 
    public void runUserTask(Task task) {
-      this.runUserTask(task, () -> {});
+      this.runUserTask(task, () -> {
+      });
    }
 
    public void cancelUserTask() {
@@ -227,7 +231,7 @@ public class AltoClefController {
    }
 
    public AltoClefSettings getExtraBaritoneSettings() {
-      return ((Baritone)this.baritone).getExtraBaritoneSettings();
+      return ((Baritone) this.baritone).getExtraBaritoneSettings();
    }
 
    public TaskRunner getTaskRunner() {
@@ -362,29 +366,39 @@ public class AltoClefController {
       this.owner = owner;
       aiPersistantData.updateSystemPrompt();
    }
+
    public boolean isOwner(UUID playerToCheck) {
       return playerToCheck.equals(owner.getUUID());
    }
+
    public adris.altoclef.player2api.AIPersistantData getAIPersistantData() {
       return this.aiPersistantData;
    }
 
-   public adris.altoclef.player2api.Player2APIService getPlayer2APIService(){
+   public adris.altoclef.player2api.Player2APIService getPlayer2APIService() {
       return this.player2apiService;
    }
 
-   public String getOwnerUsername(){
-      if(getOwner() == null){
+   public String getOwnerUsername() {
+      if (getOwner() == null) {
          return "UNKNOWN OWNER";
       }
       return getOwner().getName().getString();
    }
 
-   public Optional<ServerPlayer> getClosestPlayer(){
-      return this.getWorld().players().stream().sorted((a,b)-> {
+   public Optional<ServerPlayer> getClosestPlayer() {
+      return this.getWorld().players().stream().sorted((a, b) -> {
          float adist = a.distanceTo(this.getEntity());
          float bdist = b.distanceTo(this.getEntity());
          return Float.compare(adist, bdist);
-      } ).findFirst();
+      }).findFirst();
+   }
+
+   public void setPseudoCommandInfo(Optional<String> ma) {
+      currentPseudoCommandInfoAsString = ma;
+   }
+
+   public Optional<String> getCurrentlyRunningPseudoCmd() {
+      return currentPseudoCommandInfoAsString;
    }
 }

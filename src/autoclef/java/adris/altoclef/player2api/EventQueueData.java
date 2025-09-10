@@ -1,12 +1,15 @@
 package adris.altoclef.player2api;
+
 import java.util.Deque;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.util.TriConsumer;
 
 import com.google.gson.JsonObject;
 
@@ -56,9 +59,9 @@ public class EventQueueData {
 
     // get LLM response and add to conversation history
     public void process(
-            Consumer<Event.CharacterMessage> onCharacterEvent,
+            TriConsumer<Event.CharacterMessage, LLMCompleter, Player2APIService> onCharacterEvent,
             Consumer<String> extOnErrMsg,
-            EventQueueManager.LLMCompleter completer) {
+            LLMCompleter completer) {
 
         if (isProcessing) {
             LOGGER.warn("Called queueData.process even though it was already processing! this should not happen");
@@ -76,30 +79,33 @@ public class EventQueueData {
 
         this.lastProcessTime = System.nanoTime();
         this.isProcessing = true;
-
+        Player2APIService service = mod.getPlayer2APIService();
         // prepare conversation history for LLM call
-        Event lastEvent = mod.getAIPersistantData().dumpEventQueueToConversationHistoryAndReturnLastEvent(eventQueue, mod.getPlayer2APIService());
+        Event lastEvent = mod.getAIPersistantData().dumpEventQueueToConversationHistoryAndReturnLastEvent(eventQueue,
+                service);
         Optional<String> reminderString = getReminderStringFromLastEvent(lastEvent);
 
         String agentStatus = AgentStatus.fromMod(this.mod).toString();
         String worldStatus = WorldStatus.fromMod(this.mod).toString();
         String altoClefDebugMsgs = this.altoClefMsgBuffer.dumpAndGetString();
         ConversationHistory historyWithWrappedStatus = mod.getAIPersistantData()
-                .getConversationHistoryWrappedWithStatus(worldStatus, agentStatus, altoClefDebugMsgs, mod.getPlayer2APIService(), reminderString);
+                .getConversationHistoryWrappedWithStatus(worldStatus, agentStatus, altoClefDebugMsgs,
+                        mod.getPlayer2APIService(), reminderString);
 
         LOGGER.info("[AICommandBridge/processChatWithAPI]: Calling LLM: history={}",
                 new Object[] { historyWithWrappedStatus.toString() });
 
-        Consumer<JsonObject> onLLMResponse = jsonResp -> {
+        BiConsumer<JsonObject, LLMCompleter> onLLMResponse = (jsonResp, cmp) -> {
             String llmMessage = Utils.getStringJsonSafely(jsonResp, "message");
-            String command = this.isGreetingResponse? "bodylang greeting": Utils.getStringJsonSafely(jsonResp, "command");
+            String command = this.isGreetingResponse ? "bodylang greeting"
+                    : Utils.getStringJsonSafely(jsonResp, "command");
             this.isGreetingResponse = false;
             LOGGER.info("[AICommandBridge/processCharWithAPI]: Processed LLM repsonse: message={} command={}",
                     llmMessage, command);
             try {
                 if (llmMessage != null || command != null) {
                     mod.getAIPersistantData().addAssistantMessage(llmMessage, mod.getPlayer2APIService());
-                    onCharacterEvent.accept(new Event.CharacterMessage(llmMessage, command, this));
+                    onCharacterEvent.accept(new Event.CharacterMessage(llmMessage, command, this), completer, service);
                 } else {
                     LOGGER.warn(
                             "[AICommandBridge/processChatWithAPI/onLLMResponse]: Generated null llm message and command");
@@ -111,7 +117,8 @@ public class EventQueueData {
                 this.isProcessing = false;
             }
         };
-        completer.process(mod.getPlayer2APIService(), historyWithWrappedStatus, onLLMResponse, onErrMsg);
+        completer.processWithJsonResponse(mod.getPlayer2APIService(), historyWithWrappedStatus, onLLMResponse,
+                onErrMsg);
     }
 
     private boolean isEventDuplicateOfLastMessage(Event evt) {
@@ -134,11 +141,13 @@ public class EventQueueData {
         eventQueue.add(event);
     }
 
-    private Optional<String> getReminderStringFromLastEvent(Event lastEvent){
-        if(lastEvent instanceof Event.UserMessage){
-            return Optional.of(((Event.UserMessage) lastEvent).userName().equals(getMod().getOwnerUsername()) ? Prompts.reminderOnOwnerMsg : Prompts.reminderOnOtherUSerMsg);
+    private Optional<String> getReminderStringFromLastEvent(Event lastEvent) {
+        if (lastEvent instanceof Event.UserMessage) {
+            return Optional.of(((Event.UserMessage) lastEvent).userName().equals(getMod().getOwnerUsername())
+                    ? Prompts.reminderOnOwnerMsg
+                    : Prompts.reminderOnOtherUSerMsg);
         }
-        if(lastEvent instanceof Event.CharacterMessage){
+        if (lastEvent instanceof Event.CharacterMessage) {
             return Optional.of(Prompts.reminderOnAIMsg);
         }
         return Optional.empty();
@@ -171,7 +180,7 @@ public class EventQueueData {
 
     public void onCommandFinish(AgentSideEffects.CommandExecutionStopReason stopReason) {
         if (stopReason instanceof CommandExecutionStopReason.Finished) {
-            if(shouldIgnoreGreetingDance){
+            if (shouldIgnoreGreetingDance) {
                 // ignore first greeting command finish:
                 shouldIgnoreGreetingDance = false;
                 return;
@@ -214,15 +223,17 @@ public class EventQueueData {
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
     }
-    public Character getCharacter(){
+
+    public Character getCharacter() {
         return mod.getAIPersistantData().getCharacter();
     }
-    public Player2APIService getPlayer2apiService(){
+
+    public Player2APIService getPlayer2apiService() {
         return mod.getPlayer2APIService();
     }
-    public String getName(){
+
+    public String getName() {
         return getCharacter().shortName();
     }
-
 
 }
