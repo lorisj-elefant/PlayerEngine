@@ -68,6 +68,7 @@ public class AgentSideEffects {
                 : (cmdExecutor.getCommandPrefix() + command);
         if (commandWithPrefix.equals("@stop")) {
             mod.isStopping = true;
+
         } else {
             mod.isStopping = false;
         }

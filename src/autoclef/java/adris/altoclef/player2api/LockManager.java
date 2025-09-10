@@ -35,4 +35,8 @@ public class LockManager {
         LOGGER.info(String.format("llmResponse: %s lock", onOrOff ? "setting" : "releasing"));
         onLLMResponseLock = onOrOff;
     }
+
+    public static boolean getCodeGenLock() {
+        return codeGenLocked;
+    }
 }

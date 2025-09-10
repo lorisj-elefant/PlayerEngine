@@ -1,5 +1,7 @@
 package adris.altoclef.player2api.pseudocommands.codegen;
 
+import java.util.Optional;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -13,7 +15,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.state.BlockState;
 
 public class BuildStructure {
     public static final Logger LOGGER = LogManager.getLogger();
@@ -62,7 +63,7 @@ public class BuildStructure {
                 history,
                 (llmResponse, completerParam, serviceParam) -> onLLMResponse(llmResponse, completerParam, serviceParam,
                         description, history, mod),
-                (errMsg) -> onLLMTransportError(errMsg, completer, service, description, history));
+                (errMsg) -> onLLMTransportError(errMsg, completer, service, description, history, mod));
     }
 
     private static void onLLMResponse(
@@ -99,9 +100,9 @@ public class BuildStructure {
                 },
                 () -> {
                     LOGGER.info("Building structure done, releasing code gen lock");
+                    mod.setPseudoCommandInfo(Optional.empty());
                     LockManager.setCodeGenLock(false);
-                });
-
+                }, mod);
     }
 
     private static void onLLMTransportError(
@@ -109,9 +110,11 @@ public class BuildStructure {
             LLMCompleter completer,
             Player2APIService service,
             String description,
-            ConversationHistory history) {
+            ConversationHistory history,
+            AltoClefController mod) {
 
         LOGGER.error("LLM transport/call error={}", errMsg);
+        mod.setPseudoCommandInfo(Optional.empty());
         LockManager.setCodeGenLock(false);
     }
 
@@ -134,6 +137,7 @@ public class BuildStructure {
         }
         LOGGER.info("Too many erorrs, exiting. Last errMsg={}", errMsg);
         numErrors = 0;
+        mod.setPseudoCommandInfo(Optional.empty());
         LockManager.setCodeGenLock(false);
     }
 

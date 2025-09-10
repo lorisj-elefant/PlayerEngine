@@ -6,6 +6,8 @@ import java.util.function.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import adris.altoclef.AltoClefController;
+
 /**
  * MiniBlocks: a tiny interpreter that parses and runs a small language with
  * - let / assignment
@@ -37,7 +39,7 @@ public class BuildStructureFromCode {
 
         @Override
         public String toString() {
-            return "setBlock(" + x + ", " + y + ", " + z + "\", \"" + blockName + "\")";
+            return "setBlock(" + x + ", " + y + ", " + z + ", \"" + blockName + "\")";
         }
     }
 
@@ -82,13 +84,16 @@ public class BuildStructureFromCode {
         }
     }
 
-    // ==== Demo ====
-
-    public static void runCode(String code, Consumer<SetBlockCommand> onSetBlock) throws Exception {
+    public static void runCode(String code, Consumer<SetBlockCommand> onSetBlock, AltoClefController mod)
+            throws Exception {
         Program program = compile(code);
         Runner runner = new Runner(program);
         Optional<SetBlockCommand> cmd;
         while ((cmd = runner.next()).isPresent()) {
+            if (mod.shouldStopPseudoCommand) {
+                mod.shouldStopPseudoCommand = false;
+                return;
+            }
             SetBlockCommand data = cmd.get();
             onSetBlock.accept(data);
         }
@@ -101,6 +106,10 @@ public class BuildStructureFromCode {
         LEFT_PAREN, RIGHT_PAREN, LEFT_BRACE, RIGHT_BRACE, COMMA, DOT, MINUS, PLUS, SEMICOLON, SLASH, STAR,
         // One or two char
         BANG, BANG_EQUAL, EQUAL, EQUAL_EQUAL, GREATER, GREATER_EQUAL, LESS, LESS_EQUAL,
+
+        // Booleans and ternary
+        AND_AND, OR_OR, QUESTION, COLON,
+
         // Literals
         IDENTIFIER, STRING, NUMBER,
         // Keywords
@@ -192,25 +201,7 @@ public class BuildStructureFromCode {
                 case '>':
                     add(match('=') ? TokenType.GREATER_EQUAL : TokenType.GREATER);
                     break;
-                case '/':
-                    if (match('/')) { // line comment
-                        while (!isAtEnd() && peek() != '\n')
-                            advance();
-                    } else if (match('*')) { // block comment
-                        while (!isAtEnd() && !(peek() == '*' && peekNext() == '/')) {
-                            if (peek() == '\n') {
-                                line++;
-                                col = 0;
-                            }
-                            advance();
-                        }
-                        if (!isAtEnd()) {
-                            advance();
-                            advance();
-                        } // consume */
-                    } else
-                        add(TokenType.SLASH);
-                    break;
+
                 case ' ':
                 case '\r':
                 case '\t':
@@ -221,6 +212,45 @@ public class BuildStructureFromCode {
                     break;
                 case '"':
                     string();
+                    break;
+                case '&':
+                    if (match('&'))
+                        add(TokenType.AND_AND);
+                    else
+                        error("Unexpected character: & (did you mean &&?)");
+                    break;
+                case '|':
+                    if (match('|'))
+                        add(TokenType.OR_OR);
+                    else
+                        error("Unexpected character: | (did you mean ||?)");
+                    break;
+
+                // NEW: ternary
+                case '?':
+                    add(TokenType.QUESTION);
+                    break;
+                case ':':
+                    add(TokenType.COLON);
+                    break;
+                case '/':
+                    if (match('/')) {
+                        while (!isAtEnd() && peek() != '\n')
+                            advance();
+                    } else if (match('*')) { /* …existing block comment logic… */
+                        while (!isAtEnd() && !(peek() == '*' && peekNext() == '/')) {
+                            if (peek() == '\n') {
+                                line++;
+                                col = 0;
+                            }
+                            advance();
+                        }
+                        if (!isAtEnd()) {
+                            advance();
+                            advance();
+                        }
+                    } else
+                        add(TokenType.SLASH);
                     break;
                 default:
                     if (isDigit(c))
@@ -375,6 +405,24 @@ public class BuildStructureFromCode {
         R visitVariable(Variable e);
 
         R visitAssign(Assign e);
+
+        R visitConditional(Conditional e);
+    }
+
+    static final class Conditional implements Expr {
+        final Expr condition;
+        final Expr thenExpr;
+        final Expr elseExpr;
+
+        Conditional(Expr condition, Expr thenExpr, Expr elseExpr) {
+            this.condition = condition;
+            this.thenExpr = thenExpr;
+            this.elseExpr = elseExpr;
+        }
+
+        public <R> R accept(ExprVisitor<R> v) {
+            return v.visitConditional(this);
+        }
     }
 
     static final class Binary implements Expr {
@@ -742,7 +790,7 @@ public class BuildStructureFromCode {
         }
 
         private Expr assignment() {
-            Expr expr = equality();
+            Expr expr = conditional(); // CHANGED: used to be equality()
             if (match(TokenType.EQUAL)) {
                 Token equals = previous();
                 Expr value = assignment();
@@ -751,6 +799,40 @@ public class BuildStructureFromCode {
                     return new Assign(name, value);
                 }
                 error(equals, "Invalid assignment target.");
+            }
+            return expr;
+        }
+
+        // NEW: ternary (right-associative)
+        private Expr conditional() {
+            Expr expr = or();
+            if (match(TokenType.QUESTION)) {
+                Expr thenExpr = expression(); // allow comma/ops etc.
+                consume(TokenType.COLON, "Expect ':' in ternary expression.");
+                Expr elseExpr = conditional(); // right-associative
+                expr = new Conditional(expr, thenExpr, elseExpr);
+            }
+            return expr;
+        }
+
+        // NEW: || precedence
+        private Expr or() {
+            Expr expr = and();
+            while (match(TokenType.OR_OR)) {
+                Token op = previous();
+                Expr right = and();
+                expr = new Binary(expr, op, right);
+            }
+            return expr;
+        }
+
+        // NEW: && precedence
+        private Expr and() {
+            Expr expr = equality();
+            while (match(TokenType.AND_AND)) {
+                Token op = previous();
+                Expr right = equality();
+                expr = new Binary(expr, op, right);
             }
             return expr;
         }
@@ -987,8 +1069,21 @@ public class BuildStructureFromCode {
         }
 
         // ---- Expressions ----
-
         public Object visitBinary(Binary e) {
+            // Short-circuit for logical ops:
+            if (e.op.type == TokenType.OR_OR) {
+                Object l = evaluate(e.left);
+                if (isTruthy(l))
+                    return true; // short-circuit
+                return isTruthy(evaluate(e.right));
+            }
+            if (e.op.type == TokenType.AND_AND) {
+                Object l = evaluate(e.left);
+                if (!isTruthy(l))
+                    return false; // short-circuit
+                return isTruthy(evaluate(e.right));
+            }
+
             Object l = evaluate(e.left);
             Object r = evaluate(e.right);
             switch (e.op.type) {
@@ -1031,6 +1126,13 @@ public class BuildStructureFromCode {
                 default:
                     throw new RuntimeException("Unknown binary op: " + e.op.type);
             }
+        }
+
+        public Object visitConditional(Conditional e) {
+            Object cond = evaluate(e.condition);
+            if (isTruthy(cond))
+                return evaluate(e.thenExpr);
+            return evaluate(e.elseExpr);
         }
 
         public Object visitUnary(Unary e) {
@@ -1206,11 +1308,12 @@ public class BuildStructureFromCode {
     // "let baseZ = 10;",
     // "let dir = \"north\";",
     // "let block = \"stone\";",
+    // "let t = true;",
     // "",
     // "// Build a 3x2 wall:",
     // "for (let i = 0; i < 3; i = i + 1) {",
     // " for (let j = 0; j < 2; j = j + 1) {",
-    // " setBlock(baseX + i, baseY + j, baseZ, block);",
+    // " setBlock(baseX + i, baseY + j, baseZ, (!t || j != 0)? block : \"a\");",
     // " }",
     // "}",
     // "",
@@ -1219,17 +1322,25 @@ public class BuildStructureFromCode {
     // " setBlock(baseX + 1, baseY + 2, baseZ, \"glass\");",
     // "}");
 
+    // public static void main(String[] args) {
+    // try {
+    // runCode(code, cmd -> System.out.println(cmd));
+    // } catch (Exception e) {
+    // // TODO: handle exception
+    // }
+    // }
+
     public static void buildStructureFromCode(String code, Consumer<SetBlockCommand> onSetBlock,
-            Consumer<String> onErrString, Runnable onFinishSuccess) {
+            Consumer<String> onErrString, Runnable onFinishSuccess, AltoClefController mod) {
         try {
             // run once to validate
             BuildStructureFromCode.runCode(code,
                     (_unused) -> {
                         // set block is nothing
-                    });
+                    }, mod);
             LOGGER.info("Code validated, running code for real now.");
             // code validated, can safely set block
-            BuildStructureFromCode.runCode(code, onSetBlock);
+            BuildStructureFromCode.runCode(code, onSetBlock, mod);
             onFinishSuccess.run();
         } catch (Exception e) {
             LOGGER.error("LLM build structure err={} ", e.getMessage());
