@@ -157,7 +157,6 @@ public class BuildStructure {
             Player2APIService service,
             AltoClefController mod) {
 
-        LockManager.setCodeGenLock(true);
         numErrors = 0;
 
         ConversationHistory history = new ConversationHistory(Prompts.getBuildStructurePrompt());

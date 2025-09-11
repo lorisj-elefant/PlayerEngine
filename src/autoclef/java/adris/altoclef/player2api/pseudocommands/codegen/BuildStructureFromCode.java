@@ -90,8 +90,8 @@ public class BuildStructureFromCode {
         Runner runner = new Runner(program);
         Optional<SetBlockCommand> cmd;
         while ((cmd = runner.next()).isPresent()) {
-            if (mod.shouldStopPseudoCommand) {
-                mod.shouldStopPseudoCommand = false;
+            if (mod.shouldCancelPseudoCommand) {
+                mod.shouldCancelPseudoCommand = false;
                 return;
             }
             SetBlockCommand data = cmd.get();

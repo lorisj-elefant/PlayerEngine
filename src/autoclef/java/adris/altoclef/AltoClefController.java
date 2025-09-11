@@ -18,6 +18,7 @@ import adris.altoclef.control.SlotHandler;
 import adris.altoclef.player2api.EventQueueManager;
 import adris.altoclef.player2api.AIPersistantData;
 import adris.altoclef.player2api.Player2APIService;
+import adris.altoclef.player2api.pseudocommands.PseudoCommandExecutor;
 import adris.altoclef.player2api.pseudocommands.PseudoCommands.PseudoCommand;
 import adris.altoclef.player2api.Character;
 import adris.altoclef.tasksystem.Task;
@@ -79,8 +80,9 @@ public class AltoClefController {
    private Task storedTask;
    public boolean isStopping = false;
    private Player owner;
-   private Optional<String> currentPseudoCommandInfoAsString;
-   public boolean shouldStopPseudoCommand = false;
+   private Optional<String> currentPseudoCommandInfoAsString = Optional.empty();
+   public boolean shouldCancelPseudoCommand = false;
+   private PseudoCommandExecutor pseudoCommandExecutor;
 
    public AltoClefController(IBaritone baritone, Character character, String player2GameId) {
       this.baritone = baritone;
@@ -130,9 +132,11 @@ public class AltoClefController {
 
       // AI setup: (should be at end to ensure as many things are not null as
       // possible)
+      this.player2apiService = new Player2APIService(player2GameId);
+      this.pseudoCommandExecutor = new PseudoCommandExecutor(this, player2apiService);
+
       EventQueueManager.getOrCreateEventQueueData(this);
       this.aiPersistantData = new AIPersistantData(this, character);
-      this.player2apiService = new Player2APIService(player2GameId);
    }
 
    public void serverTick() {
@@ -400,5 +404,19 @@ public class AltoClefController {
 
    public Optional<String> getCurrentlyRunningPseudoCmd() {
       return currentPseudoCommandInfoAsString;
+   }
+
+   public PseudoCommandExecutor getPseudoCommandExecutor() {
+      return this.pseudoCommandExecutor;
+   }
+
+   public void resetStop() {
+      isStopping = false;
+      shouldCancelPseudoCommand = false;
+   }
+
+   public void callOnStop() {
+      isStopping = true;
+      shouldCancelPseudoCommand = true;
    }
 }

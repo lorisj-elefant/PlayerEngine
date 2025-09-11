@@ -1,6 +1,7 @@
 
 package adris.altoclef.player2api;
 
+import java.util.Optional;
 import java.util.function.Consumer;
 
 import org.apache.logging.log4j.LogManager;
@@ -8,7 +9,9 @@ import org.apache.logging.log4j.Logger;
 
 import adris.altoclef.AltoClefController;
 import adris.altoclef.commandsystem.CommandExecutor;
+import adris.altoclef.player2api.pseudocommands.PseudoCommandExecutor;
 import adris.altoclef.player2api.pseudocommands.PseudoCommands;
+import adris.altoclef.player2api.pseudocommands.PseudoCommands.PseudoCommand;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -67,18 +70,36 @@ public class AgentSideEffects {
         String commandWithPrefix = cmdExecutor.isClientCommand(command) ? command
                 : (cmdExecutor.getCommandPrefix() + command);
         if (commandWithPrefix.equals("@stop")) {
-            mod.isStopping = true;
-
+            mod.callOnStop();
         } else {
-            mod.isStopping = false;
+            mod.resetStop();
         }
+        Optional<PseudoCommands.PseudoCommand> ma = PseudoCommands
+                .getPseudocommandOption(commandWithPrefix.substring(1));
+        ma.ifPresentOrElse(
+                (pcmd) -> executePseudoCommand(mod, pcmd, commandWithPrefix, onStop),
+                () -> executeAltoclefCommand(mod, commandWithPrefix, onStop));
+    }
 
-        PseudoCommands.getPseudocommandOption(commandWithPrefix).ifPresentOrElse(
-                (pseudoCommand) -> {
-                    PseudoCommands.process(pseudoCommand, commandWithPrefix, completer, service, mod);
-                },
+    private static void executePseudoCommand(AltoClefController mod, PseudoCommand pcmd, String commandWithPrefix,
+            Consumer<CommandExecutionStopReason> onStop) {
+        PseudoCommandExecutor executor = mod.getPseudoCommandExecutor();
+        mod.shouldCancelPseudoCommand = false;
+        mod.setPseudoCommandInfo(Optional.of("running" + commandWithPrefix.substring(1)));
+        executor.execute(pcmd,
+                commandWithPrefix,
                 () -> {
-                    executeAltoclefCommand(mod, commandWithPrefix, onStop);
+                    if (mod.shouldCancelPseudoCommand) {
+                        mod.setPseudoCommandInfo(
+                                Optional.of(String.format("Running psuedocommand %s", pcmd.getName())));
+                        LOGGER.info("{} was cancelled. Not adding finish event to queue.",
+                                commandWithPrefix);
+                        onStop.accept(new CommandExecutionStopReason.Cancelled(commandWithPrefix));
+                    } else {
+                        onStop.accept(new CommandExecutionStopReason.Finished(commandWithPrefix));
+                    }
+                }, (errMsg) -> {
+                    onStop.accept(new CommandExecutionStopReason.Error(commandWithPrefix, errMsg));
                 });
     }
 

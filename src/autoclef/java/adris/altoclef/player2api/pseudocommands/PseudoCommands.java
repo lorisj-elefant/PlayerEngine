@@ -8,7 +8,6 @@ import org.apache.logging.log4j.Logger;
 
 import adris.altoclef.AltoClefController;
 import adris.altoclef.player2api.LLMCompleter;
-import adris.altoclef.player2api.LockManager;
 import adris.altoclef.player2api.Player2APIService;
 import adris.altoclef.player2api.pseudocommands.codegen.BuildStructure;
 
@@ -41,19 +40,4 @@ public class PseudoCommands {
         return pseudoCommands.stream().filter((p) -> cmd.contains(p.getName())).findFirst();
     }
 
-    public static void process(PseudoCommand cmd, String commandWithPrefix, LLMCompleter completer,
-            Player2APIService service, AltoClefController mod) {
-        mod.setPseudoCommandInfo(Optional.of(commandWithPrefix.substring(1)));
-        LOGGER.info("Processing PseudoCommand={}, commandWithPrefix={}", cmd, commandWithPrefix);
-        mod.shouldStopPseudoCommand = false;
-        switch (cmd.name) {
-            case "build_structure":
-                String description = commandWithPrefix.split("build_structure")[1].strip();
-                BuildStructure.buildStructure(description, completer, service, mod);
-                break;
-            default:
-                LOGGER.error("for cmdWithPrefix={} could not find matching pseudocommand", commandWithPrefix);
-                mod.setPseudoCommandInfo(Optional.empty());
-        }
-    }
 }

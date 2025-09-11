@@ -105,7 +105,7 @@ public class EventQueueManager {
         Consumer<String> onErrEvent = (errMsg) -> {
             AgentSideEffects.onError(server, errMsg);
         };
-        if (!LockManager.processingNextQueueLock()) {
+        if (!LockManager.isConversationLocked()) {
             LLMCompleter.processUsingAvailibleCompleter(
                     (cmp) -> {
                         process(onCharacterEvent, onErrEvent);

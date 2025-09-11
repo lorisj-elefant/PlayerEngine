@@ -10,15 +10,14 @@ public class LockManager {
                                               // estimated wait)
     private static boolean onLLMResponseLock = false; // make sure we dont start processing until onLLMResponse has
                                                       // finished
-    private static boolean codeGenLocked = false; // make sure we don't start processing until code gen has finished
 
     public static boolean isTTSLocked() {
         return ttsLocked;
     }
 
     // should we wait before processing next queue element.
-    public static boolean processingNextQueueLock() {
-        return ttsLocked || codeGenLocked || onLLMResponseLock;
+    public static boolean isConversationLocked() {
+        return ttsLocked || onLLMResponseLock;
     }
 
     public static void setTTS(boolean onOrOff) {
@@ -26,17 +25,9 @@ public class LockManager {
         ttsLocked = onOrOff;
     }
 
-    public static void setCodeGenLock(boolean onOrOff) {
-        LOGGER.info(String.format("CodeGen: %s lock", onOrOff ? "setting" : "releasing"));
-        codeGenLocked = onOrOff;
-    }
-
     public static void setOnLLMResponseLock(boolean onOrOff) {
         LOGGER.info(String.format("llmResponse: %s lock", onOrOff ? "setting" : "releasing"));
         onLLMResponseLock = onOrOff;
     }
 
-    public static boolean getCodeGenLock() {
-        return codeGenLocked;
-    }
 }
