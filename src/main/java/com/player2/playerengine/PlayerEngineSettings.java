@@ -6,13 +6,6 @@ import com.player2.playerengine.util.BlockRange;
 import com.player2.playerengine.util.helpers.ConfigHelper;
 import com.player2.playerengine.util.helpers.ItemHelper;
 import com.player2.playerengine.util.serialization.IFailableConfigFile;
-import com.player2.playerengine.util.serialization.ItemDeserializer;
-import com.player2.playerengine.util.serialization.ItemSerializer;
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Streams;
 import java.util.Arrays;
 import java.util.Collections;
@@ -23,15 +16,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 
-@JsonIgnoreProperties(
-   ignoreUnknown = true
-)
-@JsonAutoDetect(
-   fieldVisibility = JsonAutoDetect.Visibility.ANY
-)
-public class Settings implements IFailableConfigFile {
-   public static final String SETTINGS_PATH = "altoclef_settings.json";
-   @JsonIgnore
+public class PlayerEngineSettings implements IFailableConfigFile {
+
    private transient boolean failedToLoad = false;
    private boolean showDebugTickMs = false;
    private boolean showTaskChains = true;
@@ -67,12 +53,7 @@ public class Settings implements IFailableConfigFile {
    private int netherFastTravelWalkingRange = 600;
    private String idleCommand = "idle";
    private String deathCommand = "";
-   @JsonSerialize(
-      using = ItemSerializer.class
-   )
-   @JsonDeserialize(
-      using = ItemDeserializer.class
-   )
+
    private List<Item> throwawayItems = Arrays.asList(
       Items.DRIPSTONE_BLOCK,
       Items.ROOTED_DIRT,
@@ -107,12 +88,7 @@ public class Settings implements IFailableConfigFile {
    private boolean dontThrowAwayCustomNameItems = true;
    private boolean dontThrowAwayEnchantedItems = true;
    private boolean throwAwayUnusedItems = true;
-   @JsonSerialize(
-      using = ItemSerializer.class
-   )
-   @JsonDeserialize(
-      using = ItemDeserializer.class
-   )
+
    private List<Item> importantItems = Streams.concat(
          new Stream[]{
             Stream.of(
@@ -135,18 +111,13 @@ public class Settings implements IFailableConfigFile {
       )
       .toList();
    private boolean limitFuelsToSupportedFuels = true;
-   @JsonSerialize(
-      using = ItemSerializer.class
-   )
-   @JsonDeserialize(
-      using = ItemDeserializer.class
-   )
+
    private List<Item> supportedFuels = Streams.concat(new Stream[]{Stream.of(Items.COAL, Items.CHARCOAL)}).toList();
    private BlockPos homeBasePosition = new BlockPos(0, 64, 0);
    private List<BlockRange> areasToProtect = Collections.emptyList();
 
-   public static void load(Consumer<Settings> onReload) {
-      ConfigHelper.loadConfig("altoclef_settings.json", Settings::new, Settings.class, onReload);
+   public static void load(Consumer<PlayerEngineSettings> onReload) {
+      ConfigHelper.loadConfig(PlayerEngine.MOD_ID+ "_settings.json", PlayerEngineSettings::new, PlayerEngineSettings.class, onReload);
    }
 
    public boolean shouldShowTaskChain() {
@@ -322,7 +293,6 @@ public class Settings implements IFailableConfigFile {
       return !this.limitFuelsToSupportedFuels || this.supportedFuels.contains(item);
    }
 
-   @JsonIgnore
    public Item[] getSupportedFuelItems() {
       return this.supportedFuels.toArray(Item[]::new);
    }

@@ -24,7 +24,6 @@ import com.player2.playerengine.automaton.api.cache.IWorldProvider;
 import com.player2.playerengine.automaton.api.event.listener.IEventBus;
 import com.player2.playerengine.automaton.api.process.IBaritoneProcess;
 import com.player2.playerengine.automaton.api.utils.IEntityContext;
-import com.player2.playerengine.automaton.autoclef.AltoClefSettings;
 import com.player2.playerengine.automaton.behavior.Behavior;
 import com.player2.playerengine.automaton.behavior.InventoryBehavior;
 import com.player2.playerengine.automaton.behavior.LookBehavior;
@@ -71,7 +70,7 @@ public class Baritone implements IBaritone {
    private final BaritoneCommandManager commandManager;
    private final IEntityContext playerContext;
    public BlockStateInterface bsi;
-   public AltoClefSettings altoClefSettings = new AltoClefSettings();
+   public AdditionalBaritoneSettings additionalBaritoneSettings = new AdditionalBaritoneSettings();
 
    public Baritone(LivingEntity player) {
       this.settings = new Settings();
@@ -184,8 +183,8 @@ public class Baritone implements IBaritone {
       return this.settings;
    }
 
-   public AltoClefSettings getExtraBaritoneSettings() {
-      return this.altoClefSettings;
+   public AdditionalBaritoneSettings getExtraBaritoneSettings() {
+      return this.additionalBaritoneSettings;
    }
 
    @Override

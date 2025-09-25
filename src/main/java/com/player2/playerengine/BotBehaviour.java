@@ -1,8 +1,9 @@
 package com.player2.playerengine;
 
+import com.player2.playerengine.automaton.AdditionalBaritoneSettings;
 import com.player2.playerengine.automaton.api.Settings;
 import com.player2.playerengine.automaton.api.utils.RayTraceUtils;
-import com.player2.playerengine.automaton.autoclef.AltoClefSettings;
+
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -278,7 +279,7 @@ public class BotBehaviour {
          this.blockBreakAdditionalPenalty = s.blockBreakAdditionalPenalty.get();
       }
 
-      private void readExtraState(AltoClefSettings settings) {
+      private void readExtraState(AdditionalBaritoneSettings settings) {
          synchronized (settings.getBreakMutex()) {
             synchronized (settings.getPlaceMutex()) {
                this.blocksToAvoidBreaking = new HashSet<>(settings.getBlocksToAvoidBreaking());
@@ -305,7 +306,7 @@ public class BotBehaviour {
          this.pauseOnLostFocus = false;
       }
 
-      private void applyState(Settings s, AltoClefSettings sa) {
+      private void applyState(Settings s, AdditionalBaritoneSettings sa) {
          s.followOffsetDistance.set(this.followOffsetDistance);
          s.mineScanDroppedItems.set(this.mineScanDroppedItems);
          s.allowDiagonalAscend.set(this.allowDiagonalAscend);

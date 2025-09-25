@@ -1,7 +1,7 @@
 package com.player2.playerengine.chains;
 
 import com.player2.playerengine.PlayerEngineController;
-import com.player2.playerengine.Settings;
+import com.player2.playerengine.PlayerEngineSettings;
 import com.player2.playerengine.multiversion.FoodComponentWrapper;
 import com.player2.playerengine.multiversion.item.ItemVer;
 import com.player2.playerengine.tasks.resources.CollectFoodTask;
@@ -102,7 +102,7 @@ public class FoodChain extends SingleTaskChain {
                   this.stopEat(this.controller);
                }
 
-               Settings settings = this.controller.getModSettings();
+               PlayerEngineSettings settings = this.controller.getModSettings();
                if (this.needsToCollectFood || foodScore < settings.getMinimumFoodAllowed()) {
                   this.needsToCollectFood = foodScore < settings.getFoodUnitsToCollect();
                   if (this.needsToCollectFood) {

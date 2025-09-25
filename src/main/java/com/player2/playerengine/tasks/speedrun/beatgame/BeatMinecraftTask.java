@@ -1,5 +1,6 @@
 package com.player2.playerengine.tasks.speedrun.beatgame;
 
+import com.player2.playerengine.PlayerEngine;
 import com.player2.playerengine.PlayerEngineController;
 import com.player2.playerengine.util.Debug;
 import com.player2.playerengine.TaskCatalogue;
@@ -954,7 +955,7 @@ public class BeatMinecraftTask extends Task {
    }
 
    private void addThrowawayItemsWarning(PlayerEngineController mod) {
-      String settingsWarningTail = "in \".minecraft/altoclef_settings.json\". @gamer may break if you don't add this! (sorry!)";
+      String settingsWarningTail = "in \".minecraft/"+ PlayerEngine.MOD_ID +"_settings.json\". @gamer may break if you don't add this! (sorry!)";
       if (!ArrayUtils.contains(mod.getModSettings().getThrowawayItems(mod), Items.END_STONE)) {
          Debug.logWarning("\"end_stone\" is not part of your \"throwawayItems\" list " + settingsWarningTail);
       }

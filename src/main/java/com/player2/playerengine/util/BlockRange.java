@@ -2,7 +2,6 @@ package com.player2.playerengine.util;
 
 import com.player2.playerengine.PlayerEngineController;
 import com.player2.playerengine.util.helpers.WorldHelper;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.Objects;
 import net.minecraft.core.BlockPos;
 
@@ -39,7 +38,6 @@ public class BlockRange {
             && pos.getY() <= this.end.getY();
    }
 
-   @JsonIgnore
    public BlockPos getCenter() {
       BlockPos sum = this.start.offset(this.end);
       return new BlockPos(sum.getX() / 2, sum.getY() / 2, sum.getZ() / 2);

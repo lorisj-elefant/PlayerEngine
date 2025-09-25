@@ -1,5 +1,6 @@
 package com.player2.playerengine;
 
+import com.player2.playerengine.automaton.AdditionalBaritoneSettings;
 import com.player2.playerengine.chains.FoodChain;
 import com.player2.playerengine.chains.MLGBucketFallChain;
 import com.player2.playerengine.chains.MobDefenseChain;
@@ -36,7 +37,7 @@ import com.player2.playerengine.automaton.api.IBaritone;
 import com.player2.playerengine.automaton.api.entity.LivingEntityInventory;
 import com.player2.playerengine.automaton.api.utils.IEntityContext;
 import com.player2.playerengine.automaton.api.utils.IInteractionController;
-import com.player2.playerengine.automaton.autoclef.AltoClefSettings;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -77,7 +78,7 @@ public class PlayerEngineController {
    private InputControls inputControls;
    private SlotHandler slotHandler;
    private PlayerExtraController extraController;
-   private Settings settings;
+   private PlayerEngineSettings settings;
    private boolean paused = false;
    private Task storedTask;
    public boolean isStopping = false;
@@ -113,7 +114,7 @@ public class PlayerEngineController {
       this.initializeBaritoneSettings();
       this.botBehaviour = new BotBehaviour(this);
       this.initializeCommands();
-      Settings.load(
+      PlayerEngineSettings.load(
             newSettings -> {
                this.settings = newSettings;
                List<Item> baritoneCanPlace = Arrays.stream(this.settings.getThrowawayItems(this, true)).toList();
@@ -236,7 +237,7 @@ public class PlayerEngineController {
       return this.baritone.settings();
    }
 
-   public AltoClefSettings getExtraBaritoneSettings() {
+   public AdditionalBaritoneSettings getExtraBaritoneSettings() {
       return ((Baritone) this.baritone).getExtraBaritoneSettings();
    }
 
@@ -292,7 +293,7 @@ public class PlayerEngineController {
       return this.miscBlockTracker;
    }
 
-   public Settings getModSettings() {
+   public PlayerEngineSettings getModSettings() {
       return this.settings;
    }
 

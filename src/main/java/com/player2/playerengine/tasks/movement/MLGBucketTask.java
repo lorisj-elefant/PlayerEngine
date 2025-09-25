@@ -10,15 +10,11 @@ import com.player2.playerengine.util.helpers.EntityHelper;
 import com.player2.playerengine.util.helpers.LookHelper;
 import com.player2.playerengine.util.helpers.MathsHelper;
 import com.player2.playerengine.util.helpers.WorldHelper;
-import com.player2.playerengine.util.serialization.ItemDeserializer;
-import com.player2.playerengine.util.serialization.ItemSerializer;
 import com.player2.playerengine.automaton.api.IBaritone;
 import com.player2.playerengine.automaton.api.utils.IEntityContext;
 import com.player2.playerengine.automaton.api.utils.Rotation;
 import com.player2.playerengine.automaton.api.utils.RotationUtils;
 import com.player2.playerengine.automaton.api.utils.input.Input;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -508,12 +504,7 @@ public class MLGBucketTask extends Task {
       public int epicClutchConeYawDivisionEnd = 20;
       public int preferLavaWhenFallDropsHealthBelowThreshold = 3;
       public int lavaLevelOrGreaterWillCancelFallDamage = 5;
-      @JsonSerialize(
-         using = ItemSerializer.class
-      )
-      @JsonDeserialize(
-         using = ItemDeserializer.class
-      )
+
       public List<Item> clutchItems = List.of(Items.HAY_BLOCK, Items.TWISTING_VINES);
    }
 }

@@ -1,41 +1,49 @@
 package com.player2.playerengine.util.helpers;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonSyntaxException;
+import com.google.gson.reflect.TypeToken;
+import com.player2.playerengine.PlayerEngine;
 import com.player2.playerengine.util.Debug;
-import com.player2.playerengine.util.serialization.BlockPosDeserializer;
-import com.player2.playerengine.util.serialization.BlockPosSerializer;
-import com.player2.playerengine.util.serialization.ChunkPosDeserializer;
-import com.player2.playerengine.util.serialization.ChunkPosSerializer;
 import com.player2.playerengine.util.serialization.IFailableConfigFile;
 import com.player2.playerengine.util.serialization.IListConfigFile;
-import com.player2.playerengine.util.serialization.Vec3dDeserializer;
-import com.player2.playerengine.util.serialization.Vec3dSerializer;
-import com.fasterxml.jackson.core.util.DefaultIndenter;
-import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.module.SimpleModule;
+
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Scanner;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+
+import com.player2.playerengine.util.serialization.gson.BlockPosTypeAdapter;
+import com.player2.playerengine.util.serialization.gson.ChunkPosTypeAdapter;
+import com.player2.playerengine.util.serialization.gson.ItemListTypeAdapter;
+import com.player2.playerengine.util.serialization.gson.Vec3dTypeAdapter;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.phys.Vec3;
 
 public class ConfigHelper {
-   private static final String ALTO_FOLDER = "altoclef";
    private static final HashMap<String, Runnable> loadedConfigs = new HashMap<>();
 
+   private static final Gson GSON = new GsonBuilder()
+           .setPrettyPrinting()
+           .registerTypeAdapter(BlockPos.class, new BlockPosTypeAdapter())
+           .registerTypeAdapter(ChunkPos.class, new ChunkPosTypeAdapter())
+           .registerTypeAdapter(Vec3.class, new Vec3dTypeAdapter())
+           .registerTypeAdapter(new TypeToken<List<Item>>() {}.getType(), new ItemListTypeAdapter())
+           .create();
+
    private static File getConfigFile(String path) {
-      String fullPath = "altoclef" + File.separator + path;
+      String fullPath = PlayerEngine.MOD_ID + File.separator + path;
       return new File(fullPath);
    }
 
@@ -48,47 +56,49 @@ public class ConfigHelper {
    private static <T> T getConfig(String path, Supplier<T> getDefault, Class<T> classToLoad) {
       T result = getDefault.get();
       File loadFrom = getConfigFile(path);
+
       if (!loadFrom.exists()) {
          saveConfig(path, result);
          return result;
-      } else {
-         ObjectMapper mapper = new ObjectMapper();
-         SimpleModule module = new SimpleModule();
-         module.addDeserializer(Vec3.class, new Vec3dDeserializer());
-         module.addDeserializer(ChunkPos.class, new ChunkPosDeserializer());
-         module.addDeserializer(BlockPos.class, new BlockPosDeserializer());
-         mapper.registerModule(module);
+      }
 
-         try {
-            result = mapper.readValue(loadFrom, classToLoad);
-         } catch (JsonMappingException var9) {
-            Debug.logError(
-               "Failed to parse Config file of type "
-                  + classToLoad.getSimpleName()
-                  + "at "
-                  + path
-                  + ". JSON Error Message: "
-                  + var9.getMessage()
-                  + ".\n JSON Error STACK TRACE:\n\n"
-            );
-            var9.printStackTrace();
-            if (result instanceof IFailableConfigFile failable) {
-               failable.failedToLoad();
-            }
-
-            return result;
-         } catch (IOException var10) {
-            Debug.logError("Failed to read Config at " + path + ".");
-            var10.printStackTrace();
-            if (result instanceof IFailableConfigFile failable) {
-               failable.failedToLoad();
-            }
-
-            return result;
+      try (FileReader reader = new FileReader(loadFrom)) {
+         result = GSON.fromJson(reader, classToLoad);
+      } catch (JsonSyntaxException e) {
+         Debug.logError(
+                 "Failed to parse Config file of type "
+                         + classToLoad.getSimpleName()
+                         + " at "
+                         + path
+                         + ". JSON Error Message: "
+                         + e.getMessage()
+         );
+         e.printStackTrace();
+         if (result instanceof IFailableConfigFile failable) {
+            failable.onFailLoad();
          }
-
-         saveConfig(path, result);
          return result;
+      } catch (IOException e) {
+         Debug.logError("Failed to read Config at " + path + ".");
+         e.printStackTrace();
+         if (result instanceof IFailableConfigFile failable) {
+            failable.onFailLoad();
+         }
+         return result;
+      }
+
+      saveConfig(path, result);
+      return result;
+   }
+
+   public static <T> void saveConfig(String path, T config) {
+      File configFile = getConfigFile(path);
+      createParentDirectories(configFile);
+
+      try (FileWriter writer = new FileWriter(configFile)) {
+         GSON.toJson(config, writer);
+      } catch (IOException e) {
+         handleIOException(e);
       }
    }
 
@@ -98,56 +108,12 @@ public class ConfigHelper {
       onReload.accept(config);
    }
 
-   public static <T> void saveConfig(String path, T config) {
-      ObjectMapper mapper = new ObjectMapper();
-      SimpleModule module = new SimpleModule();
-      module.addSerializer(Vec3.class, new Vec3dSerializer());
-      module.addSerializer(BlockPos.class, new BlockPosSerializer());
-      module.addSerializer(ChunkPos.class, new ChunkPosSerializer());
-      mapper.registerModule(module);
-      File configFile = getConfigFile(path);
-      createParentDirectories(configFile);
-
-      try {
-         enablePrettyPrinting(mapper);
-         writeConfigToFile(mapper, configFile, config);
-      } catch (IOException var6) {
-         handleIOException(var6);
-      }
-   }
-
    private static void createParentDirectories(File file) {
       try {
          Path parentPath = file.getParentFile().toPath();
          Files.createDirectories(parentPath);
       } catch (IOException var2) {
          System.err.println("Failed to create parent directories: " + var2.getMessage());
-      }
-   }
-
-   private static void enablePrettyPrinting(ObjectMapper mapper) {
-      if (mapper != null) {
-         mapper.enable(SerializationFeature.INDENT_OUTPUT);
-         DefaultPrettyPrinter prettyPrinter = new DefaultPrettyPrinter();
-         prettyPrinter.indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE);
-         mapper.writer(prettyPrinter);
-      }
-   }
-
-   private static <T> void writeConfigToFile(ObjectMapper objectMapper, File configFile, T configData) throws IOException {
-      Writer writer = new FileWriter(configFile);
-
-      try {
-         objectMapper.writeValue(writer, configData);
-         writer.close();
-      } catch (Throwable var7) {
-         try {
-            writer.close();
-         } catch (Throwable var6) {
-            var7.addSuppressed(var6);
-         }
-
-         throw var7;
       }
    }
 

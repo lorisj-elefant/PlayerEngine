@@ -37,7 +37,7 @@ public class AgentConversationData {
     private boolean isGreetingResponse = true;
     private boolean shouldIgnoreGreetingDance = true;
 
-    private MessageBuffer altoClefMsgBuffer = new MessageBuffer(10);
+    private MessageBuffer playerEngineMsgBuffer = new MessageBuffer(10);
 
     public AgentConversationData(PlayerEngineController mod) {
         this.mod = mod;
@@ -85,7 +85,7 @@ public class AgentConversationData {
 
         String agentStatus = AgentStatus.fromMod(this.mod).toString();
         String worldStatus = WorldStatus.fromMod(this.mod).toString();
-        String altoClefDebugMsgs = this.altoClefMsgBuffer.dumpAndGetString();
+        String altoClefDebugMsgs = this.playerEngineMsgBuffer.dumpAndGetString();
         ConversationHistory historyWithWrappedStatus = mod.getAIPersistantData()
                 .getConversationHistoryWrappedWithStatus(worldStatus, agentStatus, altoClefDebugMsgs,
                         mod.getPlayer2APIService(), reminderString);
@@ -148,12 +148,6 @@ public class AgentConversationData {
             return Optional.of(Prompts.reminderOnAIMsg);
         }
         return Optional.empty();
-    }
-
-    // ## Callbacks:
-    public void addAltoclefLogMessage(String message) {
-        LOGGER.info("Adding altoclef system msg={}", message);
-        this.altoClefMsgBuffer.addMsg(message);
     }
 
     public void onEvent(Event event) {
