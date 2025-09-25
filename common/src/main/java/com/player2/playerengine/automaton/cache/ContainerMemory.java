@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Map.Entry;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtUtils;
@@ -37,15 +38,15 @@ import net.minecraft.world.item.ItemStack;
 public class ContainerMemory implements IContainerMemory {
    private final Map<BlockPos, ContainerMemory.RememberedInventory> inventories = new HashMap<>();
 
-   public void read(CompoundTag tag) {
+   public void read(HolderLookup.Provider levelRegistryAccess, CompoundTag tag) {
       try {
          ListTag nbtInventories = tag.getList("inventories", 10);
 
          for (int i = 0; i < nbtInventories.size(); i++) {
             CompoundTag nbtEntry = nbtInventories.getCompound(i);
-            BlockPos pos = NbtUtils.readBlockPos(nbtEntry.getCompound("pos"));
+            BlockPos pos = NbtUtils.readBlockPos(nbtEntry,"pos").get();
             ContainerMemory.RememberedInventory rem = new ContainerMemory.RememberedInventory();
-            rem.fromNbt(nbtEntry.getList("content", 9));
+            rem.fromNbt(levelRegistryAccess, nbtEntry.getList("content", 9));
             if (!rem.items.isEmpty()) {
                this.inventories.put(pos, rem);
             }
@@ -56,7 +57,7 @@ public class ContainerMemory implements IContainerMemory {
       }
    }
 
-   public CompoundTag toNbt() {
+   public CompoundTag toNbt(HolderLookup.Provider levelRegistryAccess) {
       CompoundTag tag = new CompoundTag();
       if (BaritoneAPI.getGlobalSettings().containerMemory.get()) {
          ListTag list = new ListTag();
@@ -64,7 +65,7 @@ public class ContainerMemory implements IContainerMemory {
          for (Entry<BlockPos, ContainerMemory.RememberedInventory> entry : this.inventories.entrySet()) {
             CompoundTag nbtEntry = new CompoundTag();
             nbtEntry.put("pos", NbtUtils.writeBlockPos(entry.getKey()));
-            nbtEntry.put("content", entry.getValue().toNbt());
+            nbtEntry.put("content", entry.getValue().toNbt(levelRegistryAccess));
             list.add(nbtEntry);
          }
 
@@ -111,19 +112,19 @@ public class ContainerMemory implements IContainerMemory {
          return this.size;
       }
 
-      public ListTag toNbt() {
+      public ListTag toNbt(HolderLookup.Provider levelRegistryAccess) {
          ListTag inv = new ListTag();
 
          for (ItemStack item : this.items) {
-            inv.add(item.save(new CompoundTag()));
+            inv.add(item.save(levelRegistryAccess, new CompoundTag()));
          }
 
          return inv;
       }
 
-      public void fromNbt(ListTag content) {
+      public void fromNbt(HolderLookup.Provider levelRegistryAccess, ListTag content) {
          for (int i = 0; i < content.size(); i++) {
-            this.items.add(ItemStack.of(content.getCompound(i)));
+            this.items.add(ItemStack.parseOptional(levelRegistryAccess, content.getCompound(i)));
          }
 
          this.size = this.items.size();

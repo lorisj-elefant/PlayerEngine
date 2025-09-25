@@ -23,7 +23,9 @@ import java.util.function.Predicate;
 import net.minecraft.CrashReport;
 import net.minecraft.CrashReportCategory;
 import net.minecraft.ReportedException;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.network.chat.Component;
@@ -73,7 +75,7 @@ public class LivingEntityInventory implements Container, Nameable {
 
    private boolean canStackAddMore(ItemStack existingStack, ItemStack stack) {
       return !existingStack.isEmpty()
-         && ItemStack.isSameItemSameTags(existingStack, stack)
+         && ItemStack.isSameItemSameComponents(existingStack, stack)
          && existingStack.isStackable()
          && existingStack.getCount() < existingStack.getMaxStackSize()
          && existingStack.getCount() < this.getMaxStackSize();
@@ -121,7 +123,7 @@ public class LivingEntityInventory implements Container, Nameable {
 
    public int getSlotWithStack(ItemStack stack) {
       for (int i = 0; i < this.main.size(); i++) {
-         if (!((ItemStack)this.main.get(i)).isEmpty() && ItemStack.isSameItemSameTags(stack, (ItemStack)this.main.get(i))) {
+         if (!((ItemStack)this.main.get(i)).isEmpty() && ItemStack.isSameItemSameComponents(stack, (ItemStack)this.main.get(i))) {
             return i;
          }
       }
@@ -133,10 +135,10 @@ public class LivingEntityInventory implements Container, Nameable {
       for (int i = 0; i < this.main.size(); i++) {
          ItemStack itemStack = (ItemStack)this.main.get(i);
          if (!((ItemStack)this.main.get(i)).isEmpty()
-            && ItemStack.isSameItemSameTags(stack, (ItemStack)this.main.get(i))
+            && ItemStack.isSameItemSameComponents(stack, (ItemStack)this.main.get(i))
             && !((ItemStack)this.main.get(i)).isDamaged()
             && !itemStack.isEnchanted()
-            && !itemStack.hasCustomHoverName()) {
+            && !itemStack.has(DataComponents.CUSTOM_NAME)) {
             return i;
          }
       }
@@ -197,11 +199,9 @@ public class LivingEntityInventory implements Container, Nameable {
       ItemStack itemStack = this.getItem(slot);
       if (itemStack.isEmpty()) {
          itemStack = new ItemStack(item, 0);
-         if (stack.hasTag()) {
-            itemStack.setTag(stack.getTag().copy());
-         }
+          itemStack.applyComponents(stack.getComponents());
 
-         this.setItem(slot, itemStack);
+          this.setItem(slot, itemStack);
       }
 
       int j = i;
@@ -362,12 +362,12 @@ public class LivingEntityInventory implements Container, Nameable {
       return ((ItemStack)this.main.get(this.selectedSlot)).getDestroySpeed(block);
    }
 
-   public ListTag writeNbt(ListTag nbtList) {
+   public ListTag writeNbt(HolderLookup.Provider levelRegistryAccess, ListTag nbtList) {
       for (int i = 0; i < this.main.size(); i++) {
          if (!((ItemStack)this.main.get(i)).isEmpty()) {
             CompoundTag nbtCompound = new CompoundTag();
             nbtCompound.putByte("Slot", (byte)i);
-            ((ItemStack)this.main.get(i)).save(nbtCompound);
+            ((ItemStack)this.main.get(i)).save(levelRegistryAccess, nbtCompound);
             nbtList.add(nbtCompound);
          }
       }
@@ -376,7 +376,7 @@ public class LivingEntityInventory implements Container, Nameable {
          if (!((ItemStack)this.armor.get(ix)).isEmpty()) {
             CompoundTag nbtCompound = new CompoundTag();
             nbtCompound.putByte("Slot", (byte)(ix + 100));
-            ((ItemStack)this.armor.get(ix)).save(nbtCompound);
+            ((ItemStack)this.armor.get(ix)).save(levelRegistryAccess, nbtCompound);
             nbtList.add(nbtCompound);
          }
       }
@@ -385,7 +385,7 @@ public class LivingEntityInventory implements Container, Nameable {
          if (!((ItemStack)this.offHand.get(ixx)).isEmpty()) {
             CompoundTag nbtCompound = new CompoundTag();
             nbtCompound.putByte("Slot", (byte)(ixx + 150));
-            ((ItemStack)this.offHand.get(ixx)).save(nbtCompound);
+            ((ItemStack)this.offHand.get(ixx)).save(levelRegistryAccess, nbtCompound);
             nbtList.add(nbtCompound);
          }
       }
@@ -393,7 +393,7 @@ public class LivingEntityInventory implements Container, Nameable {
       return nbtList;
    }
 
-   public void readNbt(ListTag nbtList) {
+   public void readNbt(HolderLookup.Provider levelRegistryAccess, ListTag nbtList) {
       this.main.clear();
       this.armor.clear();
       this.offHand.clear();
@@ -401,7 +401,7 @@ public class LivingEntityInventory implements Container, Nameable {
       for (int i = 0; i < nbtList.size(); i++) {
          CompoundTag nbtCompound = nbtList.getCompound(i);
          int j = nbtCompound.getByte("Slot") & 255;
-         ItemStack itemStack = ItemStack.of(nbtCompound);
+         ItemStack itemStack = ItemStack.parseOptional(levelRegistryAccess, nbtCompound);
          if (!itemStack.isEmpty()) {
             if (j >= 0 && j < this.main.size()) {
                this.main.set(j, itemStack);
@@ -472,8 +472,8 @@ public class LivingEntityInventory implements Container, Nameable {
 
          for (int i : slots) {
             ItemStack itemStack = (ItemStack)this.armor.get(i);
-            if ((!damageSource.is(DamageTypeTags.IS_FIRE) || !itemStack.getItem().isFireResistant()) && itemStack.getItem() instanceof ArmorItem) {
-               itemStack.hurtAndBreak((int)amount, this.player, player -> player.broadcastBreakEvent(EquipmentSlot.byTypeAndIndex(Type.ARMOR, i)));
+            if ((!damageSource.is(DamageTypeTags.IS_FIRE) || !itemStack.getItem().components().has(DataComponents.FIRE_RESISTANT)) && itemStack.getItem() instanceof ArmorItem) {
+               itemStack.hurtAndBreak((int)amount, this.player, player.getEquipmentSlotForItem(itemStack));
             }
          }
       }
@@ -506,7 +506,7 @@ public class LivingEntityInventory implements Container, Nameable {
    public boolean contains(ItemStack stack) {
       for (List<ItemStack> list : this.combinedInventory) {
          for (ItemStack itemStack : list) {
-            if (!itemStack.isEmpty() && ItemStack.isSameItemSameTags(itemStack, stack)) {
+            if (!itemStack.isEmpty() && ItemStack.isSameItemSameComponents(itemStack, stack)) {
                return true;
             }
          }

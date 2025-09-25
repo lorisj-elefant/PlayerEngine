@@ -12,7 +12,6 @@
   "mixins": [
     "ClientBlockBreakMixin",
     "ClientConnectionAccessor",
-    "EntityAccessor",
     "EntityAnimationSwungMixin",
     "LivingEntityMixin",
     "MixinAbstractFurnaceBlockEntity",

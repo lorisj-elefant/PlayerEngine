@@ -31,7 +31,7 @@ public final class PlayerSlot {
             }
 
             return getOffhandSlot(inventory);
-         case ARMOR:
+         case HUMANOID_ARMOR:
             return getArmorSlot(inventory, equipSlot.getIndex());
          default:
             return Slot.UNDEFINED;

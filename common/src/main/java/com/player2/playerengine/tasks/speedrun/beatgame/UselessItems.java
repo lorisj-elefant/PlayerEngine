@@ -60,7 +60,7 @@ public class UselessItems {
             Items.BOW,
             Items.EMERALD,
             Items.IRON_NUGGET,
-            Items.GRASS,
+            Items.GRASS_BLOCK,
             Items.COBBLESTONE_WALL,
             Items.COBBLESTONE_STAIRS,
             Items.COBBLESTONE_SLAB,

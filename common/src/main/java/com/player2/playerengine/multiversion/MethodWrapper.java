@@ -11,7 +11,7 @@ import net.minecraft.world.level.Level;
 
 public class MethodWrapper {
    public static Entity getRenderedEntity(BaseSpawner logic, Level world, BlockPos pos) {
-      return logic.getOrCreateDisplayEntity(world, RandomSource.create(), pos);
+      return logic.getOrCreateDisplayEntity(world, pos);
    }
 
    public static float getDamageLeft(LivingEntity armorWearer, double damage, DamageSource source, double armor, double armorToughness) {
@@ -19,6 +19,6 @@ public class MethodWrapper {
    }
 
    public static float getDamageLeft(LivingEntity armorWearer, float damage, DamageSource source, float armor, float armorToughness) {
-      return CombatRules.getDamageAfterAbsorb(damage, armor, armorToughness);
+      return CombatRules.getDamageAfterAbsorb(armorWearer, damage, source, armor, armorToughness);
    }
 }

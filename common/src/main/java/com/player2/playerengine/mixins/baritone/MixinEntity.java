@@ -23,7 +23,7 @@ public abstract class MixinEntity implements IEntityAccessor {
 
    @Invoker("getEyeHeight")
    @Override
-   public abstract float automatone$invokeGetEyeHeight(Pose var1, EntityDimensions var2);
+   public abstract float automatone$invokeGetEyeHeight(Pose var1);
 
    @Inject(
       method = {"setRemoved"},

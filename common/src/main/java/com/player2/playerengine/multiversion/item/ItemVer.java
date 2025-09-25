@@ -1,6 +1,7 @@
 package com.player2.playerengine.multiversion.item;
 
 import com.player2.playerengine.multiversion.FoodComponentWrapper;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -8,7 +9,7 @@ import net.minecraft.world.level.block.state.BlockState;
 
 public class ItemVer {
    public static FoodComponentWrapper getFoodComponent(Item item) {
-      return FoodComponentWrapper.of(item.getFoodProperties());
+      return FoodComponentWrapper.of(item.components().get(DataComponents.FOOD));
    }
 
    public static boolean isFood(ItemStack stack) {
@@ -16,15 +17,15 @@ public class ItemVer {
    }
 
    public static boolean hasCustomName(ItemStack stack) {
-      return stack.hasCustomHoverName();
+      return stack.has(DataComponents.CUSTOM_NAME);
    }
 
    public static boolean isFood(Item item) {
-      return item.isEdible();
+      return item.components().has(DataComponents.FOOD);
    }
 
    private static boolean isSuitableFor(Item item, BlockState state) {
-      return item.isCorrectToolForDrops(state);
+      return item.isCorrectToolForDrops(new ItemStack(item), state);
    }
 
    private static Item RAW_GOLD() {

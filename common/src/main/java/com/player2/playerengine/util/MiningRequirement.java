@@ -1,6 +1,7 @@
 package com.player2.playerengine.util;
 
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 
@@ -22,7 +23,7 @@ public enum MiningRequirement implements Comparable<MiningRequirement> {
          for (MiningRequirement req : values()) {
             if (req != HAND) {
                Item pick = req.getMinimumPickaxe();
-               if (pick.isCorrectToolForDrops(block.defaultBlockState())) {
+               if (pick.isCorrectToolForDrops(new ItemStack(pick), block.defaultBlockState())) {
                   return req;
                }
             }

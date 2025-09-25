@@ -3,6 +3,7 @@ package com.player2.playerengine.util.helpers;
 import com.player2.playerengine.PlayerEngineController;
 import com.player2.playerengine.multiversion.DamageSourceWrapper;
 import com.player2.playerengine.multiversion.MethodWrapper;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.CombatRules;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffects;
@@ -77,7 +78,7 @@ public class EntityHelper {
             if (damageAmount <= 0.0) {
                damageAmount = 0.0;
             } else {
-               float k = EnchantmentHelper.getDamageProtection(player.getArmorSlots(), src);
+               float k = EnchantmentHelper.getDamageProtection((ServerLevel) player.level(), player, src);
                if (k > 0.0F) {
                   damageAmount = CombatRules.getDamageAfterMagicAbsorb((float)damageAmount, k);
                }

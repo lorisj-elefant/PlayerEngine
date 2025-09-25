@@ -1,7 +1,6 @@
 package com.player2.playerengine.util.helpers;
 
 import com.player2.playerengine.PlayerEngineController;
-import com.player2.playerengine.mixins.EntityAccessor;
 import com.player2.playerengine.multiversion.MethodWrapper;
 import com.player2.playerengine.multiversion.world.WorldVer;
 import com.player2.playerengine.util.Dimension;
@@ -32,7 +31,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CartographyTableBlock;
 import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.CraftingTableBlock;
-import net.minecraft.world.level.block.EnchantmentTableBlock;
+import net.minecraft.world.level.block.EnchantingTableBlock;
 import net.minecraft.world.level.block.EnderChestBlock;
 import net.minecraft.world.level.block.FallingBlock;
 import net.minecraft.world.level.block.LiquidBlock;
@@ -207,7 +206,7 @@ public interface WorldHelper {
 
    static boolean isInNetherPortal(PlayerEngineController controller) {
       LivingEntity player = controller.getPlayer();
-      return player == null ? false : ((EntityAccessor)player).isInNetherPortal();
+      return player == null ? false : player.portalProcess.isInsidePortalThisTick();
    }
 
    static boolean canPlace(PlayerEngineController controller, BlockPos pos) {
@@ -253,7 +252,7 @@ public interface WorldHelper {
          || block instanceof AbstractFurnaceBlock
          || block instanceof LoomBlock
          || block instanceof CartographyTableBlock
-         || block instanceof EnchantmentTableBlock
+         || block instanceof EnchantingTableBlock
          || block instanceof RedStoneOreBlock
          || block instanceof BarrelBlock;
    }

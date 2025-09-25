@@ -37,7 +37,7 @@ public class Selection implements ISelection {
       this.min = new BetterBlockPos(Math.min(pos1.x, pos2.x), Math.min(pos1.y, pos2.y), Math.min(pos1.z, pos2.z));
       this.max = new BetterBlockPos(Math.max(pos1.x, pos2.x), Math.max(pos1.y, pos2.y), Math.max(pos1.z, pos2.z));
       this.size = new Vec3i(this.max.x - this.min.x + 1, this.max.y - this.min.y + 1, this.max.z - this.min.z + 1);
-      this.aabb = new AABB(this.min, this.max.offset(1, 1, 1));
+      this.aabb = new AABB(this.min.getCenter(), this.max.offset(1, 1, 1).getCenter());
    }
 
    @Override

@@ -120,7 +120,7 @@ public final class SpongeSchematic extends StaticSchematic {
             try {
                String location = m.group("location");
                String properties = m.group("properties");
-               ResourceLocation resourceLocation = new ResourceLocation(location);
+               ResourceLocation resourceLocation = ResourceLocation.tryParse(location);
                Map<String, String> propertiesMap = new HashMap<>();
                if (properties != null) {
                   for (String property : properties.split(",")) {

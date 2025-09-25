@@ -88,7 +88,7 @@ public class MovementTraverse extends Movement {
       int checkedZShift = diffZ * requiredSideSpace;
       int checkedX = destX + checkedXShift;
       int checkedZ = destZ + checkedZShift;
-      int height = Mth.ceil(dimensions.height);
+      int height = Mth.ceil(dimensions.height());
       int requiredForwardSpace = requiredSideSpace == 0 ? 1 : 2;
       int volume = requiredForwardSpace * (requiredSideSpace * 2 + 1) * height;
       int i = 0;
@@ -253,7 +253,7 @@ public class MovementTraverse extends Movement {
                return state;
             } else {
                EntityDimensions dims = this.ctx.entity().getDimensions(this.ctx.entity().getPose());
-               if (!(dims.width > 1.0F) && !(dims.height < 1.0F) && !(dims.height > 2.0F)) {
+               if (!(dims.width() > 1.0F) && !(dims.height() < 1.0F) && !(dims.height() > 2.0F)) {
                   float yawToDest = RotationUtils.calcRotationFromVec3d(
                         this.ctx.headPos(), VecUtils.calculateBlockCenter(this.ctx.world(), this.dest), this.ctx.entityRotations()
                      )

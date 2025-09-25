@@ -13,6 +13,7 @@ import java.util.function.Consumer;
 import dev.architectury.networking.NetworkManager;
 import io.netty.buffer.Unpooled;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -91,7 +92,7 @@ public class Player2APIService {
 
    public void textToSpeech(String message, Character character, Consumer<Map<String, JsonElement>> onFinish) {
       try {
-         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+         RegistryFriendlyByteBuf buf = new RegistryFriendlyByteBuf(Unpooled.buffer(), controller.getOwner().registryAccess());
 
          buf.writeUtf(clientId);
          buf.writeUtf(Player2HTTPUtils.awaitToken(controller.getOwner(), clientId));
@@ -103,7 +104,7 @@ public class Player2APIService {
          }
 
          ((ServerPlayer)controller.getOwner()).connection.send(NetworkManager.toPacket(NetworkManager.Side.S2C,
-               new ResourceLocation("com/player2/playerengine", "stream_tts"), buf));
+               ResourceLocation.fromNamespaceAndPath("com/player2/playerengine", "stream_tts"), buf));
          onFinish.accept(null);
       } catch (Exception var9) {
       }

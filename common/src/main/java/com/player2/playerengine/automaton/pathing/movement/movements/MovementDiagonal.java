@@ -57,7 +57,7 @@ public class MovementDiagonal extends Movement {
 
    @NotNull
    private static BetterBlockPos[] computeBlocksToBreak(LivingEntity entity, BetterBlockPos end, BetterBlockPos dir1, BetterBlockPos dir2) {
-      return entity.getDimensions(Pose.STANDING).height <= 1.0F
+      return entity.getDimensions(Pose.STANDING).height() <= 1.0F
          ? new BetterBlockPos[]{dir1, dir2, end}
          : new BetterBlockPos[]{dir1, dir1.up(), dir2, dir2.up(), end, end.up()};
    }

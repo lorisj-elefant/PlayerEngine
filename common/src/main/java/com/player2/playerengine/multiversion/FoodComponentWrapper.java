@@ -14,10 +14,10 @@ public class FoodComponentWrapper {
    }
 
    public int getHunger() {
-      return this.component.getNutrition();
+      return this.component.nutrition();
    }
 
    public float getSaturationModifier() {
-      return this.component.getSaturationModifier();
+      return this.component.saturation();
    }
 }

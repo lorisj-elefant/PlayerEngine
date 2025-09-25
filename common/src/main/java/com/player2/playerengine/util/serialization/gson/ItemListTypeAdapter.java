@@ -40,7 +40,7 @@ public class ItemListTypeAdapter extends TypeAdapter<List<Item>> {
         while (in.hasNext()) {
             String itemKey = in.nextString();
             itemKey = ItemHelper.trimItemName(itemKey);
-            ResourceLocation identifier = new ResourceLocation(itemKey);
+            ResourceLocation identifier = ResourceLocation.tryParse(itemKey);
             if (BuiltInRegistries.ITEM.containsKey(identifier)) {
                 result.add(BuiltInRegistries.ITEM.get(identifier));
             } else {

@@ -173,7 +173,7 @@ public final class FarmProcess extends BaritoneProcessHelper implements IFarmPro
                   toBreak.add(pos);
                } else if (state.getBlock() instanceof BonemealableBlock) {
                   BonemealableBlock ig = (BonemealableBlock)state.getBlock();
-                  if (ig.isValidBonemealTarget(this.ctx.world(), pos, state, true)
+                  if (ig.isValidBonemealTarget(this.ctx.world(), pos, state)
                      && ig.isBonemealSuccess(this.ctx.world(), this.ctx.world().random, pos, state)) {
                      bonemealable.add(pos);
                   }

@@ -85,10 +85,10 @@ public final class Settings {
       new ArrayList<>(List.of(Blocks.CRAFTING_TABLE, Blocks.FURNACE, Blocks.CAMPFIRE, Blocks.SMOKER, Blocks.BLAST_FURNACE, Blocks.CHEST, Blocks.TRAPPED_CHEST))
    );
    public final Settings.Setting<TagKey<Block>> buildIgnoreBlocks = new Settings.Setting<>(
-      TagKey.create(Registries.BLOCK, new ResourceLocation(PlayerEngine.MOD_ID, "build/ignored_blocks"))
+      TagKey.create(Registries.BLOCK, ResourceLocation.fromNamespaceAndPath(PlayerEngine.MOD_ID, "build/ignored_blocks"))
    );
    public final Settings.Setting<TagKey<Block>> okIfAir = new Settings.Setting<>(
-      TagKey.create(Registries.BLOCK, new ResourceLocation(PlayerEngine.MOD_ID, "build/ok_if_air"))
+      TagKey.create(Registries.BLOCK, ResourceLocation.fromNamespaceAndPath(PlayerEngine.MOD_ID, "build/ok_if_air"))
    );
    public final Settings.Setting<Boolean> buildIgnoreExisting = new Settings.Setting<>(false);
    public final Settings.Setting<Boolean> avoidUpdatingFallingBlocks = new Settings.Setting<>(true);

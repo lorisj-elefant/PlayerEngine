@@ -28,6 +28,7 @@ import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.tags.FluidTags;
@@ -119,9 +120,10 @@ public class CustomFishingBobberEntity extends ThrowableProjectile {
       this.xRotO = this.getXRot();
    }
 
-   protected void defineSynchedData() {
-      this.getEntityData().define(HOOK_ENTITY_ID, 0);
-      this.getEntityData().define(CAUGHT_FISH, false);
+   @Override
+   protected void defineSynchedData(SynchedEntityData.Builder builder) {
+      builder.define(HOOK_ENTITY_ID, 0);
+      builder.define(CAUGHT_FISH, false);
    }
 
    public void onSyncedDataUpdated(EntityDataAccessor<?> data) {
@@ -439,7 +441,7 @@ public class CustomFishingBobberEntity extends ThrowableProjectile {
                .withParameter(LootContextParams.THIS_ENTITY, this)
                .withLuck(this.luckOfTheSeaLevel)
                .create(LootContextParamSets.FISHING);
-            LootTable lootTable = this.level().getServer().getLootData().getLootTable(BuiltInLootTables.FISHING);
+            LootTable lootTable = this.level().getServer().reloadableRegistries().getLootTable(BuiltInLootTables.FISHING);
 
             for (ItemStack itemStack : lootTable.getRandomItems(lootContextParameterSet)) {
                ItemEntity itemEntity = new ItemEntity(this.level(), this.getX(), this.getY(), this.getZ(), itemStack);
@@ -528,9 +530,9 @@ public class CustomFishingBobberEntity extends ThrowableProjectile {
       return false;
    }
 
-   public Packet<ClientGamePacketListener> getAddEntityPacket() {
-      Entity entity = this.getOwner();
-      return new ClientboundAddEntityPacket(this, entity == null ? this.getId() : entity.getId());
+   public Packet<ClientGamePacketListener> getAddEntityPacket(ServerEntity entity) {
+      Entity entity2 = this.getOwner();
+      return new ClientboundAddEntityPacket(this, entity, entity2 == null ? this.getId() : entity2.getId());
    }
 
    public void recreateFromPacket(ClientboundAddEntityPacket packet) {

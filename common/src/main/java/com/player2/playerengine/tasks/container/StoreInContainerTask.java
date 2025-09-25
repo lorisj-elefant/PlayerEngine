@@ -152,7 +152,7 @@ public class StoreInContainerTask extends Task {
 
       for (int i = 0; i < inventory.getContainerSize() && !stack.isEmpty(); i++) {
          ItemStack slotStack = inventory.getItem(i);
-         if (ItemStack.isSameItemSameTags(stack, slotStack)) {
+         if (ItemStack.isSameItemSameComponents(stack, slotStack)) {
             int space = slotStack.getMaxStackSize() - slotStack.getCount();
             int toTransfer = Math.min(stack.getCount(), space);
             if (toTransfer > 0) {

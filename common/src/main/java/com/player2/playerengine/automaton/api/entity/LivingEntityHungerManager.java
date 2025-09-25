@@ -17,6 +17,7 @@
 
 package com.player2.playerengine.automaton.api.entity;
 
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.entity.LivingEntity;
@@ -38,9 +39,9 @@ public class LivingEntityHungerManager {
    }
 
    public void eat(Item item, ItemStack stack) {
-      if (item.isEdible()) {
-         FoodProperties foodComponent = item.getFoodProperties();
-         this.add(foodComponent.getNutrition(), foodComponent.getSaturationModifier());
+      if (item.components().has(DataComponents.FOOD)) {
+         FoodProperties foodComponent = item.components().get(DataComponents.FOOD);
+         this.add(foodComponent.nutrition(), foodComponent.saturation());
       }
    }
 

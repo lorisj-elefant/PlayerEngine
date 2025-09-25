@@ -144,7 +144,7 @@ public interface MovementHelper extends ActionCosts {
          } else {
             FluidState fluidState = state.getFluidState();
             if (!(fluidState.getType() instanceof WaterFluid)) {
-               return state.isPathfindable(bsi.access, BlockPos.ZERO, PathComputationType.LAND);
+               return state.isPathfindable(PathComputationType.LAND);
             } else if (settings.assumeWalkOnWater.get()) {
                return false;
             } else {
@@ -184,7 +184,7 @@ public interface MovementHelper extends ActionCosts {
                && !(block instanceof EndPortalBlock)
                && !(block instanceof SkullBlock)
                && !(block instanceof ShulkerBoxBlock)
-            ? state.isPathfindable(access, pos, PathComputationType.LAND)
+            ? state.isPathfindable(PathComputationType.LAND)
             : false;
       }
    }

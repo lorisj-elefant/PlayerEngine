@@ -35,7 +35,7 @@ public final class PlayerEngine {
       .build("fishing_bobber");
 
    public static ResourceLocation id(String path) {
-      return new ResourceLocation(MOD_ID, path);
+      return ResourceLocation.fromNamespaceAndPath(MOD_ID, path);
    }
 
    public static ThreadPoolExecutor getExecutor() {

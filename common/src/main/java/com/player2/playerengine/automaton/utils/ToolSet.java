@@ -22,6 +22,8 @@ import com.player2.playerengine.automaton.api.entity.IInventoryProvider;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
@@ -60,7 +62,7 @@ public class ToolSet {
    }
 
    public boolean hasSilkTouch(ItemStack stack) {
-      return EnchantmentHelper.getItemEnchantmentLevel(Enchantments.SILK_TOUCH, stack) > 0;
+      return stack.get(DataComponents.ENCHANTMENTS).entrySet().stream().anyMatch(e->e.getKey().unwrapKey().get().equals(Enchantments.SILK_TOUCH));
    }
 
    public int getBestSlot(Block b, boolean preferSilkTouch) {
@@ -122,7 +124,7 @@ public class ToolSet {
       } else {
          float speed = item.getDestroySpeed(state);
          if (speed > 1.0F) {
-            int effLevel = EnchantmentHelper.getItemEnchantmentLevel(Enchantments.BLOCK_EFFICIENCY, item);
+            int effLevel = item.get(DataComponents.ENCHANTMENTS).entrySet().stream().filter(e->e.getKey().unwrapKey().get().equals(Enchantments.EFFICIENCY)).findFirst().get().getIntValue();
             if (effLevel > 0 && !item.isEmpty()) {
                speed += effLevel * effLevel + 1;
             }

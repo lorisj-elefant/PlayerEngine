@@ -2,6 +2,7 @@ package com.player2.playerengine.player2api;
 
 import com.player2.playerengine.automaton.utils.DirUtil;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
 
 import java.io.IOException;
@@ -30,7 +31,7 @@ public class TokenStorage {
     private void load() {
         if (Files.exists(PATH)) {
             try {
-                tokensStored = NbtIo.readCompressed(PATH.toFile());
+                tokensStored = NbtIo.readCompressed(PATH.toFile().toPath(), NbtAccounter.unlimitedHeap());
             } catch (IOException var1) {
                 var1.printStackTrace();
             }
@@ -40,7 +41,7 @@ public class TokenStorage {
     private void save() {
         System.out.println("[PlayerEngineTokenStorage]: save() called");
         try {
-            NbtIo.writeCompressed(tokensStored, PATH.toFile());
+            NbtIo.writeCompressed(tokensStored, PATH.toFile().toPath());
             System.out.println("[PlayerEngineTokenStorage]: Writing to file...");
         } catch (IOException var1) {
             System.err.println("[PlayerEngineTokenStorage]: Writing to file FAILED");

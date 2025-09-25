@@ -29,14 +29,17 @@ import com.player2.playerengine.automaton.utils.ToolSet;
 import com.player2.playerengine.automaton.utils.accessor.ILivingEntityAccessor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.BlockPos.MutableBlockPos;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EntityDimensions;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -116,7 +119,7 @@ public class CalculationContext {
       this.allowDownward = baritone.settings().allowDownward.get();
       this.maxFallHeightNoWater = baritone.settings().maxFallHeightNoWater.get();
       this.maxFallHeightBucket = baritone.settings().maxFallHeightBucket.get();
-      int depth = EnchantmentHelper.getDepthStrider(entity);
+      int depth = entity.getItemBySlot(EquipmentSlot.FEET).get(DataComponents.ENCHANTMENTS).entrySet().stream().filter(e->e.getKey().unwrapKey().get().equals(Enchantments.DEPTH_STRIDER)).findFirst().get().getIntValue();
       if (depth > 3) {
          depth = 3;
       }
@@ -130,9 +133,9 @@ public class CalculationContext {
       this.worldTop = this.world.getMaxBuildHeight();
       this.worldBottom = this.world.getMinBuildHeight();
       EntityDimensions dimensions = entity.getDimensions(Pose.STANDING);
-      this.width = Mth.ceil(dimensions.width);
+      this.width = Mth.ceil(dimensions.width());
       this.requiredSideSpace = getRequiredSideSpace(dimensions);
-      this.height = Mth.ceil(dimensions.height);
+      this.height = Mth.ceil(dimensions.height());
       this.blockPos = new MutableBlockPos();
       this.allowSwimming = baritone.settings().allowSwimming.get();
       this.breathTime = baritone.settings().ignoreBreath.get() ? Integer.MAX_VALUE : entity.getMaxAirSupply();
@@ -142,7 +145,7 @@ public class CalculationContext {
    }
 
    public static int getRequiredSideSpace(EntityDimensions dimensions) {
-      return Mth.ceil((dimensions.width - 1.0F) * 0.5F);
+      return Mth.ceil((dimensions.width() - 1.0F) * 0.5F);
    }
 
    public final IBaritone getBaritone() {

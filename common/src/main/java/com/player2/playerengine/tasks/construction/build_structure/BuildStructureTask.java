@@ -89,7 +89,7 @@ public class BuildStructureTask extends Task {
                 StructureFromCode.buildStructureFromCode(code, setBlockData -> {
                     LOGGER.info("setBlock(x={}, y={}, z={}, blockName={})",
                             setBlockData.x, setBlockData.y, setBlockData.z, setBlockData.blockName);
-                    ResourceLocation id = new ResourceLocation("minecraft", setBlockData.blockName);
+                    ResourceLocation id = ResourceLocation.fromNamespaceAndPath("minecraft", setBlockData.blockName);
                     Block block = BuiltInRegistries.BLOCK.get(id);
                     // 3 means send to clients (2) and notify neighbors/update block states (1).
                     // maybe do 2 if you dont want

@@ -39,7 +39,7 @@ import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 
 public class CustomFishingBobberRenderer extends EntityRenderer<CustomFishingBobberEntity> {
-   private static final ResourceLocation TEXTURE = new ResourceLocation("textures/entity/fishing_hook.png");
+   private static final ResourceLocation TEXTURE = ResourceLocation.tryParse("textures/entity/fishing_hook.png");
    private static final RenderType LAYER = RenderType.entityCutout(TEXTURE);
    private static final double BOBBING_VIEW_SCALE = 960.0;
 
@@ -59,10 +59,10 @@ public class CustomFishingBobberRenderer extends EntityRenderer<CustomFishingBob
          Matrix4f matrix4f = entry.pose();
          Matrix3f matrix3f = entry.normal();
          VertexConsumer vertexConsumer = vertexConsumerProvider.getBuffer(LAYER);
-         vertex(vertexConsumer, matrix4f, matrix3f, i, 0.0F, 0, 0, 1);
-         vertex(vertexConsumer, matrix4f, matrix3f, i, 1.0F, 0, 1, 1);
-         vertex(vertexConsumer, matrix4f, matrix3f, i, 1.0F, 1, 1, 0);
-         vertex(vertexConsumer, matrix4f, matrix3f, i, 0.0F, 1, 0, 0);
+         vertex(matrixStack, vertexConsumer, matrix4f, matrix3f, i, 0.0F, 0, 0, 1);
+         vertex(matrixStack,vertexConsumer, matrix4f, matrix3f, i, 1.0F, 0, 1, 1);
+         vertex(matrixStack,vertexConsumer, matrix4f, matrix3f, i, 1.0F, 1, 1, 0);
+         vertex(matrixStack,vertexConsumer, matrix4f, matrix3f, i, 0.0F, 1, 0, 0);
          matrixStack.popPose();
          int j = playerEntity.getMainArm() == HumanoidArm.RIGHT ? 1 : -1;
          ItemStack itemStack = playerEntity.getMainHandItem();
@@ -122,14 +122,13 @@ public class CustomFishingBobberRenderer extends EntityRenderer<CustomFishingBob
       return (float)value / max;
    }
 
-   private static void vertex(VertexConsumer buffer, Matrix4f matrix, Matrix3f normalMatrix, int light, float x, int y, int u, int v) {
-      buffer.vertex(matrix, x - 0.5F, y - 0.5F, 0.0F)
-         .color(255, 255, 255, 255)
-         .uv(u, v)
-         .overlayCoords(OverlayTexture.NO_OVERLAY)
-         .uv2(light)
-         .normal(normalMatrix, 0.0F, 1.0F, 0.0F)
-         .endVertex();
+   private static void vertex(PoseStack matrixStack, VertexConsumer buffer, Matrix4f matrix, Matrix3f normalMatrix, int light, float x, int y, int u, int v) {
+      buffer.addVertex(matrix, x - 0.5F, y - 0.5F, 0.0F)
+         .setColor(255, 255, 255, 255)
+         .setUv(u, v)
+         .setOverlay(OverlayTexture.NO_OVERLAY)
+         .setLight(light)
+         .setNormal(matrixStack.last(), 0.0F, 1.0F, 0.0F);
    }
 
    private static void drawArcSection(float x, float y, float z, VertexConsumer buffer, Pose normal, float startPercent, float endPercent) {
@@ -143,7 +142,7 @@ public class CustomFishingBobberRenderer extends EntityRenderer<CustomFishingBob
       i /= l;
       j /= l;
       k /= l;
-      buffer.vertex(normal.pose(), f, g, h).color(0, 0, 0, 255).normal(normal.normal(), i, j, k).endVertex();
+      buffer.addVertex(normal.pose(), f, g, h).setColor(0, 0, 0, 255).setNormal(normal, i, j, k);
    }
 
    public ResourceLocation getTextureLocation(CustomFishingBobberEntity fishingBobberEntity) {

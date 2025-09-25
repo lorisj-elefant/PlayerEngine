@@ -31,6 +31,9 @@ import com.player2.playerengine.automaton.pathing.movement.MovementHelper;
 import com.player2.playerengine.automaton.utils.BaritoneProcessHelper;
 import java.util.Optional;
 import java.util.stream.StreamSupport;
+
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.EquipmentSlot;
 import org.jetbrains.annotations.Nullable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -270,7 +273,7 @@ public final class FishingProcess extends BaritoneProcessHelper implements IBari
       if (bobber != null) {
          if (!world.isClientSide) {
             int i = bobber.use(itemStack);
-            itemStack.hurtAndBreak(i, user, p -> p.broadcastBreakEvent(hand));
+            itemStack.hurtAndBreak(i, user, EquipmentSlot.MAINHAND);
          }
 
          world.playSound(
@@ -296,8 +299,8 @@ public final class FishingProcess extends BaritoneProcessHelper implements IBari
             0.4F / (world.getRandom().nextFloat() * 0.4F + 0.8F)
          );
          if (!world.isClientSide) {
-            int i = EnchantmentHelper.getFishingSpeedBonus(itemStack);
-            int j = EnchantmentHelper.getFishingLuckBonus(itemStack);
+            int i = (int)(EnchantmentHelper.getFishingTimeReduction((ServerLevel) world, itemStack, user) * 20.0F);
+            int j = EnchantmentHelper.getFishingLuckBonus((ServerLevel) world, itemStack, user);
             world.addFreshEntity(new CustomFishingBobberEntity(user, world, j, i));
          }
 

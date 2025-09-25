@@ -32,6 +32,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.Item;
@@ -40,6 +41,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.loot.BuiltInLootTables;
 import net.minecraft.world.level.storage.loot.LootContext.Builder;
+import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.Vec3;
@@ -119,13 +121,13 @@ public final class BlockOptionalMeta {
       return drops.computeIfAbsent(
          b,
          block -> {
-            ResourceLocation lootTableLocation = block.getLootTable();
+            ResourceKey<LootTable> lootTableLocation = block.getLootTable();
             if (lootTableLocation == BuiltInLootTables.EMPTY) {
                return Collections.emptyList();
             } else {
                List<Item> items = new ArrayList<>();
                world.getServer()
-                  .getLootData()
+                  .reloadableRegistries()
                   .getLootTable(lootTableLocation)
                   .getRandomItems(
                      new Builder(

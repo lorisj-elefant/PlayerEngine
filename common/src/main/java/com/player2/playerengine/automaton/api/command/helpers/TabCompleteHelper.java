@@ -93,7 +93,7 @@ public class TabCompleteHelper {
    }
 
    public TabCompleteHelper filterPrefixNamespaced(String prefix) {
-      return this.filterPrefix(new ResourceLocation(prefix).toString());
+      return this.filterPrefix(ResourceLocation.tryParse(prefix).toString());
    }
 
    public String[] build() {

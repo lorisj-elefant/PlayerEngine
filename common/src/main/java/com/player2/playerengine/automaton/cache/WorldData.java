@@ -23,6 +23,7 @@ import com.player2.playerengine.automaton.api.cache.IWaypointCollection;
 import com.player2.playerengine.automaton.api.cache.IWorldData;
 import java.util.ArrayList;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
@@ -36,13 +37,13 @@ public class WorldData implements IWorldData {
       this.dimension = dimension;
    }
 
-   public void readFromNbt(CompoundTag tag) {
-      this.containerMemory.read(tag.getCompound("containers"));
+   public void readFromNbt(HolderLookup.Provider levelRegistryAccess, CompoundTag tag) {
+      this.containerMemory.read(levelRegistryAccess, tag.getCompound("containers"));
       this.waypoints.readFromNbt(tag.getCompound("waypoints"));
    }
 
-   public void writeToNbt(CompoundTag tag) {
-      tag.put("containers", this.containerMemory.toNbt());
+   public void writeToNbt(HolderLookup.Provider levelRegistryAccess, CompoundTag tag) {
+      tag.put("containers", this.containerMemory.toNbt(levelRegistryAccess));
       tag.put("waypoints", this.waypoints.toNbt());
    }
 

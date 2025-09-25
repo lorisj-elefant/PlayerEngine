@@ -126,13 +126,13 @@ public class SettingsUtil {
       ),
       BLOCK(Block.class, str -> BlockUtils.stringToBlockRequired(str.trim()), BlockUtils::blockToString),
       ITEM(
-         Item.class, str -> (Item)BuiltInRegistries.ITEM.get(new ResourceLocation(str.trim())), item -> BuiltInRegistries.ITEM.getResourceKey(item).toString()
+         Item.class, str -> (Item)BuiltInRegistries.ITEM.get(ResourceLocation.tryParse(str.trim())), item -> BuiltInRegistries.ITEM.getResourceKey(item).toString()
       ),
       TAG {
          @Override
          public Object parse(SettingsUtil.ParserContext context, String raw) {
             Type type = ((ParameterizedType)context.getSetting().getType()).getActualTypeArguments()[0];
-            ResourceLocation id = new ResourceLocation(raw);
+            ResourceLocation id = ResourceLocation.tryParse(raw);
             if (type == Block.class) {
                return TagKey.create(Registries.BLOCK, id);
             } else if (type == Item.class) {

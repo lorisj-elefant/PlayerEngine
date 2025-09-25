@@ -6,6 +6,7 @@ import com.player2.playerengine.tasks.base.Task;
 import java.util.Optional;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.animal.Sheep;
 import net.minecraft.world.item.Items;
 
@@ -27,7 +28,7 @@ public class ShearSheepTask extends AbstractDoToEntityTask {
       } else {
          if (mod.getSlotHandler().forceEquipItem(Items.SHEARS)) {
             ((Sheep)entity).shear(SoundSource.PLAYERS);
-            mod.getPlayer().getMainHandItem().hurtAndBreak(1, mod.getPlayer(), e -> {});
+            mod.getPlayer().getMainHandItem().hurtAndBreak(1, mod.getPlayer(), EquipmentSlot.MAINHAND);
          }
 
          return null;

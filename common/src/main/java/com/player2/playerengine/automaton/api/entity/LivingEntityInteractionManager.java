@@ -22,6 +22,7 @@ import com.mojang.logging.LogUtils;
 import java.util.Objects;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket.Action;
 import net.minecraft.server.level.ServerLevel;
@@ -33,12 +34,14 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.effect.MobEffectUtil;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.GameType;
@@ -140,7 +143,7 @@ public class LivingEntityInteractionManager {
    }
 
    public void processBlockBreakingAction(BlockPos pos, Action action, Direction direction, int worldHeight, int i) {
-      if (this.livingEntity.getEyePosition().distanceToSqr(Vec3.atCenterOf(pos)) > ServerGamePacketListenerImpl.MAX_INTERACTION_DISTANCE) {
+      if (this.livingEntity.getEyePosition().distanceToSqr(Vec3.atCenterOf(pos)) > Mth.square((double)6.0F)) {
          this.method_41250(pos, false, i, "too far");
       } else if (pos.getY() >= worldHeight) {
          this.method_41250(pos, false, i, "too high");
@@ -225,8 +228,8 @@ public class LivingEntityInteractionManager {
    public float getBlockBreakingSpeed(LivingEntity entity, BlockState block) {
       float f = this.livingEntity.getItemInHand(InteractionHand.MAIN_HAND).getDestroySpeed(block);
       if (f > 1.0F) {
-         int i = EnchantmentHelper.getBlockEfficiency(entity);
          ItemStack itemStack = this.livingEntity.getItemInHand(InteractionHand.MAIN_HAND);
+         int i = itemStack.get(DataComponents.ENCHANTMENTS).entrySet().stream().filter(e->e.getKey().unwrapKey().get().equals(Enchantments.EFFICIENCY)).findFirst().get().getIntValue();
          if (i > 0 && !itemStack.isEmpty()) {
             f += i * i + 1;
          }
@@ -245,7 +248,7 @@ public class LivingEntityInteractionManager {
          };
       }
 
-      if (entity.isEyeInFluid(FluidTags.WATER) && !EnchantmentHelper.hasAquaAffinity(entity)) {
+      if (entity.isEyeInFluid(FluidTags.WATER) && !entity.getItemBySlot(EquipmentSlot.HEAD).get(DataComponents.ENCHANTMENTS).entrySet().stream().anyMatch(e->e.getKey().unwrapKey().get().equals(Enchantments.AQUA_AFFINITY))) {
          f /= 5.0F;
       }
 
@@ -310,9 +313,9 @@ public class LivingEntityInteractionManager {
             }
 
             ItemStack itemStack = (ItemStack)typedActionResult.getObject();
-            if (itemStack == stack && itemStack.getCount() == i && itemStack.getUseDuration() <= 0 && itemStack.getDamageValue() == j) {
+            if (itemStack == stack && itemStack.getCount() == i && itemStack.getUseDuration(player) <= 0 && itemStack.getDamageValue() == j) {
                return typedActionResult.getResult();
-            } else if (typedActionResult.getResult() == InteractionResult.FAIL && itemStack.getUseDuration() > 0 && !player.isUsingItem()) {
+            } else if (typedActionResult.getResult() == InteractionResult.FAIL && itemStack.getUseDuration(player) > 0 && !player.isUsingItem()) {
                return typedActionResult.getResult();
             } else {
                if (stack != itemStack) {
@@ -353,7 +356,7 @@ public class LivingEntityInteractionManager {
             BlockState blockState = world.getBlockState(blockPos);
             if (blockState.getBlock() instanceof BucketPickup) {
                BucketPickup fluidDrainable = (BucketPickup)blockState.getBlock();
-               ItemStack itemStack2 = fluidDrainable.pickupBlock(world, blockPos, blockState);
+               ItemStack itemStack2 = fluidDrainable.pickupBlock(null, world, blockPos, blockState);
                if (!itemStack2.isEmpty()) {
                   fluidDrainable.getPickupSound().ifPresent(sound -> user.playSound(sound, 1.0F, 1.0F));
                   world.gameEvent(user, GameEvent.FLUID_PICKUP, blockPos);
@@ -381,7 +384,7 @@ public class LivingEntityInteractionManager {
    public boolean canPlaceOn(LivingEntity entity, BlockPos pos, Direction facing, ItemStack stack) {
       BlockPos blockPos = pos.relative(facing.getOpposite());
       BlockInWorld cachedBlockPosition = new BlockInWorld(entity.level(), blockPos, false);
-      return stack.hasAdventureModePlaceTagForBlock(entity.level().registryAccess().registryOrThrow(Registries.BLOCK), cachedBlockPosition);
+      return stack.canPlaceOnBlockInAdventureMode(cachedBlockPosition);
    }
 
    protected static BlockHitResult raycast(Level world, LivingEntity player, Fluid fluidHandling) {
@@ -427,7 +430,7 @@ public class LivingEntityInteractionManager {
          ItemStack itemStack = stack.copy();
          if (!bl2) {
             try {
-               InteractionResult actionResult = blockState.use(world, null, hand, hitResult);
+               InteractionResult actionResult = blockState.useItemOn(stack, world, null, hand, hitResult).result();
                if (actionResult.consumesAction()) {
                   return actionResult;
                }
