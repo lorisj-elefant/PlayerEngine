@@ -1,6 +1,5 @@
 plugins {
     id 'fabric-loom' version '1.6-SNAPSHOT'
-    id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 
 group project.maven_group
@@ -36,43 +35,6 @@ dependencies {
     modImplementation "net.fabricmc.fabric-api:fabric-api:0.92.1+1.20.1"
 }
 
-shadowJar {
-    configurations = [project.configurations.shadow]
-
-    archiveBaseName.set('PlayerEngine')
-    archiveClassifier.set('dev')
-
-    from sourceSets.main.output
-
-    filesMatching('fabric.mod.json') {
-        expand 'version': project.version
-    }
-
-    manifest {
-        attributes(tasks.jar.manifest.attributes)
-        attributes('MixinConfigs': 'mixins.playerengine.json')
-    }
-}
-
-remapJar {
-    dependsOn("shadowJar")
-    archiveBaseName.set('PlayerEngine')
-    archiveClassifier.set('')
-    input.set(shadowJar.archiveFile)
-}
-
-java {
-    withSourcesJar()
-}
-
-javadoc {
-    options.addStringOption('Xwerror', '-quiet')
-    options.linkSource true
-    options.encoding "UTF-8"
-    source = sourceSets.main.allJava
-    classpath += sourceSets.main.compileClasspath
-}
-
 jar {
     from sourceSets.main.output
 
@@ -82,7 +44,6 @@ jar {
     manifest {
         attributes(
                 'MixinConfigs': 'mixins.playerengine.json',
-
                 'Implementation-Title': 'PlayerEngine',
                 'Implementation-Version': project.version
         )
