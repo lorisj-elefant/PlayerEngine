@@ -69,7 +69,7 @@ public interface IBaritone {
          component.append(BaritoneAPI.getPrefix());
          component.append(Component.literal(" "));
          Arrays.asList(components).forEach(component::append);
-         ((Player)entity).displayClientMessage(component, false);
+         ((Player) entity).displayClientMessage(component, false);
       } else {
          for (ServerPlayer p : entity.level().getServer().getPlayerList().getPlayers()) {
             if (p.isCreative()) {

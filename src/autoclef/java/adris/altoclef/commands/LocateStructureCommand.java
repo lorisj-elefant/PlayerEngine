@@ -7,14 +7,14 @@ import adris.altoclef.commandsystem.Command;
 import adris.altoclef.commandsystem.CommandException;
 import adris.altoclef.tasks.movement.GoToStrongholdPortalTask;
 import adris.altoclef.tasks.movement.LocateDesertTempleTask;
+import adris.altoclef.tasks.movement.LocateVillageTask;
 
 public class LocateStructureCommand extends Command {
    public LocateStructureCommand() throws CommandException {
       super(
-         "locate_structure",
-         "Locate a world generated structure. Only works for stronghold and desert_temple",
-         new Arg<>(LocateStructureCommand.Structure.class, "structure")
-      );
+            "locate_structure",
+            "Locate a world generated structure. Only works for stronghold, desert_temple and village",
+            new Arg<>(LocateStructureCommand.Structure.class, "structure"));
    }
 
    @Override
@@ -26,11 +26,15 @@ public class LocateStructureCommand extends Command {
             break;
          case DESERT_TEMPLE:
             mod.runUserTask(new LocateDesertTempleTask(), () -> this.finish());
+            break;
+         case VILLAGE:
+            mod.runUserTask(new LocateVillageTask(), () -> this.finish());
       }
    }
 
    public static enum Structure {
       DESERT_TEMPLE,
-      STRONGHOLD;
+      STRONGHOLD,
+      VILLAGE;
    }
 }

@@ -86,6 +86,7 @@ public class Debug {
       switch (enabledLogLevel) {
          case "NONE":
          case "ALL":
+            return true;
          case "NORMAL":
             return level == 1 || level == 2;
          case "WARN":

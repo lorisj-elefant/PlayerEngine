@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -21,6 +22,8 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.Vec3i;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.animal.IronGolem;
+import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Biomes;
@@ -42,6 +45,8 @@ import net.minecraft.world.level.block.SpawnerBlock;
 import net.minecraft.world.level.block.entity.SpawnerBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BedPart;
+import net.minecraft.world.level.levelgen.structure.Structure;
+import net.minecraft.world.level.levelgen.structure.StructureStart;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
@@ -55,11 +60,11 @@ public interface WorldHelper {
    }
 
    static Vec3i toVec3i(Vec3 pos) {
-      return new Vec3i((int)pos.x(), (int)pos.y(), (int)pos.z());
+      return new Vec3i((int) pos.x(), (int) pos.y(), (int) pos.z());
    }
 
    static BlockPos toBlockPos(Vec3 pos) {
-      return new BlockPos((int)pos.x(), (int)pos.y(), (int)pos.z());
+      return new BlockPos((int) pos.x(), (int) pos.y(), (int) pos.z());
    }
 
    static boolean isSourceBlock(AltoClefController controller, BlockPos pos, boolean onlyAcceptStill) {
@@ -127,8 +132,9 @@ public interface WorldHelper {
       Level world = controller.getWorld();
       BlockState state = world.getBlockState(posWithBed);
       if (state.getBlock() instanceof BedBlock) {
-         Direction facing = (Direction)state.getValue(BedBlock.FACING);
-         return ((BedPart)world.getBlockState(posWithBed).getValue(BedBlock.PART)).equals(BedPart.HEAD) ? posWithBed : posWithBed.relative(facing);
+         Direction facing = (Direction) state.getValue(BedBlock.FACING);
+         return ((BedPart) world.getBlockState(posWithBed).getValue(BedBlock.PART)).equals(BedPart.HEAD) ? posWithBed
+               : posWithBed.relative(facing);
       } else {
          return null;
       }
@@ -138,10 +144,10 @@ public interface WorldHelper {
       Level world = controller.getWorld();
       BlockState state = world.getBlockState(posWithBed);
       if (state.getBlock() instanceof BedBlock) {
-         Direction facing = (Direction)state.getValue(BedBlock.FACING);
-         return ((BedPart)world.getBlockState(posWithBed).getValue(BedBlock.PART)).equals(BedPart.FOOT)
-            ? posWithBed
-            : posWithBed.relative(facing.getOpposite());
+         Direction facing = (Direction) state.getValue(BedBlock.FACING);
+         return ((BedPart) world.getBlockState(posWithBed).getValue(BedBlock.PART)).equals(BedPart.FOOT)
+               ? posWithBed
+               : posWithBed.relative(facing.getOpposite());
       } else {
          return null;
       }
@@ -160,14 +166,47 @@ public interface WorldHelper {
       return -1;
    }
 
+   static BlockPos getAVillage(AltoClefController controller) {
+
+      List<BlockPos> bellPos = controller.getBlockScanner().getKnownLocations(Blocks.BELL);
+      // natural bell => village
+      if (!bellPos.isEmpty()) {
+         return bellPos.get(0);
+      }
+
+      List<Villager> trackedVillagers = controller.getEntityTracker().getTrackedEntities(Villager.class);
+      List<BlockPos> bedPos = controller.getBlockScanner().getKnownLocations(Blocks.RED_BED, Blocks.BLUE_BED,
+            Blocks.CYAN_BED, Blocks.GRAY_BED, Blocks.LIME_BED, Blocks.PINK_BED, Blocks.BLACK_BED, Blocks.BROWN_BED,
+            Blocks.GREEN_BED, Blocks.WHITE_BED, Blocks.ORANGE_BED, Blocks.PURPLE_BED, Blocks.YELLOW_BED,
+            Blocks.MAGENTA_BED);
+
+      // first check if there is villager nearby bed
+      // maybe can optimize later if needed
+      for (Villager villager : trackedVillagers) {
+         for (BlockPos pos : bedPos) {
+            if (villager.getEyePosition().distanceTo(pos.getCenter()) < 400) {
+               return pos;
+            }
+         }
+      }
+
+      // otherwise check if there is an iron golem nearby
+      List<IronGolem> golemPos = controller.getEntityTracker().getTrackedEntities(IronGolem.class);
+      if (!golemPos.isEmpty()) {
+         return golemPos.get(0).blockPosition();
+      }
+
+      return null;
+   }
+
    static BlockPos getADesertTemple(AltoClefController controller) {
       Level world = controller.getWorld();
       List<BlockPos> stonePressurePlates = controller.getBlockScanner().getKnownLocations(Blocks.STONE_PRESSURE_PLATE);
       if (!stonePressurePlates.isEmpty()) {
          for (BlockPos pos : stonePressurePlates) {
             if (world.getBlockState(pos).getBlock() == Blocks.STONE_PRESSURE_PLATE
-               && world.getBlockState(pos.below()).getBlock() == Blocks.CUT_SANDSTONE
-               && world.getBlockState(pos.below(2)).getBlock() == Blocks.TNT) {
+                  && world.getBlockState(pos.below()).getBlock() == Blocks.CUT_SANDSTONE
+                  && world.getBlockState(pos.below(2)).getBlock() == Blocks.TNT) {
                return pos;
             }
          }
@@ -198,16 +237,16 @@ public interface WorldHelper {
       boolean prevInteractionPaused = controller.getExtraBaritoneSettings().isInteractionPaused();
       controller.getExtraBaritoneSettings().setInteractionPaused(false);
       boolean canBreak = controller.getWorld().getBlockState(pos).getDestroySpeed(controller.getWorld(), pos) >= 0.0F
-         && !controller.getExtraBaritoneSettings().shouldAvoidBreaking(pos)
-         && MineProcess.plausibleToBreak(new CalculationContext(controller.getBaritone()), pos)
-         && canReach(controller, pos);
+            && !controller.getExtraBaritoneSettings().shouldAvoidBreaking(pos)
+            && MineProcess.plausibleToBreak(new CalculationContext(controller.getBaritone()), pos)
+            && canReach(controller, pos);
       controller.getExtraBaritoneSettings().setInteractionPaused(prevInteractionPaused);
       return canBreak;
    }
 
    static boolean isInNetherPortal(AltoClefController controller) {
       LivingEntity player = controller.getPlayer();
-      return player == null ? false : ((EntityAccessor)player).isInNetherPortal();
+      return player == null ? false : ((EntityAccessor) player).isInNetherPortal();
    }
 
    static boolean canPlace(AltoClefController controller, BlockPos pos) {
@@ -221,20 +260,20 @@ public interface WorldHelper {
             && isOcean(controller.getWorld().getBiome(pos))
             && pos.getY() < 64
             && getGroundHeight(controller, pos.getX(), pos.getZ(), Blocks.WATER) > pos.getY()
-         ? false
-         : !controller.getBlockScanner().isUnreachable(pos);
+                  ? false
+                  : !controller.getBlockScanner().isUnreachable(pos);
    }
 
    static boolean isOcean(Holder<Biome> b) {
       return WorldVer.isBiome(b, Biomes.OCEAN)
-         || WorldVer.isBiome(b, Biomes.COLD_OCEAN)
-         || WorldVer.isBiome(b, Biomes.DEEP_COLD_OCEAN)
-         || WorldVer.isBiome(b, Biomes.DEEP_OCEAN)
-         || WorldVer.isBiome(b, Biomes.DEEP_FROZEN_OCEAN)
-         || WorldVer.isBiome(b, Biomes.DEEP_LUKEWARM_OCEAN)
-         || WorldVer.isBiome(b, Biomes.LUKEWARM_OCEAN)
-         || WorldVer.isBiome(b, Biomes.WARM_OCEAN)
-         || WorldVer.isBiome(b, Biomes.FROZEN_OCEAN);
+            || WorldVer.isBiome(b, Biomes.COLD_OCEAN)
+            || WorldVer.isBiome(b, Biomes.DEEP_COLD_OCEAN)
+            || WorldVer.isBiome(b, Biomes.DEEP_OCEAN)
+            || WorldVer.isBiome(b, Biomes.DEEP_FROZEN_OCEAN)
+            || WorldVer.isBiome(b, Biomes.DEEP_LUKEWARM_OCEAN)
+            || WorldVer.isBiome(b, Biomes.LUKEWARM_OCEAN)
+            || WorldVer.isBiome(b, Biomes.WARM_OCEAN)
+            || WorldVer.isBiome(b, Biomes.FROZEN_OCEAN);
    }
 
    static boolean isAir(AltoClefController controller, BlockPos pos) {
@@ -248,14 +287,14 @@ public interface WorldHelper {
    static boolean isInteractableBlock(AltoClefController controller, BlockPos pos) {
       Block block = controller.getWorld().getBlockState(pos).getBlock();
       return block instanceof ChestBlock
-         || block instanceof EnderChestBlock
-         || block instanceof CraftingTableBlock
-         || block instanceof AbstractFurnaceBlock
-         || block instanceof LoomBlock
-         || block instanceof CartographyTableBlock
-         || block instanceof EnchantmentTableBlock
-         || block instanceof RedStoneOreBlock
-         || block instanceof BarrelBlock;
+            || block instanceof EnderChestBlock
+            || block instanceof CraftingTableBlock
+            || block instanceof AbstractFurnaceBlock
+            || block instanceof LoomBlock
+            || block instanceof CartographyTableBlock
+            || block instanceof EnchantmentTableBlock
+            || block instanceof RedStoneOreBlock
+            || block instanceof BarrelBlock;
    }
 
    static boolean isInsidePlayer(AltoClefController controller, BlockPos pos) {
@@ -267,8 +306,8 @@ public interface WorldHelper {
    }
 
    static Iterable<BlockPos> getBlocksTouchingBox(AABB box) {
-      BlockPos min = new BlockPos((int)box.minX, (int)box.minY, (int)box.minZ);
-      BlockPos max = new BlockPos((int)box.maxX, (int)box.maxY, (int)box.maxZ);
+      BlockPos min = new BlockPos((int) box.minX, (int) box.minY, (int) box.minZ);
+      BlockPos max = new BlockPos((int) box.maxX, (int) box.maxY, (int) box.maxZ);
       return scanRegion(min, max);
    }
 
@@ -307,7 +346,8 @@ public interface WorldHelper {
          throw new AssertionError();
       } else {
          while (isFallingBlock(controller, pos)) {
-            if (MovementHelper.avoidBreaking(bsi, pos.getX(), pos.getY(), pos.getZ(), clientWorld.getBlockState(pos), controller.getBaritoneSettings())) {
+            if (MovementHelper.avoidBreaking(bsi, pos.getX(), pos.getY(), pos.getZ(), clientWorld.getBlockState(pos),
+                  controller.getBaritoneSettings())) {
                return false;
             }
 
@@ -330,9 +370,10 @@ public interface WorldHelper {
    static Entity getSpawnerEntity(AltoClefController controller, BlockPos pos) {
       Level world = controller.getWorld();
       BlockState state = world.getBlockState(pos);
-      return state.getBlock() instanceof SpawnerBlock && world.getBlockEntity(pos) instanceof SpawnerBlockEntity blockEntity
-         ? MethodWrapper.getRenderedEntity(blockEntity.getSpawner(), world, pos)
-         : null;
+      return state.getBlock() instanceof SpawnerBlock
+            && world.getBlockEntity(pos) instanceof SpawnerBlockEntity blockEntity
+                  ? MethodWrapper.getRenderedEntity(blockEntity.getSpawner(), world, pos)
+                  : null;
    }
 
    static boolean isChest(AltoClefController controller, BlockPos block) {
@@ -364,7 +405,7 @@ public interface WorldHelper {
 
    static int getTimeOfDay(AltoClefController controller) {
       Level world = controller.getWorld();
-      return world != null ? (int)(world.getDayTime() % 24000L) : 0;
+      return world != null ? (int) (world.getDayTime() % 24000L) : 0;
    }
 
    static boolean isVulnerable(LivingEntity player) {
@@ -423,7 +464,8 @@ public interface WorldHelper {
 
       if ((!(yaw >= 45.0) || !(yaw < 135.0)) && (!(yaw >= -315.0) || !(yaw < -225.0))) {
          if ((!(yaw >= 135.0) || !(yaw < 225.0)) && (!(yaw >= -225.0) || !(yaw < -135.0))) {
-            return (!(yaw >= 225.0) || !(yaw < 315.0)) && (!(yaw >= -135.0) || !(yaw < -45.0)) ? Direction.SOUTH : Direction.EAST;
+            return (!(yaw >= 225.0) || !(yaw < 315.0)) && (!(yaw >= -135.0) || !(yaw < -45.0)) ? Direction.SOUTH
+                  : Direction.EAST;
          } else {
             return Direction.NORTH;
          }
