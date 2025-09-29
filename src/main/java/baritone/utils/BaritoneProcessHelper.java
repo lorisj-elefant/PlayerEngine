@@ -29,6 +29,7 @@ public abstract class BaritoneProcessHelper implements IBaritoneProcess {
    }
 
    public void logDirect(String message) {
+      System.out.println("BTONE: " + message);
       this.baritone.logDirect(message);
    }
 }

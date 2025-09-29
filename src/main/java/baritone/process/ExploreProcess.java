@@ -61,9 +61,11 @@ public final class ExploreProcess extends BaritoneProcessHelper implements IExpl
 
    @Override
    public PathingCommand onTick(boolean calcFailed, boolean isSafeToCancel) {
+      this.logDirect("Running Explore Process");
       if (calcFailed) {
          this.logDirect("Failed");
-         if (this.baritone.settings().desktopNotifications.get() && this.baritone.settings().notificationOnExploreFinished.get()) {
+         if (this.baritone.settings().desktopNotifications.get()
+               && this.baritone.settings().notificationOnExploreFinished.get()) {
             NotificationHelper.notify("Exploration failed", true);
          }
 
@@ -73,7 +75,8 @@ public final class ExploreProcess extends BaritoneProcessHelper implements IExpl
          ExploreProcess.IChunkFilter filter = this.calcFilter();
          if (!this.baritone.settings().disableCompletionCheck.get() && filter.countRemain() == 0) {
             this.logDirect("Explored all chunks");
-            if (this.baritone.settings().desktopNotifications.get() && this.baritone.settings().notificationOnExploreFinished.get()) {
+            if (this.baritone.settings().desktopNotifications.get()
+                  && this.baritone.settings().notificationOnExploreFinished.get()) {
                NotificationHelper.notify("Explored all chunks", false);
             }
 
@@ -85,7 +88,8 @@ public final class ExploreProcess extends BaritoneProcessHelper implements IExpl
                this.baritone.logDebug("awaiting region load from disk");
                return new PathingCommand(null, PathingCommandType.REQUEST_PAUSE);
             } else {
-               return new PathingCommand(new GoalComposite(closestUncached), PathingCommandType.FORCE_REVALIDATE_GOAL_AND_PATH);
+               return new PathingCommand(new GoalComposite(closestUncached),
+                     PathingCommandType.FORCE_REVALIDATE_GOAL_AND_PATH);
             }
          }
       }
@@ -158,7 +162,8 @@ public final class ExploreProcess extends BaritoneProcessHelper implements IExpl
       return this.baritone.settings().exploreMaintainY.get() == -1 ? new GoalXZ(x, z) : new GoalXZ(x, z) {
          @Override
          public double heuristic(int x, int y, int zx) {
-            return super.heuristic(x, y, zx) + GoalYLevel.calculate(ExploreProcess.this.baritone.settings().exploreMaintainY.get(), y);
+            return super.heuristic(x, y, zx)
+                  + GoalYLevel.calculate(ExploreProcess.this.baritone.settings().exploreMaintainY.get(), y);
          }
       };
    }
@@ -171,21 +176,23 @@ public final class ExploreProcess extends BaritoneProcessHelper implements IExpl
    @Override
    public String displayName0() {
       return "Exploring around "
-         + this.explorationOrigin
-         + ", distance completed "
-         + this.distanceCompleted
-         + ", currently going to "
-         + new GoalComposite(this.closestUncachedChunks(this.explorationOrigin, this.calcFilter()));
+            + this.explorationOrigin
+            + ", distance completed "
+            + this.distanceCompleted
+            + ", currently going to "
+            + new GoalComposite(this.closestUncachedChunks(this.explorationOrigin, this.calcFilter()));
    }
 
    private class BaritoneChunkCache implements ExploreProcess.IChunkFilter {
-      private final ICachedWorld cache = ExploreProcess.this.baritone.getWorldProvider().getCurrentWorld().getCachedWorld();
+      private final ICachedWorld cache = ExploreProcess.this.baritone.getWorldProvider().getCurrentWorld()
+            .getCachedWorld();
 
       @Override
       public ExploreProcess.Status isAlreadyExplored(int chunkX, int chunkZ) {
          int centerX = chunkX << 4;
          int centerZ = chunkZ << 4;
-         return this.cache.isCached(centerX, centerZ) ? ExploreProcess.Status.EXPLORED : ExploreProcess.Status.NOT_EXPLORED;
+         return this.cache.isCached(centerX, centerZ) ? ExploreProcess.Status.EXPLORED
+               : ExploreProcess.Status.NOT_EXPLORED;
       }
 
       @Override
@@ -206,8 +213,8 @@ public final class ExploreProcess extends BaritoneProcessHelper implements IExpl
       @Override
       public ExploreProcess.Status isAlreadyExplored(int chunkX, int chunkZ) {
          return this.a.isAlreadyExplored(chunkX, chunkZ) == ExploreProcess.Status.EXPLORED
-            ? ExploreProcess.Status.EXPLORED
-            : this.b.isAlreadyExplored(chunkX, chunkZ);
+               ? ExploreProcess.Status.EXPLORED
+               : this.b.isAlreadyExplored(chunkX, chunkZ);
       }
 
       @Override
@@ -230,7 +237,8 @@ public final class ExploreProcess extends BaritoneProcessHelper implements IExpl
       private JsonChunkFilter(Path path, boolean invert) throws Exception {
          this.invert = invert;
          Gson gson = new GsonBuilder().create();
-         this.positions = (MyChunkPos[])gson.fromJson(new InputStreamReader(Files.newInputStream(path)), MyChunkPos[].class);
+         this.positions = (MyChunkPos[]) gson.fromJson(new InputStreamReader(Files.newInputStream(path)),
+               MyChunkPos[].class);
          ExploreProcess.this.logDirect("Loaded " + this.positions.length + " positions");
          this.inFilter = new LongOpenHashSet();
 
@@ -241,7 +249,8 @@ public final class ExploreProcess extends BaritoneProcessHelper implements IExpl
 
       @Override
       public ExploreProcess.Status isAlreadyExplored(int chunkX, int chunkZ) {
-         return this.inFilter.contains(ChunkPos.asLong(chunkX, chunkZ)) ^ this.invert ? ExploreProcess.Status.EXPLORED : ExploreProcess.Status.UNKNOWN;
+         return this.inFilter.contains(ChunkPos.asLong(chunkX, chunkZ)) ^ this.invert ? ExploreProcess.Status.EXPLORED
+               : ExploreProcess.Status.UNKNOWN;
       }
 
       @Override
