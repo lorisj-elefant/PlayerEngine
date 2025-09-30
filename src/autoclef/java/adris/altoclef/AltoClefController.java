@@ -149,7 +149,7 @@ public class AltoClefController {
       this.inputControls.onTickPost();
       this.baritone.serverTick();
       this.player2apiService.trySendHeartbeat();
-
+      copiedServerPlayer.update(this);
    }
 
    static {

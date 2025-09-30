@@ -1,7 +1,7 @@
 package adris.altoclef;
 
 import adris.altoclef.commands.AttackPlayerOrMobCommand;
-import adris.altoclef.commands.BodyLanguageCommand;
+import adris.altoclef.commands.UseItemOnEntityCommand;
 import adris.altoclef.commands.DepositCommand;
 import adris.altoclef.commands.EquipCommand;
 import adris.altoclef.commands.FarmCommand;
@@ -31,7 +31,7 @@ public class AltoClefCommands {
                   new GetCommand(),
                   new EquipCommand(),
                   new BuildStructureCommand(),
-                  new BodyLanguageCommand(),
+                  new UseItemOnEntityCommand(),
                   new DepositCommand(),
                   new GotoCommand(),
                   new IdleCommand(),
