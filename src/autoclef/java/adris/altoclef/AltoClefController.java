@@ -42,6 +42,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.mojang.authlib.GameProfile;
+
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -80,6 +82,7 @@ public class AltoClefController {
    private Task storedTask;
    public boolean isStopping = false;
    private Player owner;
+   public FakePlayer copiedServerPlayer;
 
    public AltoClefController(IBaritone baritone, Character character, String player2GameId) {
       this.baritone = baritone;
@@ -132,6 +135,8 @@ public class AltoClefController {
       ConversationManager.getOrCreateEventQueueData(this);
       this.aiPersistantData = new AIPersistantData(this, character);
       this.player2apiService = new Player2APIService(this, player2GameId);
+      this.copiedServerPlayer = new FakePlayer(getWorld(),
+            UUID.fromString(this.getPlayer().getStringUUID() + "-fakeplayer"), character.name());
    }
 
    public void serverTick() {
@@ -144,6 +149,7 @@ public class AltoClefController {
       this.inputControls.onTickPost();
       this.baritone.serverTick();
       this.player2apiService.trySendHeartbeat();
+
    }
 
    static {
