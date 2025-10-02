@@ -10,7 +10,7 @@ import adris.altoclef.tasks.entity.UseItemOnEntityTask;
 public class UseItemOnEntityCommand extends Command {
     public UseItemOnEntityCommand() throws CommandException {
         super("useItemOnEntity",
-                "Uses an item on an entity. Examples: `useItemOnEntity shears sheep`, `useItemOnEntity saddle pig` ",
+                "Uses an item on an entity. Use 'hand' as item if you want empty use (get in vehicle, etc.).  Examples: `useItemOnEntity shears sheep`, `useItemOnEntity saddle pig` `useITemOnEntity hand minecart` ",
                 new Arg<>(String.class, "itemName"),
                 new Arg<>(String.class, "entityName"));
     }

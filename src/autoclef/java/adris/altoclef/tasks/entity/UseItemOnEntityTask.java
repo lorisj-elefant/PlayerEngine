@@ -36,7 +36,9 @@ public class UseItemOnEntityTask extends Task {
     public UseItemOnEntityTask(String itemName, String entityName) {
         this.itemName = itemName;
         this.entityName = entityName;
-
+        if (itemName.equals("hand")) {
+            return;
+        }
         // will err if itemName not found
         item = ItemHelper.fromString(itemName).get();
 
@@ -50,6 +52,10 @@ public class UseItemOnEntityTask extends Task {
 
     private void equipItem() {
         AltoClefController mod = this.controller;
+        if (itemName.equals("hand")) {
+            mod.getSlotHandler().forceDeequip(stack -> !stack.isEmpty());
+            return;
+        }
         mod.getSlotHandler().forceEquipItem(item);
     }
 
