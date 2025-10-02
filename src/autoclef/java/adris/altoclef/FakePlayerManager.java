@@ -4,19 +4,20 @@ import java.util.UUID;
 
 import com.mojang.authlib.GameProfile;
 
+import net.fabricmc.fabric.api.entity.FakePlayer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 
-public class FakePlayer {
-    ServerPlayer playerCopy;
+public class FakePlayerManager {
+    FakePlayer playerCopy;
 
-    public FakePlayer(ServerLevel world, UUID uuid, String name) {
-
-        this.playerCopy = new ServerPlayer(world.getServer(), world,
-                new GameProfile(UUID.fromString("TEMP"), name));
+    public FakePlayerManager(ServerLevel world, UUID uuid, String name) {
+        this.playerCopy = FakePlayer.get(world, new GameProfile(uuid, name));
+        // this.playerCopy = new ServerPlayer(world.getServer(), world,
+        // new GameProfile(UUID.fromString("TEMP"), name));
     }
 
     public void update(AltoClefController controller) {
@@ -141,14 +142,16 @@ public class FakePlayer {
         // ((Chicken) entity).flap = copied.onGround() ? 0 : 1;
         // }
 
-        for (EquipmentSlot slot : EquipmentSlot.values()) {
-            playerCopy.setItemSlot(slot, original.getItemBySlot(slot));
-        }
-
     }
 
-    public ServerPlayer getPlayerCopy() {
+    public FakePlayer getPlayerCopy() {
         return playerCopy;
+    }
+
+    public void updateOriginalItem(AltoClefController mod) {
+        for (EquipmentSlot slot : EquipmentSlot.values()) {
+            mod.getPlayer().setItemSlot(slot, playerCopy.getItemBySlot(slot));
+        }
     }
 
 }

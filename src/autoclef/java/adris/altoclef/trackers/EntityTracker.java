@@ -171,23 +171,6 @@ public class EntityTracker extends Tracker {
       return Optional.ofNullable(closestEntity);
    }
 
-   public Optional<Entity> getClosestFromPredicate(Vec3 pos, Predicate<Entity> p) {
-      double minCost = Double.POSITIVE_INFINITY;
-      Optional<Entity> closestEntity = Optional.empty();
-      synchronized (BaritoneHelper.MINECRAFT_LOCK) {
-         for (Entity entity : this.closeEntities) {
-            if (!this.entityBlacklist.unreachable(entity) && entity.isAlive() && p.test(entity)) {
-               double cost = entity.distanceToSqr(pos);
-               if (cost < minCost) {
-                  minCost = cost;
-                  closestEntity = Optional.of(entity);
-               }
-            }
-         }
-      }
-      return closestEntity;
-   }
-
    public boolean itemDropped(Item... items) {
       this.ensureUpdated();
 
