@@ -7,6 +7,7 @@ import org.apache.logging.log4j.Logger;
 
 import adris.altoclef.AltoClefController;
 import adris.altoclef.tasks.AbstractDoToClosestObjectTask;
+import adris.altoclef.tasks.movement.GetToBlockTask;
 import adris.altoclef.tasks.resources.CollectMilkTask;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.helpers.EntityHelper;
@@ -15,6 +16,7 @@ import adris.altoclef.util.helpers.LookHelper;
 import adris.altoclef.util.progresscheck.MovementProgressChecker;
 import baritone.api.pathing.goals.GoalBlock;
 import baritone.api.pathing.goals.GoalRunAway;
+import baritone.api.utils.input.Input;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.ai.goal.Goal;
@@ -99,25 +101,18 @@ public class UseItemOnEntityTask extends Task {
         // will throw error if there is no entity closeby
         Entity entity = closeEntity.get();
 
-        double playerReach = mod.getModSettings().getEntityReachRange();
-        // EntityHitResult result = LookHelper.raycast(mod.getPlayer(), entity,
-        // playerReach);
-        double sqDist = entity.distanceToSqr(mod.getPlayer());
-
-        // double maintainDistance = playerReach - 0.5;
-        // boolean tooClose = sqDist < maintainDistance * maintainDistance;
-        // if (tooClose && !mod.getBaritone().getCustomGoalProcess().isActive()) {
-        // mod.getBaritone().getCustomGoalProcess()
-        // .setGoalAndPath(new GoalRunAway(maintainDistance, entity.blockPosition()));
-        // }
-        mod.getBaritone().getCustomGoalProcess().setGoalAndPath(new GoalBlock(entity.getOnPos()));
-        LookHelper.lookAt(mod, entity.getEyePosition());
-        equipItem();
-        if (sqDist <= playerReach * playerReach) {
-            mod.copiedServerPlayer.getPlayerCopy().interactOn(entity, InteractionHand.MAIN_HAND);
-            mod.copiedServerPlayer.updateOriginalItem(mod); // update item
-            hasInteracted = true;
+        if (!entity.closerThan(mod.getPlayer(), 1)) {
+            return new GetToBlockTask(entity.blockPosition(), false);
         }
+        LookHelper.lookAt(mod, entity.blockPosition());
+        equipItem();
+        if (itemName.equals("hand")) {
+            mod.getInputControls().hold(Input.CLICK_RIGHT);
+        }
+        mod.copiedServerPlayer.getPlayerCopy().interactOn(entity, InteractionHand.MAIN_HAND);
+
+        mod.copiedServerPlayer.updateOriginalItem(mod); // update item from copy => mod
+        hasInteracted = true;
 
         return null;
     }
@@ -127,6 +122,7 @@ public class UseItemOnEntityTask extends Task {
         AltoClefController mod = this.controller;
         mod.getMobDefenseChain().setTargetEntity(null);
         mod.getMobDefenseChain().resetForceField();
+        mod.getInputControls().release(Input.CLICK_RIGHT);
     }
 
     @Override
