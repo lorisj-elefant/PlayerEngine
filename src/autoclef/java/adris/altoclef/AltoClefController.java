@@ -42,6 +42,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.mojang.authlib.GameProfile;
 
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
@@ -83,6 +86,7 @@ public class AltoClefController {
    public boolean isStopping = false;
    private Player owner;
    public FakePlayerManager copiedServerPlayer;
+   private static final Logger LOGGER = LogManager.getLogger();
 
    public AltoClefController(IBaritone baritone, Character character, String player2GameId) {
       this.baritone = baritone;
@@ -403,5 +407,10 @@ public class AltoClefController {
          float bdist = b.distanceTo(this.getEntity());
          return Float.compare(adist, bdist);
       }).findFirst();
+   }
+
+   public void logSignificantError(String err) {
+      LOGGER.info("Logging significant err={}", err);
+      ConversationManager.getOrCreateEventQueueData(this).addAltoclefLogMessage(err);
    }
 }

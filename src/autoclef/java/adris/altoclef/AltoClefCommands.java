@@ -21,6 +21,7 @@ import adris.altoclef.commands.ReloadSettingsCommand;
 import adris.altoclef.commands.ResetMemoryCommand;
 import adris.altoclef.commands.SetAIBridgeEnabledCommand;
 import adris.altoclef.commands.StopCommand;
+import adris.altoclef.commands.UseItemOnBlockCommand;
 import adris.altoclef.commands.random.ScanCommand;
 import adris.altoclef.commands.BuildStructureCommand;
 import adris.altoclef.commandsystem.CommandException;
@@ -47,10 +48,13 @@ public class AltoClefCommands {
                   new GamerCommand(),
                   new FollowCommand(),
                   new GiveCommand(),
-                  new ScanCommand(),
+                  // new ScanCommand(), // remove scan cmd for now
                   new AttackPlayerOrMobCommand(),
                   new SetAIBridgeEnabledCommand(),
                   new FarmCommand(),
-                  new FishCommand());
+                  new FishCommand(),
+                  new UseItemOnBlockCommand()
+
+            );
    }
 }
