@@ -19,6 +19,10 @@ public class TTSManager {
     private static long estimatedEndTime = 0;
     private static final ExecutorService ttsThread = Executors.newSingleThreadExecutor();
 
+    public static ExecutorService getExecutor(){
+        return ttsThread;
+    }
+
     private static void setEstimatedEndTime(String message) {
         int waitTimeSec = (int) Math.ceil(message.length() / (double) TTScharactersPerSecond) + 1;
 

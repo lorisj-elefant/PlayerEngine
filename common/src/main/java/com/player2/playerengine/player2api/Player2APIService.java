@@ -103,7 +103,7 @@ public class Player2APIService {
          }
 
          ((ServerPlayer)controller.getOwner()).connection.send(NetworkManager.toPacket(NetworkManager.Side.S2C,
-               new ResourceLocation("com/player2/playerengine", "stream_tts"), buf));
+               new ResourceLocation("playerengine", "stream_tts"), buf));
          onFinish.accept(null);
       } catch (Exception var9) {
       }

@@ -12,9 +12,9 @@ import java.util.concurrent.CompletableFuture;
 @KeepName
 public final class PlayerEngineClient {
    public static void onInitializeClient() {
-      EntityRendererRegistry.register(()->PlayerEngine.FISHING_BOBBER, CustomFishingBobberRenderer::new);
+      EntityRendererRegistry.register(PlayerEngine.FISHING_BOBBER, CustomFishingBobberRenderer::new);
 
-      NetworkManager.registerReceiver(NetworkManager.Side.S2C, new ResourceLocation("com/player2/playerengine", "stream_tts"), (buf, context) -> {
+      NetworkManager.registerReceiver(NetworkManager.Side.S2C, new ResourceLocation("playerengine", "stream_tts"), (buf, context) -> {
          String clientId = buf.readUtf();
          String token = buf.readUtf();
          String text = buf.readUtf();
