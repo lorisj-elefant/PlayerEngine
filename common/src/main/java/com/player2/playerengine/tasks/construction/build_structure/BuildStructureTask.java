@@ -119,7 +119,7 @@ public class BuildStructureTask extends Task {
         @Override
         protected void onStop(Task var1) {
             // TODO Auto-generated method stub
-
+            buildThread.shutdownNow();
         }
 
         @Override

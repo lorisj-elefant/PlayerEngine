@@ -1,5 +1,6 @@
 package com.player2.playerengine;
 
+import com.google.common.base.Suppliers;
 import com.player2.playerengine.automaton.KeepName;
 import com.player2.playerengine.automaton.command.defaults.DefaultCommands;
 import com.player2.playerengine.automaton.entity.CustomFishingBobberEntity;
@@ -7,9 +8,12 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
-import net.minecraft.core.Registry;
-import net.minecraft.core.registries.BuiltInRegistries;
+import dev.architectury.registry.registries.DeferredRegister;
+import dev.architectury.registry.registries.Registrar;
+import dev.architectury.registry.registries.RegistrarManager;
+import dev.architectury.registry.registries.RegistrySupplier;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
@@ -28,12 +32,17 @@ public final class PlayerEngine {
    public static final TagKey<Item> EMPTY_BUCKETS = TagKey.create(Registries.ITEM, id("empty_buckets"));
    public static final TagKey<Item> WATER_BUCKETS = TagKey.create(Registries.ITEM, id("water_buckets"));
    private static final ThreadPoolExecutor threadPool;
-   public static final EntityType<CustomFishingBobberEntity> FISHING_BOBBER = EntityType.Builder.of((EntityType.EntityFactory<CustomFishingBobberEntity>) CustomFishingBobberEntity::new, MobCategory.MISC)
-      .sized(EntityType.FISHING_BOBBER.getWidth(), EntityType.FISHING_BOBBER.getHeight())
-      .clientTrackingRange(64)
-      .updateInterval(1)
-      .build("fishing_bobber");
 
+
+   public static final DeferredRegister<EntityType<?>> ENTITY_TYPES = DeferredRegister.create(MOD_ID, Registries.ENTITY_TYPE);
+   public static RegistrySupplier<EntityType<CustomFishingBobberEntity>> FISHING_BOBBER =
+           ENTITY_TYPES.register("custom_fishing_bobber", ()-> EntityType.Builder.of((EntityType.EntityFactory<CustomFishingBobberEntity>) CustomFishingBobberEntity::new, MobCategory.CREATURE)
+           .sized(EntityType.FISHING_BOBBER.getWidth(), EntityType.FISHING_BOBBER.getHeight())
+           .clientTrackingRange(64)
+           .updateInterval(1)
+           .build("custom_fishing_bobber")
+
+   );
    public static ResourceLocation id(String path) {
       return ResourceLocation.fromNamespaceAndPath(MOD_ID, path);
    }
@@ -44,7 +53,7 @@ public final class PlayerEngine {
 
    public static void onInitialize() {
       DefaultCommands.registerAll();
-      Registry.register(BuiltInRegistries.ENTITY_TYPE, id("fishing_bobber"), FISHING_BOBBER);
+      ENTITY_TYPES.register();
    }
 
    static {

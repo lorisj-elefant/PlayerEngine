@@ -20,8 +20,8 @@ public class AuthenticationManager {
 
     private static final AuthenticationManager INSTANCE = new AuthenticationManager();
 
-    private final ExecutorService authExecutor = Executors.newCachedThreadPool();
-    private final ScheduledExecutorService pollingExecutor = Executors.newSingleThreadScheduledExecutor();
+    private static final ExecutorService authExecutor = Executors.newCachedThreadPool();
+    private static final ScheduledExecutorService pollingExecutor = Executors.newSingleThreadScheduledExecutor();
 
     private final Map<AuthKey, CompletableFuture<String>> ongoingAuths = new ConcurrentHashMap<>();
     private final Map<AuthKey, ScheduledFuture<?>> pollingTasks = new ConcurrentHashMap<>();
@@ -29,6 +29,15 @@ public class AuthenticationManager {
     public static AuthenticationManager getInstance() {
         return INSTANCE;
     }
+
+    public static ExecutorService getExecutor(){
+        return authExecutor;
+    }
+
+    public static ExecutorService getPollingExecutor(){
+        return pollingExecutor;
+    }
+
 
     public void invalidateToken(Player player, String clientId) {
         AuthKey authKey = new AuthKey(player.getUUID(), clientId);

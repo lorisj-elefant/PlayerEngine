@@ -96,7 +96,7 @@ public class CustomFishingBobberEntity extends ThrowableProjectile {
    }
 
    public CustomFishingBobberEntity(LivingEntity thrower, Level world, int luckOfTheSeaLevel, int lureLevel) {
-      this(PlayerEngine.FISHING_BOBBER, world, luckOfTheSeaLevel, lureLevel);
+      this(PlayerEngine.FISHING_BOBBER.get(), world, luckOfTheSeaLevel, lureLevel);
       this.setOwner(thrower);
       float f = thrower.getXRot();
       float g = thrower.getYRot();
