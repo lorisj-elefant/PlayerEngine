@@ -55,6 +55,7 @@ import com.player2.playerengine.tasks.base.Task;
 import com.player2.playerengine.trackers.EntityTracker;
 import com.player2.playerengine.trackers.storage.ItemStorageTracker;
 import com.player2.playerengine.util.Dimension;
+import com.player2.playerengine.util.EnchantmentUtils;
 import com.player2.playerengine.util.ItemTarget;
 import com.player2.playerengine.util.MiningRequirement;
 import com.player2.playerengine.util.Pair;
@@ -114,7 +115,7 @@ public class BeatMinecraftTask extends Task {
    private static final ItemTarget[] COLLECT_EYE_GEAR_MIN = combine(ItemTarget.of(Items.DIAMOND_SWORD), ItemTarget.of(Items.DIAMOND_PICKAXE));
    private static final int END_PORTAL_FRAME_COUNT = 12;
    private static final double END_PORTAL_BED_SPAWN_RANGE = 8.0;
-   private static final Predicate<ItemStack> noCurseOfBinding = stack -> !stack.get(DataComponents.ENCHANTMENTS).entrySet().stream().anyMatch(e->e.getKey().unwrapKey().get().equals(Enchantments.BINDING_CURSE));
+   private static final Predicate<ItemStack> noCurseOfBinding = stack -> EnchantmentUtils.getEnchantmentLevel(stack, Enchantments.BINDING_CURSE)!=0;
    private static BeatMinecraftConfig config;
    private static GoToStrongholdPortalTask locateStrongholdTask;
    private static boolean openingEndPortal = false;

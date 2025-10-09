@@ -27,6 +27,7 @@ import com.player2.playerengine.automaton.cache.WorldData;
 import com.player2.playerengine.automaton.utils.BlockStateInterface;
 import com.player2.playerengine.automaton.utils.ToolSet;
 import com.player2.playerengine.automaton.utils.accessor.ILivingEntityAccessor;
+import com.player2.playerengine.util.EnchantmentUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.BlockPos.MutableBlockPos;
 import net.minecraft.core.component.DataComponents;
@@ -119,7 +120,7 @@ public class CalculationContext {
       this.allowDownward = baritone.settings().allowDownward.get();
       this.maxFallHeightNoWater = baritone.settings().maxFallHeightNoWater.get();
       this.maxFallHeightBucket = baritone.settings().maxFallHeightBucket.get();
-      int depth = entity.getItemBySlot(EquipmentSlot.FEET).get(DataComponents.ENCHANTMENTS).entrySet().stream().filter(e->e.getKey().unwrapKey().get().equals(Enchantments.DEPTH_STRIDER)).findFirst().get().getIntValue();
+      int depth = EnchantmentUtils.getEnchantmentLevel(entity.getItemBySlot(EquipmentSlot.FEET), Enchantments.DEPTH_STRIDER);
       if (depth > 3) {
          depth = 3;
       }

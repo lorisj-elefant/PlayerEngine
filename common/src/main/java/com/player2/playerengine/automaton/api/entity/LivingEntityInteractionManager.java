@@ -20,6 +20,8 @@ package com.player2.playerengine.automaton.api.entity;
 import com.player2.playerengine.automaton.api.utils.IBucketAccessor;
 import com.mojang.logging.LogUtils;
 import java.util.Objects;
+
+import com.player2.playerengine.util.EnchantmentUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponents;
@@ -229,7 +231,7 @@ public class LivingEntityInteractionManager {
       float f = this.livingEntity.getItemInHand(InteractionHand.MAIN_HAND).getDestroySpeed(block);
       if (f > 1.0F) {
          ItemStack itemStack = this.livingEntity.getItemInHand(InteractionHand.MAIN_HAND);
-         int i = itemStack.get(DataComponents.ENCHANTMENTS).entrySet().stream().filter(e->e.getKey().unwrapKey().get().equals(Enchantments.EFFICIENCY)).findFirst().get().getIntValue();
+         int i = EnchantmentUtils.getEnchantmentLevel(itemStack, Enchantments.EFFICIENCY);
          if (i > 0 && !itemStack.isEmpty()) {
             f += i * i + 1;
          }
@@ -248,7 +250,7 @@ public class LivingEntityInteractionManager {
          };
       }
 
-      if (entity.isEyeInFluid(FluidTags.WATER) && !entity.getItemBySlot(EquipmentSlot.HEAD).get(DataComponents.ENCHANTMENTS).entrySet().stream().anyMatch(e->e.getKey().unwrapKey().get().equals(Enchantments.AQUA_AFFINITY))) {
+      if (entity.isEyeInFluid(FluidTags.WATER) && EnchantmentUtils.getEnchantmentLevel(entity.getItemBySlot(EquipmentSlot.HEAD), Enchantments.AQUA_AFFINITY)!=0) {
          f /= 5.0F;
       }
 
