@@ -27,6 +27,7 @@ import com.player2.playerengine.trackers.CraftingRecipeTracker;
 import com.player2.playerengine.trackers.EntityStuckTracker;
 import com.player2.playerengine.trackers.EntityTracker;
 import com.player2.playerengine.trackers.MiscBlockTracker;
+import com.player2.playerengine.trackers.CacheTracker;
 import com.player2.playerengine.trackers.SimpleChunkTracker;
 import com.player2.playerengine.trackers.TrackerManager;
 import com.player2.playerengine.trackers.UserBlockRangeTracker;
@@ -71,6 +72,7 @@ public class PlayerEngineController {
    private EntityTracker entityTracker;
    private BlockScanner blockScanner;
    private SimpleChunkTracker chunkTracker;
+   private CacheTracker cacheTracker;
    private MiscBlockTracker miscBlockTracker;
    private CraftingRecipeTracker craftingRecipeTracker;
    private EntityStuckTracker entityStuckTracker;
@@ -105,6 +107,7 @@ public class PlayerEngineController {
       this.blockScanner = new BlockScanner(this);
       this.chunkTracker = new SimpleChunkTracker(this);
       this.miscBlockTracker = new MiscBlockTracker(this);
+      this.cacheTracker = new CacheTracker(this);
       this.craftingRecipeTracker = new CraftingRecipeTracker(this.trackerManager);
       this.entityStuckTracker = new EntityStuckTracker(this.trackerManager);
       this.userBlockRangeTracker = new UserBlockRangeTracker(this.trackerManager);
@@ -144,6 +147,7 @@ public class PlayerEngineController {
       this.trackerManager.tick();
       this.blockScanner.tick();
       this.taskRunner.tick();
+      this.cacheTracker.tick();
       this.inputControls.onTickPost();
       this.baritone.serverTick();
       this.player2apiService.trySendHeartbeat();
