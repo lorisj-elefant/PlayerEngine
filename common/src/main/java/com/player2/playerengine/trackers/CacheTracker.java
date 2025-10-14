@@ -18,7 +18,6 @@ public class CacheTracker {
         Vec3 curPos = mod.getPlayer().position();
         int x = (int) curPos.x();
         int z = (int) curPos.z();
-        System.out.println(String.format("Added x=%s, z=%s", x, z));
         worldData.addBlockPosToCache(x, z);
     }
 
