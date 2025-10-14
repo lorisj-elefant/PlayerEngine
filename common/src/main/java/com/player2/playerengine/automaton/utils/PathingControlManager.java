@@ -95,9 +95,9 @@ public class PathingControlManager implements IPathingControlManager {
          p.secretInternalSetGoal(null);
       } else {
          if (!Objects.equals(this.inControlThisTick, this.inControlLastTick)
-            && this.command.commandType != PathingCommandType.REQUEST_PAUSE
-            && this.inControlLastTick != null
-            && !this.inControlLastTick.isTemporary()) {
+               && this.command.commandType != PathingCommandType.REQUEST_PAUSE
+               && this.inControlLastTick != null
+               && !this.inControlLastTick.isTemporary()) {
             p.cancelSegmentIfSafe();
          }
 
@@ -135,14 +135,16 @@ public class PathingControlManager implements IPathingControlManager {
          PathingBehavior p = this.baritone.getPathingBehavior();
          switch (this.command.commandType) {
             case FORCE_REVALIDATE_GOAL_AND_PATH:
-               if (this.command.goal == null || this.forceRevalidate(this.command.goal) || this.revalidateGoal(this.command.goal)) {
+               if (this.command.goal == null || this.forceRevalidate(this.command.goal)
+                     || this.revalidateGoal(this.command.goal)) {
                   p.softCancelIfSafe();
                }
 
                p.secretInternalSetGoalAndPath(this.command);
                break;
             case REVALIDATE_GOAL_AND_PATH:
-               if (this.baritone.settings().cancelOnGoalInvalidation.get() && (this.command.goal == null || this.revalidateGoal(this.command.goal))) {
+               if (this.baritone.settings().cancelOnGoalInvalidation.get()
+                     && (this.command.goal == null || this.revalidateGoal(this.command.goal))) {
                   p.softCancelIfSafe();
                }
 
@@ -154,7 +156,8 @@ public class PathingControlManager implements IPathingControlManager {
    public boolean forceRevalidate(Goal newGoal) {
       PathExecutor current = this.baritone.getPathingBehavior().getCurrent();
       if (current != null) {
-         return newGoal.isInGoal(current.getPath().getDest()) ? false : !newGoal.toString().equals(current.getPath().getGoal().toString());
+         return newGoal.isInGoal(current.getPath().getDest()) ? false
+               : !newGoal.toString().equals(current.getPath().getGoal().toString());
       } else {
          return false;
       }
@@ -190,9 +193,8 @@ public class PathingControlManager implements IPathingControlManager {
       while (iterator.hasNext()) {
          IBaritoneProcess proc = iterator.next();
          PathingCommand exec = proc.onTick(
-            Objects.equals(proc, this.inControlLastTick) && this.baritone.getPathingBehavior().calcFailedLastTick(),
-            this.baritone.getPathingBehavior().isSafeToCancel()
-         );
+               Objects.equals(proc, this.inControlLastTick) && this.baritone.getPathingBehavior().calcFailedLastTick(),
+               this.baritone.getPathingBehavior().isSafeToCancel());
          if (exec == null) {
             if (proc.isActive()) {
                throw new IllegalStateException(proc.displayName() + " actively returned null PathingCommand");

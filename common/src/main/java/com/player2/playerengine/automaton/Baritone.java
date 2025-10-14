@@ -46,6 +46,8 @@ import com.player2.playerengine.automaton.utils.BlockStateInterface;
 import com.player2.playerengine.automaton.utils.InputOverrideHandler;
 import com.player2.playerengine.automaton.utils.PathingControlManager;
 import com.player2.playerengine.automaton.utils.player.EntityContext;
+
+import net.minecraft.ChatFormatting;
 import net.minecraft.world.entity.LivingEntity;
 
 public class Baritone implements IBaritone {
@@ -157,7 +159,7 @@ public class Baritone implements IBaritone {
    }
 
    public WorldProvider getWorldProvider() {
-      return (WorldProvider)IWorldProvider.KEY.get(this.getEntityContext().world());
+      return (WorldProvider) IWorldProvider.KEY.get(this.getEntityContext().world());
    }
 
    @Override
@@ -189,7 +191,8 @@ public class Baritone implements IBaritone {
 
    @Override
    public void logDebug(String message) {
-      PlayerEngine.LOGGER.debug(message);
+      // PlayerEngine.LOGGER.debug(message);
+      this.logDirect(message, ChatFormatting.DARK_GREEN);
    }
 
    @Override

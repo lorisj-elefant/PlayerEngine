@@ -8,7 +8,7 @@ public class Debug {
    private static final int ERROR_LOG_LEVEL = 2;
 
    public static void logInternal(String message) {
-      if (canLog(0)) {
+      if (true || canLog(0)) {
          System.out.println("ALTO CLEF: " + message);
       }
    }

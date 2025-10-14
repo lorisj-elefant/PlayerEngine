@@ -119,12 +119,11 @@ public final class PathingBehavior extends Behavior implements IPathingBehavior 
                   BetterBlockPos calcFrom = this.inProgress.getStart();
                   Optional<IPath> currentBest = this.inProgress.bestPathSoFar();
                   if ((this.current == null || !this.current.getPath().getDest().equals(calcFrom))
-                     && !calcFrom.equals(this.ctx.feetPos())
-                     && !calcFrom.equals(this.expectedSegmentStart)
-                     && (
-                        !currentBest.isPresent()
-                           || !currentBest.get().positions().contains(this.ctx.feetPos()) && !currentBest.get().positions().contains(this.expectedSegmentStart)
-                     )) {
+                        && !calcFrom.equals(this.ctx.feetPos())
+                        && !calcFrom.equals(this.expectedSegmentStart)
+                        && (!currentBest.isPresent()
+                              || !currentBest.get().positions().contains(this.ctx.feetPos())
+                                    && !currentBest.get().positions().contains(this.expectedSegmentStart))) {
                      this.inProgress.cancel();
                   }
                }
@@ -136,8 +135,8 @@ public final class PathingBehavior extends Behavior implements IPathingBehavior 
                   this.current = null;
                   if (this.goal != null && !this.goal.isInGoal(this.ctx.feetPos())) {
                      if (this.next != null
-                        && !this.next.getPath().positions().contains(this.ctx.feetPos())
-                        && !this.next.getPath().positions().contains(this.expectedSegmentStart)) {
+                           && !this.next.getPath().positions().contains(this.ctx.feetPos())
+                           && !this.next.getPath().positions().contains(this.expectedSegmentStart)) {
                         this.logDebug("Discarding next path as it does not contain current position");
                         this.queuePathEvent(PathEvent.DISCARD_NEXT);
                         this.next = null;
@@ -152,11 +151,14 @@ public final class PathingBehavior extends Behavior implements IPathingBehavior 
                      } else {
                         synchronized (this.pathCalcLock) {
                            if (this.inProgress != null) {
+                              this.logDebug("Finished next but still calcualting");
                               this.queuePathEvent(PathEvent.PATH_FINISHED_NEXT_STILL_CALCULATING);
                               return;
                            }
 
                            this.queuePathEvent(PathEvent.CALC_STARTED);
+
+                           this.logDebug("Calc started");
                            this.findPathInNewThread(this.expectedSegmentStart, true, this.context);
                         }
                      }
@@ -196,8 +198,9 @@ public final class PathingBehavior extends Behavior implements IPathingBehavior 
                         return;
                      }
 
-                     if (this.ticksRemainingInSegment(false).orElseThrow(IllegalStateException::new)
-                        < this.baritone.settings().planningTickLookahead.get().intValue()) {
+                     if (this.ticksRemainingInSegment(false)
+                           .orElseThrow(IllegalStateException::new) < this.baritone.settings().planningTickLookahead
+                                 .get().intValue()) {
                         this.logDebug("Path almost over. Planning ahead...");
                         this.queuePathEvent(PathEvent.NEXT_SEGMENT_CALC_STARTED);
                         this.findPathInNewThread(this.current.getPath().getDest(), false, this.context);
@@ -216,7 +219,7 @@ public final class PathingBehavior extends Behavior implements IPathingBehavior 
    public boolean secretInternalSetGoalAndPath(PathingCommand command) {
       this.secretInternalSetGoal(command.goal);
       if (command instanceof PathingCommandContext) {
-         this.context = ((PathingCommandContext)command).desiredCalcContext;
+         this.context = ((PathingCommandContext) command).desiredCalcContext;
       } else {
          this.context = new CalculationContext(this.baritone, true);
       }
@@ -358,7 +361,8 @@ public final class PathingBehavior extends Behavior implements IPathingBehavior 
             if (current == start) {
                return Optional.empty();
             } else {
-               double eta = Math.abs(current - this.goal.heuristic()) * this.ticksElapsedSoFar / Math.abs(start - current);
+               double eta = Math.abs(current - this.goal.heuristic()) * this.ticksElapsedSoFar
+                     / Math.abs(start - current);
                return Optional.of(eta);
             }
          }
@@ -396,17 +400,17 @@ public final class PathingBehavior extends Behavior implements IPathingBehavior 
             }
 
             closest.sort(
-               Comparator.comparingDouble(pos -> (pos.x + 0.5 - playerX) * (pos.x + 0.5 - playerX) + (pos.z + 0.5 - playerZ) * (pos.z + 0.5 - playerZ))
-            );
+                  Comparator.comparingDouble(pos -> (pos.x + 0.5 - playerX) * (pos.x + 0.5 - playerX)
+                        + (pos.z + 0.5 - playerZ) * (pos.z + 0.5 - playerZ)));
 
             for (int i = 0; i < 4; i++) {
                BetterBlockPos possibleSupport = closest.get(i);
                double xDist = Math.abs(possibleSupport.x + 0.5 - playerX);
                double zDist = Math.abs(possibleSupport.z + 0.5 - playerZ);
                if ((!(xDist > 0.8) || !(zDist > 0.8))
-                  && MovementHelper.canWalkOn(this.ctx, possibleSupport.down())
-                  && MovementHelper.canWalkThrough(this.ctx, possibleSupport)
-                  && MovementHelper.canWalkThrough(this.ctx, possibleSupport.up())) {
+                     && MovementHelper.canWalkOn(this.ctx, possibleSupport.down())
+                     && MovementHelper.canWalkThrough(this.ctx, possibleSupport)
+                     && MovementHelper.canWalkThrough(this.ctx, possibleSupport.up())) {
                   return possibleSupport;
                }
             }
@@ -440,88 +444,89 @@ public final class PathingBehavior extends Behavior implements IPathingBehavior 
                failureTimeout = this.baritone.settings().planAheadFailureTimeoutMS.get();
             }
 
-            AbstractNodeCostSearch pathfinder = createPathfinder(start, goal, this.current == null ? null : this.current.getPath(), context);
+            AbstractNodeCostSearch pathfinder = createPathfinder(start, goal,
+                  this.current == null ? null : this.current.getPath(), context);
             if (!Objects.equals(pathfinder.getGoal(), goal)) {
                this.logDebug("Simplifying " + goal.getClass() + " to GoalXZ due to distance");
             }
 
             this.inProgress = pathfinder;
             PlayerEngine.getExecutor()
-               .execute(
-                  () -> {
-                     if (talkAboutIt) {
-                        this.logDebug("Starting to search for path from " + start + " to " + goal);
-                     }
+                  .execute(
+                        () -> {
+                           if (talkAboutIt) {
+                              this.logDebug("Starting to search for path from " + start + " to " + goal);
+                           }
 
-                     PathCalculationResult calcResult = pathfinder.calculate(primaryTimeout, failureTimeout);
-                     synchronized (this.pathPlanLock) {
-                        Optional<PathExecutor> executor = calcResult.getPath().map(p -> new PathExecutor(this, p));
-                        if (this.current == null) {
-                           if (executor.isPresent()) {
-                              if (executor.get().getPath().positions().contains(this.expectedSegmentStart)) {
-                                 this.queuePathEvent(PathEvent.CALC_FINISHED_NOW_EXECUTING);
-                                 this.current = executor.get();
-                                 this.resetEstimatedTicksToGoal(start);
+                           PathCalculationResult calcResult = pathfinder.calculate(primaryTimeout, failureTimeout);
+                           synchronized (this.pathPlanLock) {
+                              Optional<PathExecutor> executor = calcResult.getPath()
+                                    .map(p -> new PathExecutor(this, p));
+                              if (this.current == null) {
+                                 if (executor.isPresent()) {
+                                    if (executor.get().getPath().positions().contains(this.expectedSegmentStart)) {
+                                       this.queuePathEvent(PathEvent.CALC_FINISHED_NOW_EXECUTING);
+                                       this.current = executor.get();
+                                       this.resetEstimatedTicksToGoal(start);
+                                    } else {
+                                       this.logDebug("Warning: discarding orphan path segment with incorrect start");
+                                    }
+                                 } else if (calcResult.getType() != PathCalculationResult.Type.CANCELLATION
+                                       && calcResult.getType() != PathCalculationResult.Type.EXCEPTION) {
+                                    this.queuePathEvent(PathEvent.CALC_FAILED);
+                                 }
+                              } else if (this.next == null) {
+                                 if (executor.isPresent()) {
+                                    if (executor.get().getPath().getSrc().equals(this.current.getPath().getDest())) {
+                                       this.queuePathEvent(PathEvent.NEXT_SEGMENT_CALC_FINISHED);
+                                       this.next = executor.get();
+                                    } else {
+                                       this.logDebug("Warning: discarding orphan next segment with incorrect start");
+                                    }
+                                 } else {
+                                    this.queuePathEvent(PathEvent.NEXT_CALC_FAILED);
+                                 }
                               } else {
-                                 this.logDebug("Warning: discarding orphan path segment with incorrect start");
+                                 this.baritone
+                                       .logDirect("Warning: PathingBehavior illegal state! Discarding invalid path!");
                               }
-                           } else if (calcResult.getType() != PathCalculationResult.Type.CANCELLATION
-                              && calcResult.getType() != PathCalculationResult.Type.EXCEPTION) {
-                              this.queuePathEvent(PathEvent.CALC_FAILED);
-                           }
-                        } else if (this.next == null) {
-                           if (executor.isPresent()) {
-                              if (executor.get().getPath().getSrc().equals(this.current.getPath().getDest())) {
-                                 this.queuePathEvent(PathEvent.NEXT_SEGMENT_CALC_FINISHED);
-                                 this.next = executor.get();
-                              } else {
-                                 this.logDebug("Warning: discarding orphan next segment with incorrect start");
+
+                              if (talkAboutIt && this.current != null && this.current.getPath() != null) {
+                                 if (goal.isInGoal(this.current.getPath().getDest())) {
+                                    this.logDebug(
+                                          "Finished finding a path from "
+                                                + start
+                                                + " to "
+                                                + goal
+                                                + ". "
+                                                + this.current.getPath().getNumNodesConsidered()
+                                                + " nodes considered");
+                                 } else {
+                                    this.logDebug(
+                                          "Found path segment from "
+                                                + start
+                                                + " towards "
+                                                + goal
+                                                + ". "
+                                                + this.current.getPath().getNumNodesConsidered()
+                                                + " nodes considered");
+                                 }
                               }
-                           } else {
-                              this.queuePathEvent(PathEvent.NEXT_CALC_FAILED);
-                           }
-                        } else {
-                           this.baritone.logDirect("Warning: PathingBehavior illegal state! Discarding invalid path!");
-                        }
 
-                        if (talkAboutIt && this.current != null && this.current.getPath() != null) {
-                           if (goal.isInGoal(this.current.getPath().getDest())) {
-                              this.logDebug(
-                                 "Finished finding a path from "
-                                    + start
-                                    + " to "
-                                    + goal
-                                    + ". "
-                                    + this.current.getPath().getNumNodesConsidered()
-                                    + " nodes considered"
-                              );
-                           } else {
-                              this.logDebug(
-                                 "Found path segment from "
-                                    + start
-                                    + " towards "
-                                    + goal
-                                    + ". "
-                                    + this.current.getPath().getNumNodesConsidered()
-                                    + " nodes considered"
-                              );
+                              synchronized (this.pathCalcLock) {
+                                 this.inProgress = null;
+                              }
                            }
-                        }
-
-                        synchronized (this.pathCalcLock) {
-                           this.inProgress = null;
-                        }
-                     }
-                  }
-               );
+                        });
          }
       }
    }
 
-   private static AbstractNodeCostSearch createPathfinder(BlockPos start, Goal goal, IPath previous, CalculationContext context) {
+   private static AbstractNodeCostSearch createPathfinder(BlockPos start, Goal goal, IPath previous,
+         CalculationContext context) {
       Goal transformed = goal;
       if (context.baritone.settings().simplifyUnloadedYCoord.get() && goal instanceof IGoalRenderPos) {
-         BlockPos pos = ((IGoalRenderPos)goal).getGoalPos();
+         BlockPos pos = ((IGoalRenderPos) goal).getGoalPos();
          if (!context.bsi.worldContainsLoadedChunk(pos.getX(), pos.getZ())) {
             transformed = new GoalXZ(pos.getX(), pos.getZ());
          }

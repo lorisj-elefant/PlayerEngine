@@ -40,8 +40,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
 
 public abstract class Movement implements IMovement, MovementHelper {
-   public static final Direction[] HORIZONTALS_BUT_ALSO_DOWN_____SO_EVERY_DIRECTION_EXCEPT_UP = new Direction[]{
-      Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST, Direction.DOWN
+   public static final Direction[] HORIZONTALS_BUT_ALSO_DOWN_____SO_EVERY_DIRECTION_EXCEPT_UP = new Direction[] {
+         Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST, Direction.DOWN
    };
    protected final IBaritone baritone;
    protected final IEntityContext ctx;
@@ -57,7 +57,8 @@ public abstract class Movement implements IMovement, MovementHelper {
    private Set<BetterBlockPos> validPositionsCached = null;
    private Boolean calculatedWhileLoaded;
 
-   protected Movement(IBaritone baritone, BetterBlockPos src, BetterBlockPos dest, BetterBlockPos[] toBreak, BetterBlockPos toPlace) {
+   protected Movement(IBaritone baritone, BetterBlockPos src, BetterBlockPos dest, BetterBlockPos[] toBreak,
+         BetterBlockPos toPlace) {
       this.baritone = baritone;
       this.ctx = baritone.getEntityContext();
       this.src = src;
@@ -107,31 +108,35 @@ public abstract class Movement implements IMovement, MovementHelper {
 
    protected boolean playerInValidPosition() {
       return this.getValidPositions().contains(this.ctx.feetPos())
-         || this.getValidPositions().contains(((PathingBehavior)this.baritone.getPathingBehavior()).pathStart());
+            || this.getValidPositions().contains(((PathingBehavior) this.baritone.getPathingBehavior()).pathStart());
    }
 
    @Override
    public MovementStatus update() {
       if (this.ctx.entity() instanceof Player) {
-         ((Player)this.ctx.entity()).getAbilities().flying = false;
+         ((Player) this.ctx.entity()).getAbilities().flying = false;
       }
 
-      if (!this.ctx.baritone().settings().allowSwimming.get() && MovementHelper.isLiquid(this.ctx, this.ctx.feetPos())) {
+      if (!this.ctx.baritone().settings().allowSwimming.get()
+            && MovementHelper.isLiquid(this.ctx, this.ctx.feetPos())) {
          this.currentState.setInput(Input.JUMP, true);
       }
 
       this.currentState = this.updateState(this.currentState);
       if (this.ctx.entity().isInWall()) {
-         this.ctx.getSelectedBlock().ifPresent(pos -> MovementHelper.switchToBestToolFor(this.ctx, BlockStateInterface.get(this.ctx, pos)));
+         this.ctx.getSelectedBlock()
+               .ifPresent(pos -> MovementHelper.switchToBestToolFor(this.ctx, BlockStateInterface.get(this.ctx, pos)));
          this.currentState.setInput(Input.CLICK_LEFT, true);
       }
 
       this.currentState
-         .getTarget()
-         .getRotation()
-         .ifPresent(rotation -> this.baritone.getLookBehavior().updateTarget(rotation, this.currentState.getTarget().hasToForceRotations()));
+            .getTarget()
+            .getRotation()
+            .ifPresent(rotation -> this.baritone.getLookBehavior().updateTarget(rotation,
+                  this.currentState.getTarget().hasToForceRotations()));
       this.baritone.getInputOverrideHandler().clearAllKeys();
-      this.currentState.getInputStates().forEach((input, forced) -> this.baritone.getInputOverrideHandler().setInputForceState(input, forced));
+      this.currentState.getInputStates()
+            .forEach((input, forced) -> this.baritone.getInputOverrideHandler().setInputForceState(input, forced));
       this.currentState.getInputStates().clear();
       if (this.currentState.getStatus().isComplete()) {
          this.baritone.getInputOverrideHandler().clearAllKeys();
@@ -147,21 +152,25 @@ public abstract class Movement implements IMovement, MovementHelper {
          boolean somethingInTheWay = false;
 
          for (BetterBlockPos blockPos : this.positionsToBreak) {
-            if (!this.ctx.world().getEntitiesOfClass(FallingBlockEntity.class, new AABB(0.0, 0.0, 0.0, 1.0, 1.1, 1.0).move(blockPos), e -> true).isEmpty()
-               && this.baritone.settings().pauseMiningForFallingBlocks.get()) {
+            if (!this.ctx.world()
+                  .getEntitiesOfClass(FallingBlockEntity.class, new AABB(0.0, 0.0, 0.0, 1.0, 1.1, 1.0).move(blockPos),
+                        e -> true)
+                  .isEmpty()
+                  && this.baritone.settings().pauseMiningForFallingBlocks.get()) {
                return false;
             }
 
             if (!MovementHelper.canWalkThrough(this.ctx, blockPos)) {
                somethingInTheWay = true;
                MovementHelper.switchToBestToolFor(this.ctx, BlockStateInterface.get(this.ctx, blockPos));
-               Optional<Rotation> reachable = RotationUtils.reachable(this.ctx.entity(), blockPos, this.ctx.playerController().getBlockReachDistance());
+               Optional<Rotation> reachable = RotationUtils.reachable(this.ctx.entity(), blockPos,
+                     this.ctx.playerController().getBlockReachDistance());
                if (!reachable.isPresent()) {
                   state.setTarget(
-                     new MovementState.MovementTarget(
-                        RotationUtils.calcRotationFromVec3d(this.ctx.headPos(), VecUtils.getBlockPosCenter(blockPos), this.ctx.entityRotations()), true
-                     )
-                  );
+                        new MovementState.MovementTarget(
+                              RotationUtils.calcRotationFromVec3d(this.ctx.headPos(),
+                                    VecUtils.getBlockPosCenter(blockPos), this.ctx.entityRotations()),
+                              true));
                   state.setInput(Input.CLICK_LEFT, true);
                   return false;
                }
@@ -202,6 +211,10 @@ public abstract class Movement implements IMovement, MovementHelper {
    @Override
    public BetterBlockPos getDest() {
       return this.dest;
+   }
+
+   public String toString() {
+      return String.format("Movement(src=%s, dest=%s)", src.toString(), dest.toString());
    }
 
    @Override
@@ -253,7 +266,8 @@ public abstract class Movement implements IMovement, MovementHelper {
          List<BlockPos> result = new ArrayList<>();
 
          for (BetterBlockPos positionToBreak : this.positionsToBreak) {
-            if (!MovementHelper.canWalkThrough(bsi, positionToBreak.x, positionToBreak.y, positionToBreak.z, this.ctx.baritone().settings())) {
+            if (!MovementHelper.canWalkThrough(bsi, positionToBreak.x, positionToBreak.y, positionToBreak.z,
+                  this.ctx.baritone().settings())) {
                result.add(positionToBreak);
             }
          }
@@ -269,7 +283,8 @@ public abstract class Movement implements IMovement, MovementHelper {
       } else {
          List<BlockPos> result = new ArrayList<>();
          if (this.positionToPlace != null
-            && !MovementHelper.canWalkOn(bsi, this.positionToPlace.x, this.positionToPlace.y, this.positionToPlace.z, this.baritone.settings())) {
+               && !MovementHelper.canWalkOn(bsi, this.positionToPlace.x, this.positionToPlace.y, this.positionToPlace.z,
+                     this.baritone.settings())) {
             result.add(this.positionToPlace);
          }
 
