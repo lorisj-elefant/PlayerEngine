@@ -8,8 +8,8 @@ import com.player2.playerengine.player2api.utils.Utils;
 
 public class Prompts {
 
+  public static final String generalConversationReminder = "Remember to output valid JSON reponse with reason, command and message.";
   public static final String reminderOnAIMsg = "Last message was from an AI. Think about whether or not to respond. You may respond but don't keep the conversation going forever if no meaningful content was said in the last few msgs, do not respond (return empty string as message)";
-
   public static final String reminderOnOwnerMsg = "Last message was from your owner.";
   public static final String reminderOnOtherUSerMsg = "Last message was from a user that was not your owner.";
 
