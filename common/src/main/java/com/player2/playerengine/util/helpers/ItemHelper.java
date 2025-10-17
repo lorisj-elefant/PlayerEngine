@@ -3,6 +3,9 @@ package com.player2.playerengine.util.helpers;
 import java.util.Arrays;
 import java.util.stream.Stream;
 
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+
 import com.player2.playerengine.PlayerEngineController;
 import com.player2.playerengine.multiversion.BlockTagVer;
 import com.player2.playerengine.multiversion.item.ItemVer;
@@ -1055,4 +1058,15 @@ public class ItemHelper {
                   return this.planks == Items.CRIMSON_PLANKS || this.planks == Items.WARPED_PLANKS;
             }
       }
+
+      public static Optional<Item> fromString(String name) {
+            String itemKey = trimItemName(name);
+            ResourceLocation identifier = new ResourceLocation(itemKey);
+            if (BuiltInRegistries.ITEM.containsKey(identifier)) {
+                  return Optional.of((Item) BuiltInRegistries.ITEM.get(identifier));
+            } else {
+                  return Optional.empty();
+            }
+      }
+
 }

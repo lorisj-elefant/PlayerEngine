@@ -16,7 +16,7 @@ import com.player2.playerengine.commands.base.CommandExecutor;
 import com.player2.playerengine.control.InputControls;
 import com.player2.playerengine.control.PlayerExtraController;
 import com.player2.playerengine.control.SlotHandler;
-
+import com.player2.playerengine.util.FakePlayerManager;
 import com.player2.playerengine.player2api.manager.ConversationManager;
 import com.player2.playerengine.player2api.AIPersistantData;
 import com.player2.playerengine.player2api.Player2APIService;
@@ -87,6 +87,7 @@ public class PlayerEngineController {
    private Task storedTask;
    public boolean isStopping = false;
    private Player owner;
+   public FakePlayerManager copiedServerPlayer;
 
    public PlayerEngineController(IBaritone baritone, Character character, String player2GameId) {
       this.baritone = baritone;
@@ -141,6 +142,9 @@ public class PlayerEngineController {
       ConversationManager.getOrCreateEventQueueData(this);
       this.aiPersistantData = new AIPersistantData(this, character);
       this.player2apiService = new Player2APIService(this, player2GameId);
+      this.copiedServerPlayer = new FakePlayerManager(getWorld(),
+            this.getPlayer().getUUID(),
+            character.name());
    }
 
    public void serverTick() {
@@ -154,6 +158,7 @@ public class PlayerEngineController {
       this.inputControls.onTickPost();
       this.baritone.serverTick();
       this.player2apiService.trySendHeartbeat();
+      copiedServerPlayer.update(this);
    }
 
    static {
@@ -406,5 +411,10 @@ public class PlayerEngineController {
          float bdist = b.distanceTo(this.getEntity());
          return Float.compare(adist, bdist);
       }).findFirst();
+   }
+
+   public void logSignificantError(String err) {
+      LOGGER.info("Logging significant err={}", err);
+      ConversationManager.getOrCreateEventQueueData(this).addAltoclefLogMessage(err);
    }
 }

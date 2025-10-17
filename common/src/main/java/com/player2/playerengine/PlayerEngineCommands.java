@@ -24,6 +24,7 @@ import com.player2.playerengine.commands.StopCommand;
 import com.player2.playerengine.commands.random.ScanCommand;
 import com.player2.playerengine.commands.base.CommandException;
 import com.player2.playerengine.commands.SimpleExploreCommand;
+import com.player2.playerengine.commands.UseItemOnEntityCommand;
 
 public class PlayerEngineCommands {
    public static void init(PlayerEngineController controller) throws CommandException {
@@ -51,6 +52,7 @@ public class PlayerEngineCommands {
                   new SetAIBridgeEnabledCommand(),
                   new FarmCommand(),
                   new SimpleExploreCommand(),
+                  new UseItemOnEntityCommand(),
                   new FishCommand());
    }
 }
