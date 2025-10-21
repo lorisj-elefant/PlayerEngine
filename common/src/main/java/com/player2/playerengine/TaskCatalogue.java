@@ -353,7 +353,7 @@ public class TaskCatalogue {
       BiFunction<ItemHelper.WoodItems, Integer, ResourceTask> getTask,
       boolean requireNetherForNetherStuff
    ) {
-      return woodTasks(woodItem -> woodItem.prefix + "_" + woodItem.prefix, getMatch, getTask, requireNetherForNetherStuff);
+      return woodTasks(woodItem -> woodItem.prefix + "_" + baseName, getMatch, getTask, requireNetherForNetherStuff);
    }
 
    private static TaskCatalogue.CataloguedResource[] woodTasks(
