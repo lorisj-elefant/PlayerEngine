@@ -1,6 +1,5 @@
 package com.player2.playerengine.player2api.manager;
 
-
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -18,8 +17,9 @@ public class TTSManager {
     private static boolean TTSLocked = false;
     private static long estimatedEndTime = 0;
     private static final ExecutorService ttsThread = Executors.newSingleThreadExecutor();
+    public static boolean enabled = true;
 
-    public static ExecutorService getExecutor(){
+    public static ExecutorService getExecutor() {
         return ttsThread;
     }
 
@@ -33,6 +33,9 @@ public class TTSManager {
     }
 
     public static void TTS(String message, Character character, Player2APIService player2apiService) {
+        if (!enabled) {
+            return;
+        }
         TTSLocked = true;
         LOGGER.info("Locking TTS based on msg={}", message);
         estimatedEndTime = Long.MAX_VALUE;
