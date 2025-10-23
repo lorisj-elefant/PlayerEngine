@@ -11,23 +11,29 @@ import java.util.concurrent.CompletableFuture;
 
 @KeepName
 public final class PlayerEngineClient {
+   public static boolean enabledTTS = true;
+
    public static void onInitializeClient() {
       EntityRendererRegistry.register(PlayerEngine.FISHING_BOBBER, CustomFishingBobberRenderer::new);
 
-      NetworkManager.registerReceiver(NetworkManager.Side.S2C, new ResourceLocation("playerengine", "stream_tts"), (buf, context) -> {
-         String clientId = buf.readUtf();
-         String token = buf.readUtf();
-         String text = buf.readUtf();
-         double speed = buf.readDouble();
-         int voiceIdCount = buf.readVarInt();
-         String[] voiceIds = new String[voiceIdCount];
-         for (int i = 0; i < voiceIdCount; i++) {
-            voiceIds[i] = buf.readUtf();
-         }
+      NetworkManager.registerReceiver(NetworkManager.Side.S2C, new ResourceLocation("playerengine", "stream_tts"),
+            (buf, context) -> {
+               if (!enabledTTS) {
+                  return;
+               }
+               String clientId = buf.readUtf();
+               String token = buf.readUtf();
+               String text = buf.readUtf();
+               double speed = buf.readDouble();
+               int voiceIdCount = buf.readVarInt();
+               String[] voiceIds = new String[voiceIdCount];
+               for (int i = 0; i < voiceIdCount; i++) {
+                  voiceIds[i] = buf.readUtf();
+               }
 
-         CompletableFuture.runAsync(() -> {
-            AudioUtils.streamAudio(clientId, token, text, speed, voiceIds);
-         });
-      });
+               CompletableFuture.runAsync(() -> {
+                  AudioUtils.streamAudio(clientId, token, text, speed, voiceIds);
+               });
+            });
    }
 }
