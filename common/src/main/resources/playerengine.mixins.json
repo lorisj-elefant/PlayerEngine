@@ -7,8 +7,7 @@
     "maxShiftBy": 2,
     "defaultRequire": 1
   },
-  "client": [
-  ],
+  "client": [],
   "mixins": [
     "ClientBlockBreakMixin",
     "ClientConnectionAccessor",
@@ -27,6 +26,5 @@
     "baritone.MixinServerChunkManager",
     "baritone.MixinServerCommandSource",
     "baritone.MixinUtil"
-  ],
-  "refmap": "playerengine-common-common-refmap.json"
+  ]
 }
