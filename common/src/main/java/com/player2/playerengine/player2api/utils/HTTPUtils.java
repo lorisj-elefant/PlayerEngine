@@ -10,6 +10,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -19,11 +21,15 @@ import java.util.Map.Entry;
 
 public class HTTPUtils {
 
-
-    public static Map<String, JsonElement> sendRequest(String baseUrl, String endpoint, boolean postRequest, JsonObject requestBody,
-                                                       @Nullable Map<String, String> extraHeaders)
+    public static Map<String, JsonElement> sendRequest(String baseUrl, String endpoint, boolean postRequest,
+            JsonObject requestBody,
+            @Nullable Map<String, String> extraHeaders)
             throws Exception {
         URL url = new URI(baseUrl + endpoint).toURL();
+        // uncomment to enable proxy:
+        // Proxy proxy = new Proxy(Proxy.Type.HTTP, new
+        // InetSocketAddress("192.168.0.11", 3001));
+        // HttpURLConnection connection = (HttpURLConnection) url.openConnection(proxy);
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod(postRequest ? "POST" : "GET");
         connection.setRequestProperty("Content-Type", "application/json; charset=utf-8");
@@ -58,14 +64,17 @@ public class HTTPUtils {
         int responseCode = connection.getResponseCode();
 
         if (responseCode >= 400) {
-            BufferedReader errorReader = new BufferedReader(new InputStreamReader(connection.getErrorStream(), StandardCharsets.UTF_8));
+            BufferedReader errorReader = new BufferedReader(
+                    new InputStreamReader(connection.getErrorStream(), StandardCharsets.UTF_8));
             StringBuilder errorResponse = new StringBuilder();
             String line;
             while ((line = errorReader.readLine()) != null) {
                 errorResponse.append(line);
             }
             errorReader.close();
-            throw new HttpApiException("HTTP " + responseCode + ": " + connection.getResponseMessage() + " Body: " + errorResponse, responseCode);
+            throw new HttpApiException(
+                    "HTTP " + responseCode + ": " + connection.getResponseMessage() + " Body: " + errorResponse,
+                    responseCode);
         }
 
         if (responseCode != 200) {

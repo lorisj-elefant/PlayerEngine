@@ -11,7 +11,10 @@ import org.apache.logging.log4j.Logger;
 import com.player2.playerengine.PlayerEngineController;
 import com.player2.playerengine.commands.base.CommandExecutor;
 import com.player2.playerengine.tasks.LookAtOwnerTask;
+
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -59,12 +62,13 @@ public class AgentSideEffects {
         }
     }
 
-    public static void onError(MinecraftServer server, String errMsg) {
+    public static void onError(MinecraftServer server, String errMsg, ServerPlayer player) {
         LOGGER.error(errMsg);
+        broadcastErrorMsgToPlayer(server, errMsg, player);
     }
 
     public static void onCommandListGenerated(PlayerEngineController mod, String command,
-                                              Consumer<CommandExecutionStopReason> onStop) {
+            Consumer<CommandExecutionStopReason> onStop) {
         CommandExecutor cmdExecutor = mod.getCommandExecutor();
         String commandWithPrefix = cmdExecutor.isClientCommand(command) ? command
                 : (cmdExecutor.getCommandPrefix() + command);
@@ -110,6 +114,12 @@ public class AgentSideEffects {
 
     private static void broadcastChatToPlayer(MinecraftServer server, String message, ServerPlayer player) {
         player.displayClientMessage(Component.literal(message), false);
+    }
+
+    private static void broadcastErrorMsgToPlayer(MinecraftServer server, String message, ServerPlayer player) {
+        MutableComponent output = Component.literal(message);
+        output.setStyle(output.getStyle().applyFormat(ChatFormatting.RED));
+        player.displayClientMessage(output, false);
     }
 
 }
