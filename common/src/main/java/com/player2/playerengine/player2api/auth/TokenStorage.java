@@ -14,7 +14,7 @@ public class TokenStorage {
     private static final TokenStorage INSTANCE = new TokenStorage();
     private CompoundTag tokensStored = new CompoundTag();
 
-    private TokenStorage(){
+    private TokenStorage() {
         load();
     }
 
@@ -56,4 +56,5 @@ public class TokenStorage {
     private static TokenStorage getInstance() {
         return INSTANCE;
     }
+
 }

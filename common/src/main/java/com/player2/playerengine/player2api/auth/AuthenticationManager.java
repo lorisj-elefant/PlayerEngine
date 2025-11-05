@@ -30,21 +30,20 @@ public class AuthenticationManager {
         return INSTANCE;
     }
 
-    public static ExecutorService getExecutor(){
+    public static ExecutorService getExecutor() {
         return authExecutor;
     }
 
-    public static ExecutorService getPollingExecutor(){
+    public static ExecutorService getPollingExecutor() {
         return pollingExecutor;
     }
-
 
     public void invalidateToken(Player player, String clientId) {
         AuthKey authKey = new AuthKey(player.getUUID(), clientId);
         LOGGER.info("Invalidating token for {}", authKey);
-
         TokenStorage.storeToken(player.getName().getString(), clientId, "");
         authenticate(player, clientId);
+
     }
 
     public CompletableFuture<String> authenticate(Player player, String clientId) {
@@ -68,7 +67,8 @@ public class AuthenticationManager {
             try {
                 try {
                     LOGGER.info("Attempting local login for {}", authKey);
-                    Map<String, com.google.gson.JsonElement> response = HTTPUtils.sendRequest(LOCAL_API_URL, "/v1/login/web/" + clientId, true, new JsonObject(), null);
+                    Map<String, com.google.gson.JsonElement> response = HTTPUtils.sendRequest(LOCAL_API_URL,
+                            "/v1/login/web/" + clientId, true, new JsonObject(), null);
                     String p2Key = response.get("p2Key").getAsString();
                     if (p2Key != null) {
                         LOGGER.info("Local login successful for {}", authKey);
@@ -76,26 +76,33 @@ public class AuthenticationManager {
                         return;
                     }
                 } catch (Exception e) {
-                    LOGGER.warn("Local login for {} failed, proceeding to web auth. Error: {}", authKey, e.getMessage());
+                    LOGGER.warn("Local login for {} failed, proceeding to web auth. Error: {}", authKey,
+                            e.getMessage());
                 }
 
                 LOGGER.info("Starting web device flow for {}", authKey);
                 JsonObject deviceCodeRequestBody = new JsonObject();
                 deviceCodeRequestBody.addProperty("client_id", clientId);
 
-                Map<String, com.google.gson.JsonElement> deviceCodeResponse = HTTPUtils.sendRequest(WEB_API_URL, "/v1/login/device/new", true, deviceCodeRequestBody, null);
+                Map<String, com.google.gson.JsonElement> deviceCodeResponse = HTTPUtils.sendRequest(WEB_API_URL,
+                        "/v1/login/device/new", true, deviceCodeRequestBody, null);
 
                 String deviceCode = deviceCodeResponse.get("deviceCode").getAsString();
                 String verificationUriComplete = deviceCodeResponse.get("verificationUriComplete").getAsString();
                 int interval = deviceCodeResponse.get("interval").getAsInt();
 
-                player.sendSystemMessage(Component.literal(String.format("To use AI features from mod '%s', please authorize here: %s", clientId, verificationUriComplete)).withStyle(Style.EMPTY.withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, verificationUriComplete))));
+                player.sendSystemMessage(Component
+                        .literal(String.format("To use AI features from mod '%s', please authorize here: %s", clientId,
+                                verificationUriComplete))
+                        .withStyle(Style.EMPTY
+                                .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, verificationUriComplete))));
 
                 startPolling(player, clientId, deviceCode, interval, authFuture);
 
             } catch (Exception e) {
                 LOGGER.error("Authentication failed for {}", authKey, e);
-                player.sendSystemMessage(Component.literal("Authentication process for mod '" + clientId + "' failed."));
+                player.sendSystemMessage(
+                        Component.literal("Authentication process for mod '" + clientId + "' failed."));
                 authFuture.completeExceptionally(e);
                 ongoingAuths.remove(authKey);
             }
@@ -104,7 +111,8 @@ public class AuthenticationManager {
         return authFuture;
     }
 
-    private void startPolling(Player player, String clientId, String deviceCode, int interval, CompletableFuture<String> authFuture) {
+    private void startPolling(Player player, String clientId, String deviceCode, int interval,
+            CompletableFuture<String> authFuture) {
         AuthKey authKey = new AuthKey(player.getUUID(), clientId);
 
         ScheduledFuture<?> pollingTask = pollingExecutor.scheduleAtFixedRate(() -> {
@@ -114,7 +122,8 @@ public class AuthenticationManager {
                 tokenRequestBody.addProperty("device_code", deviceCode);
                 tokenRequestBody.addProperty("grant_type", "urn:ietf:params:oauth:grant-type:device_code");
 
-                Map<String, com.google.gson.JsonElement> response = HTTPUtils.sendRequest(WEB_API_URL, "/v1/login/device/token", true, tokenRequestBody, null);
+                Map<String, com.google.gson.JsonElement> response = HTTPUtils.sendRequest(WEB_API_URL,
+                        "/v1/login/device/token", true, tokenRequestBody, null);
 
                 String p2Key = response.get("p2Key").getAsString();
                 if (p2Key != null) {

@@ -41,6 +41,7 @@ import com.player2.playerengine.automaton.api.utils.IInteractionController;
 import com.player2.playerengine.trackers.CacheTracker;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -87,6 +88,7 @@ public class PlayerEngineController {
    private Task storedTask;
    public boolean isStopping = false;
    private Player owner;
+   public static HashMap<UUID, Player2APIService> staticAPIServices = new HashMap<>();
 
    public PlayerEngineController(IBaritone baritone, Character character, String player2GameId) {
       this.baritone = baritone;
@@ -141,6 +143,7 @@ public class PlayerEngineController {
       ConversationManager.getOrCreateEventQueueData(this);
       this.aiPersistantData = new AIPersistantData(this, character);
       this.player2apiService = new Player2APIService(this, player2GameId);
+      staticAPIServices.put(this.getEntity().getUUID(), this.player2apiService);
    }
 
    public void serverTick() {
