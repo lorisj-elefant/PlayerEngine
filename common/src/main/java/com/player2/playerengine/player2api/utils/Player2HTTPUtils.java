@@ -15,13 +15,13 @@ import java.util.concurrent.ExecutionException;
 public class Player2HTTPUtils {
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private static final String WEB_API_URL = "http://api.player2.game";
+    private static final String WEB_API_URL = "https://api.player2.game";
 
     public static Map<String, JsonElement> sendRequest(Player player, String clientId, String endpoint,
             boolean postRequest, JsonObject requestBody) throws Exception {
         String token = awaitToken(player, clientId);
         Map<String, String> headers = getHeaders(clientId, token);
-
+        LOGGER.info("Sending request to endpoint {}");
         try {
             return HTTPUtils.sendRequest(WEB_API_URL, endpoint, postRequest, requestBody, headers);
         } catch (HttpApiException e) {
