@@ -4,12 +4,13 @@ import com.google.common.base.Suppliers;
 import com.player2.playerengine.automaton.KeepName;
 import com.player2.playerengine.automaton.command.defaults.DefaultCommands;
 import com.player2.playerengine.automaton.entity.CustomFishingBobberEntity;
+import com.player2.playerengine.player2api.auth.TokenStorage;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
-
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.Registrar;
 import dev.architectury.registry.registries.RegistrarManager;
@@ -22,8 +23,9 @@ import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.item.Item;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
+import net.minecraft.server.level.ServerPlayer;
 import dev.architectury.networking.NetworkManager;
+import io.netty.buffer.Unpooled;
 
 @KeepName
 public final class PlayerEngine {
@@ -61,10 +63,16 @@ public final class PlayerEngine {
       DefaultCommands.registerAll();
       ENTITY_TYPES.register();
       NetworkManager.registerReceiver(NetworkManager.Side.C2S,
-            ResourceLocation.fromNamespaceAndPath("playerengine", "request_tts"),
+            ResourceLocation.fromNamespaceAndPath("playerengine", "request_stt"),
             (buf, context) -> {
+               String clientId = buf.readUtf();
                String username = context.getPlayer().getName().getString();
                String storedToken = TokenStorage.getToken(username, clientId);
+               RegistryFriendlyByteBuf buf2 = new RegistryFriendlyByteBuf(Unpooled.buffer(),
+                     context.getPlayer().registryAccess());
+               buf2.writeUtf(storedToken);
+               ((ServerPlayer) context.getPlayer()).connection.send(NetworkManager.toPacket(NetworkManager.Side.S2C,
+                     ResourceLocation.fromNamespaceAndPath("playerengine", "response_stt"), buf2));
             });
    }
 

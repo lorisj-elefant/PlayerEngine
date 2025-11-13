@@ -4,6 +4,7 @@ package com.player2.playerengine.player2api.utils;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.net.URI;
 import java.net.http.WebSocket;
 
 import javax.sound.sampled.AudioFormat;
@@ -27,6 +28,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import dev.architectury.networking.NetworkManager;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import io.netty.buffer.Unpooled;
+import net.minecraft.resources.ResourceLocation;
 
 public class STTUtils {
     public static final Logger LOGGER = LogManager.getLogger();
@@ -37,6 +41,7 @@ public class STTUtils {
     private static TargetDataLine line;
     private static int chunkCount = 0;
     private static WebSocketUtils wsutils;
+    private static String clientId;
 
     // audio format:
     private static final float SAMPLE_RATE = 16000f;
@@ -78,8 +83,9 @@ public class STTUtils {
     }
 
     // this is called externally when STT is active (i.e. keybind):
-    public static void setIsListening(boolean v) {
+    public static void setIsListening(boolean v, String clientId) {
         isListening = v;
+        STTUtils.clientId = clientId;
         if (isListening) {
             startRecordingIfNeeded();
         } else {
@@ -241,42 +247,49 @@ public class STTUtils {
     }
 
     public static void connect(String token) {
-        wsutils = new WebSocketUtils();
-        wsutils.connect("wss://api.player2.game", token);
-        wsutils.registerHandler("session", (obj) -> {
-            LOGGER.info("WSM: session: {}", obj);
-        });
-        wsutils.registerHandler("open", (obj) -> {
-            LOGGER.info("WSM: open: {}", obj);
-        });
-        wsutils.registerHandler("messsage", (obj) -> {
-            LOGGER.info("WSM: message: {}", obj);
-        });
-        wsutils.registerHandler("speech_started", (obj) -> {
-            LOGGER.info("WSM: speech_started: {}", obj);
-        });
-        wsutils.registerHandler("utterance_end", (obj) -> {
-            LOGGER.info("WSM: utternace_end: {}", obj);
-        });
+        try {
 
-        wsutils.registerHandler("close", (obj) -> {
-            LOGGER.info("WSM: close: {}", obj);
-            wsutils = null;
-        });
+            wsutils = new WebSocketUtils();
+            wsutils.connect(new URI("wss://api.player2.game"), token);
+            wsutils.registerHandler("session", (obj) -> {
+                LOGGER.info("WSM: session: {}", obj);
+            });
+            wsutils.registerHandler("open", (obj) -> {
+                LOGGER.info("WSM: open: {}", obj);
+            });
+            wsutils.registerHandler("messsage", (obj) -> {
+                LOGGER.info("WSM: message: {}", obj);
+            });
+            wsutils.registerHandler("speech_started", (obj) -> {
+                LOGGER.info("WSM: speech_started: {}", obj);
+            });
+            wsutils.registerHandler("utterance_end", (obj) -> {
+                LOGGER.info("WSM: utternace_end: {}", obj);
+            });
 
-        wsutils.registerHandler("error", (obj) -> {
-            LOGGER.info("WSM: error: {}", obj);
-        });
+            wsutils.registerHandler("close", (obj) -> {
+                LOGGER.info("WSM: close: {}", obj);
+                wsutils = null;
+            });
+
+            wsutils.registerHandler("error", (obj) -> {
+                LOGGER.info("WSM: error: {}", obj);
+            });
+        } catch (Exception e) {
+            LOGGER.error(e);
+        }
     }
 
     public void send() {
         if (wsutils == null) {
+            RegistryFriendlyByteBuf buf = new RegistryFriendlyByteBuf(Unpooled.buffer(),
+                    Minecraft.getInstance().player.registryAccess());
+            buf.writeUtf(clientId);
             Minecraft.getInstance().getConnection().send(
                     NetworkManager.toPacket(
                             NetworkManager.Side.C2S,
-                            ResourceLocation.fromNamespaceAndPath("playerengine", "request_tts"),
-                            null));
-            connect();
+                            ResourceLocation.fromNamespaceAndPath("playerengine", "request_stt"),
+                            buf));
         }
     }
 }

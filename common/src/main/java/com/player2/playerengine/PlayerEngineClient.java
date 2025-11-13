@@ -42,6 +42,15 @@ public final class PlayerEngineClient {
                String token = buf.readUtf();
                STTUtils.connect(token);
             });
+      NetworkManager.registerReceiver(NetworkManager.Side.S2C,
+            ResourceLocation.fromNamespaceAndPath("playerengine", "response_stt"),
+            (buf, context) -> {
+               String token = buf.readUtf();
+               if (token == null || token.isEmpty()) {
+                  return;
+               }
+               STTUtils.connect(token);
+            });
    }
 
 }
