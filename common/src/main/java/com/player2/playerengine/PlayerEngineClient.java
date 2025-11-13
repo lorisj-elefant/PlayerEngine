@@ -3,6 +3,8 @@ package com.player2.playerengine;
 import com.player2.playerengine.player2api.utils.AudioUtils;
 import com.player2.playerengine.automaton.KeepName;
 import com.player2.playerengine.automaton.client.CustomFishingBobberRenderer;
+import com.player2.playerengine.player2api.utils.STTUtils;
+
 import dev.architectury.networking.NetworkManager;
 import dev.architectury.registry.client.level.entity.EntityRendererRegistry;
 import net.minecraft.resources.ResourceLocation;
@@ -15,7 +17,7 @@ public final class PlayerEngineClient {
 
    public static void onInitializeClient() {
       EntityRendererRegistry.register(PlayerEngine.FISHING_BOBBER, CustomFishingBobberRenderer::new);
-
+      STTUtils.onInitialize();
       NetworkManager.registerReceiver(NetworkManager.Side.S2C,
             ResourceLocation.fromNamespaceAndPath("playerengine", "stream_tts"), (buf, context) -> {
                if (!enabledTTS) {
@@ -35,5 +37,11 @@ public final class PlayerEngineClient {
                   AudioUtils.streamAudio(clientId, token, text, speed, voiceIds);
                });
             });
+      NetworkManager.registerReceiver(NetworkManager.Side.S2C,
+            ResourceLocation.fromNamespaceAndPath("playerengine", "STT_get_token"), (buf, context) -> {
+               String token = buf.readUtf();
+               STTUtils.connect(token);
+            });
    }
+
 }
