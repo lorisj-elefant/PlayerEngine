@@ -32,7 +32,7 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import io.netty.buffer.Unpooled;
 import net.minecraft.resources.ResourceLocation;
 
-public class STTUtils {
+public class STTUtilsWebSocket {
     public static final Logger LOGGER = LogManager.getLogger();
 
     // state:
@@ -49,6 +49,23 @@ public class STTUtils {
     private static final int CHANNELS = 1;
     private static final AudioFormat AUDIO_FORMAT = new AudioFormat(SAMPLE_RATE, SAMPLE_SIZE_BITS, CHANNELS, true,
             false);
+
+    // chunk format (50ms audio, will be amount of audio sent per websocket event)
+    private static final int CHUNK_MS = 50;
+    private static final int FRAME_SIZE = AUDIO_FORMAT.getFrameSize(); // bytes per frame (2 for 16 bit mono)
+    private static final int SAMPLES_PER_CHUNK = (int) (SAMPLE_RATE * (CHUNK_MS / 1000.0));
+    private static final int BYTES_PER_CHUNK = SAMPLES_PER_CHUNK * FRAME_SIZE;
+    // accumulator for partial reads:
+    private static final byte[] accumulateBuffer50ms = new byte[BYTES_PER_CHUNK];
+    // how many bytes currently in accumulate buffer
+    private static int accumulatePos = 0;
+
+    // bounded queue for chunks awaiting upload:
+    private static final int QUEUE_CAPACITY = 256; // tune for your app: 256 * 1600 ≈ 400 KB
+    private static final BlockingQueue<byte[]> CHUNK_QUEUE = new LinkedBlockingQueue<>(QUEUE_CAPACITY);
+
+    // executor for sending chunks asynchronously
+    private static final ExecutorService SENDER_POOL = Executors.newFixedThreadPool(2);
 
     public static void update() {
 

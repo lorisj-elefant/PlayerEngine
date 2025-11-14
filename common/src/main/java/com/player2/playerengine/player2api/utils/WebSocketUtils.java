@@ -10,7 +10,7 @@ import java.net.http.WebSocket;
 import java.util.Map;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
-
+import java.nio.ByteBuffer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -71,11 +71,29 @@ public class WebSocketUtils {
                 });
     }
 
-    public boolean sendMsg(JsonObject obj) {
-        if (ws == null)
+    public boolean sendBinary(byte[] toSend) {
+        WebSocket local = ws;
+        if (local == null)
             return false;
-        ws.sendText(obj.toString(), true);
+
+        ByteBuffer buffer = ByteBuffer.wrap(toSend);
+
+        local.sendBinary(buffer, true);
         return true;
     }
 
+    public boolean sendMsg(JsonObject obj) {
+        WebSocket local = ws;
+        if (local == null)
+            return false;
+        local.sendText(obj.toString(), true);
+        return true;
+    }
+
+    public boolean isConnected() {
+        WebSocket local = ws;
+        if (local == null)
+            return false;
+        return !local.isInputClosed() && !local.isOutputClosed();
+    }
 }

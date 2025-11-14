@@ -9,10 +9,13 @@ import dev.architectury.networking.NetworkManager;
 import dev.architectury.registry.client.level.entity.EntityRendererRegistry;
 import net.minecraft.resources.ResourceLocation;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import java.util.concurrent.CompletableFuture;
 
 @KeepName
 public final class PlayerEngineClient {
+   public static final Logger LOGGER = LogManager.getLogger(PlayerEngine.MOD_NAME);
    public static boolean enabledTTS = true;
 
    public static void onInitializeClient() {
@@ -38,14 +41,11 @@ public final class PlayerEngineClient {
                });
             });
       NetworkManager.registerReceiver(NetworkManager.Side.S2C,
-            ResourceLocation.fromNamespaceAndPath("playerengine", "STT_get_token"), (buf, context) -> {
-               String token = buf.readUtf();
-               STTUtils.connect(token);
-            });
-      NetworkManager.registerReceiver(NetworkManager.Side.S2C,
             ResourceLocation.fromNamespaceAndPath("playerengine", "response_stt"),
             (buf, context) -> {
                String token = buf.readUtf();
+               LOGGER.info("Client: Recieved packet response_stt token from server isNullOrEmpty={}",
+                     token == null || token.isEmpty());
                if (token == null || token.isEmpty()) {
                   return;
                }
