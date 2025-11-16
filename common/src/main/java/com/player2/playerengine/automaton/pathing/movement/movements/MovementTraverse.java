@@ -439,6 +439,7 @@ public class MovementTraverse extends Movement {
                   )
                )
                .setInput(Input.CLICK_RIGHT, true);
+             ((DoorBlock)bs.getBlock()).setOpen(null, ctx.world(), bs, dest, true);
             return true;
          }
       } else if (bs.getBlock() instanceof FenceGateBlock) {
