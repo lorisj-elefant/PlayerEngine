@@ -1,10 +1,13 @@
 package com.player2.playerengine;
 
+import com.player2.playerengine.player2api.AgentSideEffects;
 import com.google.common.base.Suppliers;
 import com.player2.playerengine.automaton.KeepName;
 import com.player2.playerengine.automaton.command.defaults.DefaultCommands;
 import com.player2.playerengine.automaton.entity.CustomFishingBobberEntity;
 import com.player2.playerengine.player2api.auth.TokenStorage;
+import com.player2.playerengine.player2api.manager.ConversationManager;
+import com.player2.playerengine.player2api.Event;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -62,6 +65,17 @@ public final class PlayerEngine {
       public static void onInitialize() {
             DefaultCommands.registerAll();
             ENTITY_TYPES.register();
+
+            NetworkManager.registerReceiver(NetworkManager.Side.C2S,
+                        ResourceLocation.fromNamespaceAndPath("playerengine", "user_message"),
+                        (buf, context) -> {
+                              LOGGER.info("Server: Recieved user_message packet");
+                              String username = context.getPlayer().getName().getString();
+                              String message = buf.readUtf();
+                              ConversationManager.onUserChatMessage(new Event.UserMessage(message, username));
+                              AgentSideEffects.broadcastChatToAllPlayers(context.getPlayer().getServer(),
+                                          String.format("<%s> %s", context.getPlayer().getName().getString(), message));
+                        });
             NetworkManager.registerReceiver(NetworkManager.Side.C2S,
                         ResourceLocation.fromNamespaceAndPath("playerengine", "request_stt"),
                         (buf, context) -> {

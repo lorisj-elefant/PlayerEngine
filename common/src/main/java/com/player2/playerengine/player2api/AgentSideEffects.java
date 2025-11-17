@@ -64,7 +64,7 @@ public class AgentSideEffects {
     }
 
     public static void onCommandListGenerated(PlayerEngineController mod, String command,
-                                              Consumer<CommandExecutionStopReason> onStop) {
+            Consumer<CommandExecutionStopReason> onStop) {
         CommandExecutor cmdExecutor = mod.getCommandExecutor();
         String commandWithPrefix = cmdExecutor.isClientCommand(command) ? command
                 : (cmdExecutor.getCommandPrefix() + command);
@@ -110,6 +110,13 @@ public class AgentSideEffects {
 
     private static void broadcastChatToPlayer(MinecraftServer server, String message, ServerPlayer player) {
         player.displayClientMessage(Component.literal(message), false);
+    }
+
+    public static void broadcastChatToAllPlayers(MinecraftServer server, String message) {
+
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            broadcastChatToPlayer(server, message, player);
+        }
     }
 
 }

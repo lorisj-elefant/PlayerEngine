@@ -1,26 +1,17 @@
 
 package com.player2.playerengine.player2api.utils;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.net.URI;
-import java.net.http.WebSocket;
-
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.DataLine;
-import javax.sound.sampled.SourceDataLine;
-import javax.sound.sampled.TargetDataLine;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import net.minecraft.client.Minecraft;
-
-import java.io.ByteArrayInputStream;
-import javax.sound.sampled.AudioFileFormat;
-
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
+import java.time.Duration;
+import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -32,16 +23,30 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import io.netty.buffer.Unpooled;
 import net.minecraft.resources.ResourceLocation;
 
+import net.minecraft.client.Minecraft;
+import javax.sound.sampled.AudioFileFormat;
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.TargetDataLine;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 public class STTUtils {
     public static final Logger LOGGER = LogManager.getLogger();
+
+    private static final ExecutorService sttThread = Executors.newSingleThreadExecutor();
 
     // state:
     public static volatile boolean isListening = false;
     private static volatile boolean recordingThreadRunning = false;
     private static TargetDataLine line;
-    private static int chunkCount = 0;
-    private static WebSocketUtils wsutils;
-    private static String clientId;
+    public static String clientId;
+    private static ByteArrayOutputStream buffer;
 
     // audio format:
     private static final float SAMPLE_RATE = 16000f;
@@ -49,9 +54,21 @@ public class STTUtils {
     private static final int CHANNELS = 1;
     private static final AudioFormat AUDIO_FORMAT = new AudioFormat(SAMPLE_RATE, SAMPLE_SIZE_BITS, CHANNELS, true,
             false);
+    private static final int BYTES_PER_FRAME = AUDIO_FORMAT.getFrameSize(); // (2 for 16 bit mono)
+
+    // queue for outgoing wav audio blobs
+    private static final BlockingQueue<byte[]> audioQueue = new LinkedBlockingQueue<>();
+
+    // current token used for sending; guarded by sttThread tasks (single-threaded)
+    private static volatile String currentToken = null;
+
+    // HTTP client shared
+    private static final HttpClient HTTP = HttpClient.newHttpClient();
+
+    // API base — change to actual host
+    private static final String API_BASE = "https://api.player2.game/v1/stt/audio";
 
     public static void update() {
-
     }
 
     // called on mod init
@@ -65,150 +82,80 @@ public class STTUtils {
         }
     }
 
-    // this is called externally when STT is active (i.e. keybind):
+    // called externally when STT is active (i.e. keybind):
     public static void setIsListening(boolean v, String clientId) {
         isListening = v;
         STTUtils.clientId = clientId;
         if (isListening) {
-            startRecordingIfNeeded();
-            initWS();
+            startRecording();
+            initToken();
         } else {
-            stopRecording();
+            // if you want to immediately stop and flush, you can call connect(...)
+            // externally
+            // or rely on your other code to call connect when a token is available.
         }
     }
 
-    private static void startRecordingIfNeeded() {
-        if (recordingThreadRunning)
+    private static synchronized void startRecording() {
+        if (recordingThreadRunning) {
             return;
+        }
         if (line == null) {
             LOGGER.error("Audio line not initialized. Call onInitialize() first.");
             return;
         }
-        LOGGER.info("STT: Starting recording");
         recordingThreadRunning = true;
-        line.start();
-        LOGGER.info("STT: line started");
-
-        // producer thread: records audio chunks using line
-        Thread producer = new Thread(STTUtils::recordLoop, "STT-Audio-Producer");
-        producer.setDaemon(true);
-        producer.start();
-
-        // consumer thread: relays chunks to sender pool
-        Thread consumer = new Thread(STTUtils::consumeLoop, "STT-Chunk-Consumer");
-        consumer.setDaemon(true);
-        consumer.start();
-
-        LOGGER.info("STT/startRecordingIfNeeded: consumer/producer started.");
-    }
-
-    private static void recordLoop() {
-        byte[] rawReadBuffer = new byte[4096]; // at 16000 sample rate, 16 bit mono, 2 bytes per sample => 32k bytes/
-                                               // sec => 4096 bytes => 128 ms, which is >50ms
-        try {
-            while (isListening && line != null && line.isOpen()) {
-                // note: should block until at least 1 frame availible
-                int numBytesRecorded = line.read(rawReadBuffer, 0, rawReadBuffer.length);
-
-                if (numBytesRecorded <= 0)
-                    continue;
-
-                // if got >50ms split into 50ms chunks and add to queue
-                int offset = 0;
-                while (offset < numBytesRecorded) {
-                    int need = BYTES_PER_CHUNK - accumulatePos;
-                    int numBytesToCopy = Math.min(need, numBytesRecorded - offset);
-                    System.arraycopy(rawReadBuffer, offset, accumulateBuffer50ms, accumulatePos, numBytesToCopy);
-                    accumulatePos += numBytesToCopy;
-                    offset += numBytesToCopy;
-
-                    if (accumulatePos >= BYTES_PER_CHUNK) {
-                        // if 50ms chunk ready, queue it and reset accumulateBuffer50ms
-                        byte[] chunk = new byte[BYTES_PER_CHUNK];
-                        System.arraycopy(accumulateBuffer50ms, 0, chunk, 0, BYTES_PER_CHUNK);
-                        boolean queued = CHUNK_QUEUE.offer(chunk);
-                        if (!queued) {
-                            // queue full, drop oldest
-                            LOGGER.warn("STT recordLoop: Chunk queue full. Dropping oldest chunk");
-                            CHUNK_QUEUE.poll();
-                            CHUNK_QUEUE.offer(chunk);
-                        }
-                        // reset accumulator
-                        accumulatePos = 0;
-                    }
+        sttThread.execute(() -> {
+            line.start();
+            buffer = new ByteArrayOutputStream();
+            byte[] chunk = new byte[4096];
+            while (isListening && line != null) {
+                int read = line.read(chunk, 0, chunk.length);
+                if (read > 0) {
+                    LOGGER.info("STT-read {}", read);
+                    buffer.write(chunk, 0, read);
                 }
             }
-        } catch (Exception e) {
-            LOGGER.error(e.getStackTrace());
-        } finally {
-            // process final partial chunk
-            if (accumulatePos > 0) {
-                LOGGER.info("STT: processing remaining final chunk after stoping recording");
-                byte[] last = new byte[accumulatePos];
-                System.arraycopy(accumulateBuffer50ms, 0, last, 0, accumulatePos);
-                boolean queued = CHUNK_QUEUE.offer(last);
-                if (!queued) {
-                    LOGGER.warn("STT: queue full, dropping last partial chunk");
-                }
-                accumulatePos = 0;
-            }
-            recordingThreadRunning = false;
+
             try {
-                if (line != null)
-                    line.stop();
-            } catch (Exception ignored) {
-            }
-            LOGGER.info("STT: recording thread exiting");
-        }
-    }
-
-    private static void dispatchChunk(byte[] pcmChunk) {
-        SENDER_POOL.submit(() -> {
-            try {
-                ByteArrayInputStream bais = new ByteArrayInputStream(pcmChunk);
-                AudioInputStream ais = new AudioInputStream(bais, AUDIO_FORMAT, SAMPLES_PER_CHUNK);
-
-                File wavOut = new File(String.format("recorded(%d).wav", chunkCount));
-                chunkCount++;
-                AudioSystem.write(ais, AudioFileFormat.Type.WAVE, wavOut);
-
-                // byte[] wav = AudioUtils.pcmToWav(pcm, (int) sampleRate, channels,
-                // sampleSizeInBits);
-                // try (FileOutputStream fos = new FileOutputStream(wavOut)) {
-                // fos.write(wav);
-                // }
-
-                LOGGER.info("WAV saved at: " + wavOut.getAbsolutePath());
-
-                sendChunkToApi(pcmChunk);
+                line.stop();
             } catch (Exception e) {
-                LOGGER.error("Failed to dispatch chunk", e);
+                LOGGER.info("STT: failed to stop line");
+            }
+
+            try {
+                // Convert the raw PCM bytes in buffer to a WAV byte[] (in-memory)
+                byte[] pcm = buffer.toByteArray();
+
+                ByteArrayInputStream bais = new ByteArrayInputStream(pcm);
+                AudioInputStream ais = new AudioInputStream(bais, AUDIO_FORMAT, pcm.length / BYTES_PER_FRAME);
+
+                // Write WAV to a ByteArrayOutputStream so we can post the bytes directly
+                ByteArrayOutputStream wavOutBaos = new ByteArrayOutputStream();
+                AudioSystem.write(ais, AudioFileFormat.Type.WAVE, wavOutBaos);
+                byte[] wavBytes = wavOutBaos.toByteArray();
+
+                // OPTIONAL: still write local file for debugging (comment out if not needed)
+                try {
+                    File wavFile = new File("recorded.wav");
+                    try (FileOutputStream fos = new FileOutputStream(wavFile)) {
+                        fos.write(wavBytes);
+                    }
+                    LOGGER.info("WAV saved at: " + wavFile.getAbsolutePath());
+                } catch (Exception e) {
+                    LOGGER.warn("Failed to write local WAV file (non-fatal): {}", e.toString());
+                }
+
+                // Instead of sending immediately (we might not have a token now),
+                // enqueue WAV bytes. The sendToApi method will enqueue if token==null.
+                sendToApi(wavBytes, null);
+            } catch (Exception e) {
+                LOGGER.error("STT: Failed creating wav bytes", e);
+            } finally {
+                LOGGER.info("STT: Recording thread exiting");
+                recordingThreadRunning = false;
             }
         });
-    }
-
-    private static void stopRecording() {
-        if (isListening) {
-            LOGGER.info("Stop requested; waiting for producer/consumer to finish");
-        }
-        isListening = false;
-    }
-
-    private static void consumeLoop() {
-        try {
-            while (isListening || (!CHUNK_QUEUE.isEmpty() && wsutils != null)) {
-                byte[] chunk = CHUNK_QUEUE.poll(200, TimeUnit.MILLISECONDS);
-                if (chunk == null)
-                    continue;
-                final byte[] toSend = chunk;
-                dispatchChunk(toSend);
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            LOGGER.info("STT: consumer interrupted", e);
-        } finally {
-            LOGGER.info("STT: consumer thread exiting");
-        }
     }
 
     public static void shutdown() {
@@ -220,74 +167,185 @@ public class STTUtils {
             }
         } catch (Exception ignored) {
         }
-        SENDER_POOL.shutdown();
-        try {
-            if (!SENDER_POOL.awaitTermination(2, TimeUnit.SECONDS)) {
-                SENDER_POOL.shutdownNow();
-            }
-        } catch (InterruptedException e) {
-            SENDER_POOL.shutdownNow();
-            Thread.currentThread().interrupt();
-        }
+        sttThread.shutdownNow();
         LOGGER.info("STTUtils shutdown complete.");
     }
 
-    private static void sendChunkToApi(byte[] pcmChunk) {
-        LOGGER.info("Sending pcm chunk to ws");
-        wsutils.sendBinary(pcmChunk);
+    /**
+     * Called externally when you have a token and want to connect/send queued
+     * audio.
+     * This will set the current token and attempt to flush the queue immediately
+     * (done on the sttThread).
+     */
+    public static void connect(String token) {
+        if (token == null) {
+            LOGGER.warn("connect called with null token; ignoring.");
+            return;
+        }
+        // set token and flush queue on sttThread to avoid races
+        sttThread.execute(() -> {
+            currentToken = token;
+            flushQueue();
+        });
     }
 
-    public static synchronized void connect(String token) {
+    /**
+     * Enqueue or send WAV bytes to API.
+     *
+     * Behavior:
+     * - If token is null -> enqueue the wav bytes for later sending (by connect()).
+     * - If token is provided -> attempt to send immediately (and also flush any
+     * queued items first).
+     *
+     * Note: This method will run sending work on sttThread to keep ordering and
+     * avoid concurrency issues.
+     */
+    public static void sendToApi(byte[] wavAudio, String token) {
+        if (wavAudio == null || wavAudio.length == 0) {
+            LOGGER.warn("sendToApi called with empty wavAudio");
+            return;
+        }
+
+        // If caller provided a token, we will send immediately (but do all work on
+        // sttThread).
+        if (token != null) {
+            sttThread.execute(() -> {
+                // adopt token as currentToken for this session
+                currentToken = token;
+                // make sure queued items (if any) are sent before this one to preserve order
+                flushQueue();
+                Optional<String> result = doHttpPost(wavAudio, currentToken);
+                if (result.isEmpty()) {
+                    // re-enqueue for retry later
+                    boolean offered = audioQueue.offer(wavAudio);
+                    LOGGER.warn("Failed to send immediate wav; requeued: {}", offered);
+                } else {
+                    String msg = result.get();
+                    if (!msg.isBlank()) {
+                        onSTTMessageGenerated(msg);
+                    }
+                }
+            });
+            return;
+        }
+
+        // No token provided -> just queue for later
+        boolean offered = audioQueue.offer(wavAudio);
+        if (!offered) {
+            LOGGER.error("Failed to enqueue wavAudio (queue.offer returned false)");
+        } else {
+            LOGGER.info("Enqueued wavAudio for later sending. queueSize={}", audioQueue.size());
+        }
+    }
+
+    /**
+     * Flush queue (send all queued items). Runs on sttThread.
+     */
+    private static void flushQueue() {
+        if (currentToken == null) {
+            LOGGER.info("No token available; will not flush queue.");
+            return;
+        }
+        LOGGER.info("Flushing audio queue (size={})", audioQueue.size());
+        byte[] item;
+        while ((item = audioQueue.poll()) != null) {
+            Optional<String> result = doHttpPost(item, currentToken);
+            if (result.isEmpty()) {
+                // if send failed, try to requeue (to the head would be ideal, but
+                // LinkedBlockingQueue doesn't have addFirst)
+                // we'll re-offer and stop processing to avoid spinning and losing ordering
+                boolean requeued = audioQueue.offer(item);
+                LOGGER.warn("Failed to send queued audio; requeued: {}", requeued);
+                break; // stop flushing now, try later when connect() called again
+            } else {
+                String msg = result.get();
+                if (!msg.isBlank()) {
+                    onSTTMessageGenerated(msg);
+                }
+            }
+        }
+    }
+
+    /**
+     * Performs the actual HTTP POST to the API. Returns true if a successful 2xx
+     * response was received.
+     * This is synchronous and must be called from sttThread to avoid blocking other
+     * threads.
+     */
+    private static Optional<String> doHttpPost(byte[] wavBytes, String token) {
         try {
-            if (wsutils != null && wsutils.isConnected()) {
-                // if ws connection is valid dont try t oconnect again
-                return;
+            String uri = API_BASE + "?encoding=linear16&sample_rate=16000";
+            HttpRequest.Builder b = HttpRequest.newBuilder()
+                    .uri(URI.create(uri))
+                    .timeout(Duration.ofSeconds(30))
+                    .header("Content-Type", "application/octet-stream")
+                    .POST(HttpRequest.BodyPublishers.ofByteArray(wavBytes));
+
+            if (token != null && !token.isEmpty()) {
+                b.header("Authorization", "Bearer " + token);
             }
 
-            LOGGER.info("STT: Connecting to WS:");
-            wsutils = new WebSocketUtils();
-            wsutils.connect(new URI("wss://api.player2.game/v1/stt/stream?sample_rate=16000&encoding=wav"), token);
-            LOGGER.info("STT WS: Connected!");
-            wsutils.registerHandler("session", (obj) -> {
-                LOGGER.info("WSM: session: {}", obj);
-            });
-            wsutils.registerHandler("open", (obj) -> {
-                LOGGER.info("WSM: open: {}", obj);
-            });
-            wsutils.registerHandler("messsage", (obj) -> {
-                LOGGER.info("WSM: message: {}", obj);
-            });
-            wsutils.registerHandler("speech_started", (obj) -> {
-                LOGGER.info("WSM: speech_started: {}", obj);
-            });
-            wsutils.registerHandler("utterance_end", (obj) -> {
-                LOGGER.info("WSM: utternace_end: {}", obj);
-            });
+            HttpRequest req = b.build();
+            LOGGER.info("Sending {} bytes to STT API...", wavBytes.length);
 
-            wsutils.registerHandler("close", (obj) -> {
-                LOGGER.info("WSM: close: {}", obj);
-                wsutils = null;
-            });
+            HttpResponse<String> resp = HTTP.send(req, HttpResponse.BodyHandlers.ofString());
+            int code = resp.statusCode();
 
-            wsutils.registerHandler("error", (obj) -> {
-                LOGGER.info("WSM: error: {}", obj);
-            });
+            LOGGER.info("STT API response: {} body-size={} (body first 200 chars: {})",
+                    code,
+                    resp.body() == null ? 0 : resp.body().length(),
+                    resp.body() == null ? "" : resp.body().substring(0, Math.min(200, resp.body().length())));
+
+            // 2xx = OK
+            if (code >= 200 && code < 300 && resp.body() != null) {
+                // Extract transcript field from JSON
+                String transcript = extractTranscript(resp.body());
+                return Optional.ofNullable(transcript);
+            }
+
+            LOGGER.warn("Non-2xx response from STT API: {}", code);
+            return Optional.empty();
+
+        } catch (HttpTimeoutException e) {
+            LOGGER.warn("Timeout sending to STT API: {}", e.getMessage());
+            return Optional.empty();
         } catch (Exception e) {
-            LOGGER.error(e);
+            LOGGER.error("Exception sending to STT API", e);
+            return Optional.empty();
         }
     }
 
-    public static void initWS() {
-        if (wsutils == null) {
-            LOGGER.info("Initializing websocket");
-            RegistryFriendlyByteBuf buf = new RegistryFriendlyByteBuf(Unpooled.buffer(),
-                    Minecraft.getInstance().player.registryAccess());
-            buf.writeUtf(clientId);
-            Minecraft.getInstance().getConnection().send(
-                    NetworkManager.toPacket(
-                            NetworkManager.Side.C2S,
-                            ResourceLocation.fromNamespaceAndPath("playerengine", "request_stt"),
-                            buf));
+    private static void initToken() {
+        RegistryFriendlyByteBuf buf = new RegistryFriendlyByteBuf(Unpooled.buffer(),
+                Minecraft.getInstance().player.registryAccess());
+        buf.writeUtf(clientId);
+        Minecraft.getInstance().getConnection().send(
+                NetworkManager.toPacket(
+                        NetworkManager.Side.C2S,
+                        ResourceLocation.fromNamespaceAndPath("playerengine", "request_stt"),
+                        buf));
+    }
+
+    private static void onSTTMessageGenerated(String message) {
+
+        RegistryFriendlyByteBuf buf = new RegistryFriendlyByteBuf(Unpooled.buffer(),
+                Minecraft.getInstance().player.registryAccess());
+        buf.writeUtf(message);
+        Minecraft.getInstance().getConnection().send(
+                NetworkManager.toPacket(
+                        NetworkManager.Side.C2S,
+                        ResourceLocation.fromNamespaceAndPath("playerengine", "user_message"),
+                        buf));
+    }
+
+    private static String extractTranscript(String json) {
+        try {
+            JsonObject obj = JsonParser.parseString(json).getAsJsonObject();
+            if (obj.has("transcript")) {
+                return obj.get("transcript").getAsString();
+            }
+        } catch (Exception ignored) {
         }
+        return null;
     }
 }
